@@ -1,6 +1,10 @@
 import { AlertTriangle, Upload, BookOpen, Clock, FileText, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+interface StudentDashboardProps {
+  onCourseClick?: (course: { id: number; name: string; code: string; lecturer: string; color: string }) => void;
+}
+
 const courses = [
   {
     id: 1,
@@ -42,7 +46,7 @@ const upcomingTasks = [
   { id: 3, course: "Kimia Analitik", task: "Tugas Kelompok", deadline: "1 minggu lagi", urgent: false },
 ];
 
-export function StudentDashboard() {
+export function StudentDashboard({ onCourseClick }: StudentDashboardProps) {
   return (
     <div className="animate-fade-in space-y-6">
       {/* Welcome Header */}
@@ -109,7 +113,8 @@ export function StudentDashboard() {
             {courses.map((course, index) => (
               <div
                 key={course.id}
-                className="group rounded-xl bg-card border border-border/50 overflow-hidden shadow-card hover:shadow-lg transition-all duration-300 animate-fade-in"
+                onClick={() => onCourseClick?.(course)}
+                className="group rounded-xl bg-card border border-border/50 overflow-hidden shadow-card hover:shadow-lg transition-all duration-300 animate-fade-in cursor-pointer"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
                 {/* Course Header */}
@@ -144,7 +149,12 @@ export function StudentDashboard() {
                   </div>
 
                   {/* Action Button */}
-                  <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary/10 py-2.5 text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-all">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary/10 py-2.5 text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+                  >
                     <Upload className="h-4 w-4" />
                     Upload Tugas
                   </button>

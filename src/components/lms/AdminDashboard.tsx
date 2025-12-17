@@ -1,11 +1,19 @@
 import { useState } from "react";
-import { ChevronDown, Users, BookOpen, GraduationCap, Building, Search, Download, Filter, MoreHorizontal } from "lucide-react";
+import { ChevronDown, Users, BookOpen, GraduationCap, Building, Search, Download, Filter, MoreHorizontal, Plus, Upload, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 const prodiOptions = [
@@ -15,15 +23,36 @@ const prodiOptions = [
   { value: "d4-ak", label: "D4 Analisis Kimia" },
 ];
 
-const usersData = [
+const semesterOptions = ["Semester 1", "Semester 2", "Semester 3", "Semester 4", "Semester 5", "Semester 6"];
+
+const courseOptions = [
+  { value: "kim101", label: "Kimia Dasar (KIM101)" },
+  { value: "kim201", label: "Kimia Organik (KIM201)" },
+  { value: "bio201", label: "Biokimia (BIO201)" },
+];
+
+const lecturerOptions = [
+  { value: "ahmad", label: "Dr. Ahmad Wijaya" },
+  { value: "sari", label: "Prof. Sari Dewi" },
+  { value: "budi", label: "Pak Budi Santoso" },
+];
+
+const dayOptions = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+
+const studentsData = [
   { id: 1, name: "Siti Rahayu", nim: "2024001", prodi: "D3 Analisis Kimia", email: "siti@mhs.aka.ac.id", status: "Aktif" },
   { id: 2, name: "Ahmad Fadli", nim: "2024002", prodi: "D3 Analisis Kimia", email: "ahmad@mhs.aka.ac.id", status: "Aktif" },
   { id: 3, name: "Dewi Lestari", nim: "2024003", prodi: "D3 Teknik Informatika", email: "dewi@mhs.aka.ac.id", status: "Aktif" },
   { id: 4, name: "Budi Santoso", nim: "2023015", prodi: "D4 Analisis Kimia", email: "budi@mhs.aka.ac.id", status: "Cuti" },
   { id: 5, name: "Rina Wulandari", nim: "2024005", prodi: "D3 Analisis Kimia", email: "rina@mhs.aka.ac.id", status: "Aktif" },
   { id: 6, name: "Eko Prasetyo", nim: "2023008", prodi: "D3 Teknik Informatika", email: "eko@mhs.aka.ac.id", status: "Aktif" },
-  { id: 7, name: "Maya Putri", nim: "2024007", prodi: "D4 Analisis Kimia", email: "maya@mhs.aka.ac.id", status: "Aktif" },
-  { id: 8, name: "Rizky Aditya", nim: "2022010", prodi: "D3 Analisis Kimia", email: "rizky@mhs.aka.ac.id", status: "Alumni" },
+];
+
+const lecturersData = [
+  { id: 1, name: "Dr. Ahmad Wijaya", nip: "198501012010011001", prodi: "D3 Analisis Kimia", email: "ahmad@dosen.aka.ac.id", status: "Aktif" },
+  { id: 2, name: "Prof. Sari Dewi", nip: "197805152005012001", prodi: "D3 Analisis Kimia", email: "sari@dosen.aka.ac.id", status: "Aktif" },
+  { id: 3, name: "Pak Budi Santoso", nip: "198203202008011003", prodi: "D3 Teknik Informatika", email: "budi@dosen.aka.ac.id", status: "Aktif" },
+  { id: 4, name: "Dr. Maya Putri", nip: "198906302015012001", prodi: "D4 Analisis Kimia", email: "maya@dosen.aka.ac.id", status: "Cuti" },
 ];
 
 const stats = [
@@ -36,14 +65,22 @@ const stats = [
 export function AdminDashboard() {
   const [selectedProdi, setSelectedProdi] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [userTab, setUserTab] = useState("mahasiswa");
+  
+  // Modal states
+  const [addCourseOpen, setAddCourseOpen] = useState(false);
+  const [addClassOpen, setAddClassOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
-  const filteredUsers = usersData.filter((user) => {
+  const currentData = userTab === "mahasiswa" ? studentsData : lecturersData;
+
+  const filteredUsers = currentData.filter((user) => {
     const matchesProdi =
       selectedProdi === "all" ||
       user.prodi.toLowerCase().includes(selectedProdi.replace("-", " "));
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.nim.includes(searchQuery);
+      (userTab === "mahasiswa" ? (user as typeof studentsData[0]).nim : (user as typeof lecturersData[0]).nip).includes(searchQuery);
     return matchesProdi && matchesSearch;
   });
 
@@ -70,10 +107,204 @@ export function AdminDashboard() {
           </h1>
           <p className="mt-1 text-muted-foreground">Kelola pengguna dan data akademik</p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-md hover:bg-primary-hover transition-colors">
-          <Download className="h-4 w-4" />
-          Export Data
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Add Course Modal */}
+          <Dialog open={addCourseOpen} onOpenChange={setAddCourseOpen}>
+            <DialogTrigger asChild>
+              <button className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors">
+                <Plus className="h-4 w-4" />
+                Tambah Mata Kuliah
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Tambah Mata Kuliah Baru</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground">Nama Mata Kuliah</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Kimia Dasar"
+                    className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Kode Mata Kuliah</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: KIM101"
+                    className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Program Studi</label>
+                  <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">Pilih Prodi</option>
+                    {prodiOptions.slice(1).map((prodi) => (
+                      <option key={prodi.value} value={prodi.value}>{prodi.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Semester</label>
+                  <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">Pilih Semester</option>
+                    {semesterOptions.map((sem) => (
+                      <option key={sem} value={sem}>{sem}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => setAddCourseOpen(false)}
+                    className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={() => setAddCourseOpen(false)}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                  >
+                    Simpan
+                  </button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Add Class Modal */}
+          <Dialog open={addClassOpen} onOpenChange={setAddClassOpen}>
+            <DialogTrigger asChild>
+              <button className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors">
+                <Plus className="h-4 w-4" />
+                Buat Kelas Baru
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Buat Kelas Baru</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground">Mata Kuliah</label>
+                  <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">Pilih Mata Kuliah</option>
+                    {courseOptions.map((course) => (
+                      <option key={course.value} value={course.value}>{course.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Dosen Pengampu</label>
+                  <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">Pilih Dosen</option>
+                    {lecturerOptions.map((lec) => (
+                      <option key={lec.value} value={lec.value}>{lec.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Hari</label>
+                    <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                      <option value="">Pilih Hari</option>
+                      {dayOptions.map((day) => (
+                        <option key={day} value={day}>{day}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Jam</label>
+                    <input
+                      type="time"
+                      className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Nama Kelas</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: D3-AK-2A"
+                    className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => setAddClassOpen(false)}
+                    className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={() => setAddClassOpen(false)}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                  >
+                    Buat Kelas
+                  </button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Import CSV Modal */}
+          <Dialog open={importOpen} onOpenChange={setImportOpen}>
+            <DialogTrigger asChild>
+              <button className="flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors">
+                <Upload className="h-4 w-4" />
+                Import CSV
+              </button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Import Data dari CSV</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div>
+                  <label className="text-sm font-medium text-foreground">Tipe Data</label>
+                  <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="mahasiswa">Data Mahasiswa</option>
+                    <option value="dosen">Data Dosen</option>
+                    <option value="matkul">Data Mata Kuliah</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground">Upload File CSV</label>
+                  <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-8 text-center">
+                    <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
+                    <p className="mt-3 font-medium text-foreground">
+                      Drag & drop file CSV di sini
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
+                    </p>
+                    <p className="mt-3 text-xs text-muted-foreground">Format: .csv (max 5MB)</p>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => setImportOpen(false)}
+                    className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={() => setImportOpen(false)}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                  >
+                    Import
+                  </button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-md hover:bg-primary-hover transition-colors">
+            <Download className="h-4 w-4" />
+            Export Data
+          </button>
+        </div>
       </div>
 
       {/* Stats Overview */}
@@ -105,17 +336,29 @@ export function AdminDashboard() {
 
       {/* User Table Section */}
       <div className="rounded-xl bg-card border border-border/50 shadow-card overflow-hidden">
-        {/* Table Header */}
+        {/* Table Header with Tabs */}
         <div className="border-b border-border p-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">Data User</h2>
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-semibold text-foreground">Data User</h2>
+              <Tabs value={userTab} onValueChange={setUserTab} className="w-auto">
+                <TabsList className="bg-muted h-9">
+                  <TabsTrigger value="mahasiswa" className="text-sm data-[state=active]:bg-background">
+                    Mahasiswa
+                  </TabsTrigger>
+                  <TabsTrigger value="dosen" className="text-sm data-[state=active]:bg-background">
+                    Dosen
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
             <div className="flex items-center gap-3">
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Cari nama atau NIM..."
+                  placeholder={userTab === "mahasiswa" ? "Cari nama atau NIM..." : "Cari nama atau NIP..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="h-9 w-64 rounded-lg border border-input bg-background pl-9 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
@@ -159,7 +402,7 @@ export function AdminDashboard() {
                   Nama
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  NIM
+                  {userTab === "mahasiswa" ? "NIM" : "NIP"}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Prodi
@@ -190,7 +433,9 @@ export function AdminDashboard() {
                       <span className="font-medium text-foreground">{user.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground font-mono">{user.nim}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground font-mono">
+                    {userTab === "mahasiswa" ? (user as typeof studentsData[0]).nim : (user as typeof lecturersData[0]).nip}
+                  </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{user.prodi}</td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{user.email}</td>
                   <td className="px-4 py-3">
@@ -223,7 +468,7 @@ export function AdminDashboard() {
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               Menampilkan <span className="font-medium text-foreground">{filteredUsers.length}</span> dari{" "}
-              <span className="font-medium text-foreground">{usersData.length}</span> user
+              <span className="font-medium text-foreground">{currentData.length}</span> {userTab}
             </p>
             <div className="flex items-center gap-2">
               <button className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50" disabled>

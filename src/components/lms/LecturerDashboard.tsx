@@ -1,6 +1,10 @@
 import { Plus, Users, Clock, BookOpen, FileText, Calendar, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+interface LecturerDashboardProps {
+  onCourseClick?: (course: { id: number; name: string; code: string; lecturer: string; color: string }) => void;
+}
+
 const todaySchedule = [
   { id: 1, time: "08:00 - 09:40", course: "Kimia Dasar", class: "D3-AK-2A", room: "Lab Kimia 1", students: 32 },
   { id: 2, time: "10:00 - 11:40", course: "Kimia Organik", class: "D3-AK-3B", room: "R.201", students: 28 },
@@ -12,6 +16,7 @@ const courses = [
     id: 1,
     name: "Kimia Dasar",
     code: "KIM101",
+    lecturer: "Pak Budi",
     classes: 2,
     students: 64,
     materials: 12,
@@ -21,6 +26,7 @@ const courses = [
     id: 2,
     name: "Kimia Organik",
     code: "KIM301",
+    lecturer: "Pak Budi",
     classes: 3,
     students: 84,
     materials: 8,
@@ -30,6 +36,7 @@ const courses = [
     id: 3,
     name: "Praktikum Kimia",
     code: "KIM102",
+    lecturer: "Pak Budi",
     classes: 4,
     students: 64,
     materials: 6,
@@ -42,7 +49,7 @@ const pendingTasks = [
   { id: 2, type: "Tugas Baru", count: 12, course: "Kimia Organik" },
 ];
 
-export function LecturerDashboard() {
+export function LecturerDashboard({ onCourseClick }: LecturerDashboardProps) {
   return (
     <div className="animate-fade-in space-y-6">
       {/* Welcome Header */}
@@ -53,10 +60,6 @@ export function LecturerDashboard() {
           </h1>
           <p className="mt-1 text-muted-foreground">Dosen Prodi D3 Analisis Kimia</p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-md hover:bg-primary-hover transition-colors">
-          <Plus className="h-4 w-4" />
-          Buat Kelas Baru
-        </button>
       </div>
 
       {/* Stats Overview */}
@@ -179,7 +182,8 @@ export function LecturerDashboard() {
           {courses.map((course, index) => (
             <div
               key={course.id}
-              className="group rounded-xl bg-card border border-border/50 overflow-hidden shadow-card hover:shadow-lg transition-all animate-scale-in"
+              onClick={() => onCourseClick?.(course)}
+              className="group rounded-xl bg-card border border-border/50 overflow-hidden shadow-card hover:shadow-lg transition-all animate-scale-in cursor-pointer"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               {/* Course Header */}
@@ -214,7 +218,13 @@ export function LecturerDashboard() {
                 </div>
 
                 {/* Action Button */}
-                <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onCourseClick?.(course);
+                  }}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                >
                   <Plus className="h-4 w-4" />
                   Upload Materi
                 </button>
