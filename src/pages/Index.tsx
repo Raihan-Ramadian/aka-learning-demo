@@ -1,11 +1,40 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { Sidebar } from "@/components/lms/Sidebar";
+import { Header, UserRole } from "@/components/lms/Header";
+import { StudentDashboard } from "@/components/lms/StudentDashboard";
+import { LecturerDashboard } from "@/components/lms/LecturerDashboard";
+import { AdminDashboard } from "@/components/lms/AdminDashboard";
 
 const Index = () => {
+  const [currentRole, setCurrentRole] = useState<UserRole>("student");
+
+  const renderDashboard = () => {
+    switch (currentRole) {
+      case "student":
+        return <StudentDashboard />;
+      case "lecturer":
+        return <LecturerDashboard />;
+      case "admin":
+        return <AdminDashboard />;
+      default:
+        return <StudentDashboard />;
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-background">
+      {/* Sidebar */}
+      <Sidebar />
+
+      {/* Main Content */}
+      <div className="ml-64">
+        {/* Header */}
+        <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
+
+        {/* Dashboard Content */}
+        <main className="p-6">
+          {renderDashboard()}
+        </main>
       </div>
     </div>
   );
