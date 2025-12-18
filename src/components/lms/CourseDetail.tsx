@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, FileText, Video, Download, Upload, Users, Calendar, Clock, GripVertical, ChevronLeft, Check, X } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Video, Download, Upload, Users, Calendar, Clock, GripVertical, ChevronLeft, Check, X, Link } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
@@ -110,6 +110,7 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<typeof assignmentsData[0] | null>(null);
+  const [materialType, setMaterialType] = useState<"document" | "video">("document");
   const [grades, setGrades] = useState<Record<number, number | null>>(() => {
     const initial: Record<number, number | null> = {};
     gradingData.forEach(student => {
@@ -328,25 +329,84 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                             className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                           />
                         </div>
+                        
+                        {/* Material Type Selector */}
                         <div>
-                          <label className="text-sm font-medium text-foreground">Upload File</label>
-                          <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-6 text-center">
-                            <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                            <p className="mt-2 text-sm text-muted-foreground">
-                              Drag & drop file atau <span className="text-primary cursor-pointer">browse</span>
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">PDF, Video (max 50MB)</p>
+                          <label className="text-sm font-medium text-foreground">Jenis Materi</label>
+                          <div className="mt-2 grid grid-cols-2 gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setMaterialType("document")}
+                              className={cn(
+                                "flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all",
+                                materialType === "document"
+                                  ? "border-primary bg-primary/5 text-primary"
+                                  : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted"
+                              )}
+                            >
+                              <FileText className="h-5 w-5" />
+                              Upload Dokumen
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setMaterialType("video")}
+                              className={cn(
+                                "flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all",
+                                materialType === "video"
+                                  ? "border-primary bg-primary/5 text-primary"
+                                  : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted"
+                              )}
+                            >
+                              <Link className="h-5 w-5" />
+                              Link Video
+                            </button>
                           </div>
                         </div>
+
+                        {/* Conditional Content Based on Material Type */}
+                        {materialType === "document" ? (
+                          <div className="animate-fade-in">
+                            <label className="text-sm font-medium text-foreground">Upload Dokumen</label>
+                            <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-6 text-center hover:border-primary/50 transition-colors">
+                              <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                              <p className="mt-2 text-sm text-muted-foreground">
+                                Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span>
+                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">PDF, PPT, PPTX, DOC, DOCX (max 50MB)</p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="animate-fade-in">
+                            <label className="text-sm font-medium text-foreground">Link Video</label>
+                            <div className="mt-1.5 relative">
+                              <Video className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <input
+                                type="url"
+                                placeholder="Tempel link Youtube atau Google Drive di sini"
+                                className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                              />
+                            </div>
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Contoh: https://youtube.com/watch?v=... atau https://drive.google.com/...
+                            </p>
+                          </div>
+                        )}
+
                         <div className="flex justify-end gap-3 pt-2">
                           <button
-                            onClick={() => setAddMaterialOpen(false)}
+                            onClick={() => {
+                              setAddMaterialOpen(false);
+                              setMaterialType("document");
+                            }}
                             className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
                           >
                             Batal
                           </button>
                           <button
-                            onClick={() => setAddMaterialOpen(false)}
+                            onClick={() => {
+                              setAddMaterialOpen(false);
+                              setMaterialType("document");
+                            }}
                             className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
                           >
                             Simpan
