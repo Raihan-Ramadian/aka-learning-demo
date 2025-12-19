@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, FileText, Video, Download, Upload, Users, Calendar, Clock, GripVertical, ChevronLeft, Check, X, Link } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Video, Download, Upload, Users, Calendar, Clock, GripVertical, ChevronLeft, Check, X, Link, Paperclip } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
@@ -66,6 +66,9 @@ const assignmentsData = [
     deadline: "20 Desember 2024",
     status: "pending",
     maxScore: 100,
+    hasAttachment: true,
+    attachmentName: "Instruksi_Laporan_Praktikum.pdf",
+    attachmentType: "file",
   },
   {
     id: 2,
@@ -75,6 +78,7 @@ const assignmentsData = [
     status: "submitted",
     maxScore: 50,
     submittedAt: "18 Desember 2024",
+    hasAttachment: false,
   },
   {
     id: 3,
@@ -83,6 +87,9 @@ const assignmentsData = [
     deadline: "5 Januari 2025",
     status: "pending",
     maxScore: 100,
+    hasAttachment: true,
+    attachmentName: "Template_Presentasi.pptx",
+    attachmentType: "file",
   },
 ];
 
@@ -534,6 +541,36 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                             />
                           </div>
                         </div>
+
+                        {/* Upload Lampiran (Opsional) */}
+                        <div>
+                          <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                            <Paperclip className="h-4 w-4" />
+                            Upload Lampiran (Opsional)
+                          </label>
+                          <p className="text-xs text-muted-foreground mt-0.5 mb-2">
+                            Sertakan file instruksi atau soal untuk mahasiswa
+                          </p>
+                          <div className="rounded-lg border-2 border-dashed border-border bg-muted/30 p-4 text-center hover:border-primary/50 transition-colors">
+                            <Upload className="mx-auto h-6 w-6 text-muted-foreground" />
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span>
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">PDF, Word, PPT (max 25MB)</p>
+                          </div>
+                          <div className="mt-3">
+                            <label className="text-xs font-medium text-muted-foreground">Atau sertakan link:</label>
+                            <div className="relative mt-1">
+                              <Link className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <input
+                                type="url"
+                                placeholder="Link Google Drive / Dropbox"
+                                className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
                         <div className="flex justify-end gap-3 pt-2">
                           <button
                             onClick={() => setAddAssignmentOpen(false)}
@@ -600,6 +637,24 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                     {/* Student Upload Area */}
                     {!isLecturer && assignment.status === "pending" && (
                       <div className="mt-4 pt-4 border-t border-border space-y-4" onClick={(e) => e.stopPropagation()}>
+                        {/* Download Instruksi/Soal dari Dosen */}
+                        {assignment.hasAttachment && (
+                          <div className="flex items-center justify-between rounded-lg bg-primary/5 border border-primary/20 p-3">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                                <FileText className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-foreground">Instruksi/Soal dari Dosen</p>
+                                <p className="text-xs text-muted-foreground">{assignment.attachmentName}</p>
+                              </div>
+                            </div>
+                            <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">
+                              <Download className="h-4 w-4" />
+                              Download
+                            </button>
+                          </div>
+                        )}
                         {/* Drag & Drop File Area */}
                         <div>
                           <label className="text-sm font-medium text-foreground">Upload File</label>
