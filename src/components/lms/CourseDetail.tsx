@@ -267,12 +267,21 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                     {gradingData.filter(s => s.status === "submitted").length}
                   </span> dari <span className="font-medium text-foreground">{gradingData.length}</span> mahasiswa sudah mengumpulkan
                 </p>
-                <button
-                  onClick={handleSaveGrades}
-                  className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
-                >
-                  Simpan Nilai
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => alert("Export rekap nilai ke Excel berhasil!")}
+                    className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors"
+                  >
+                    <Download className="h-4 w-4" />
+                    Export Rekap
+                  </button>
+                  <button
+                    onClick={handleSaveGrades}
+                    className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                  >
+                    Simpan Nilai
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -590,31 +599,61 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
 
                     {/* Student Upload Area */}
                     {!isLecturer && assignment.status === "pending" && (
-                      <div className="mt-4 pt-4 border-t border-border" onClick={(e) => e.stopPropagation()}>
-                        <div
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            setDragOver(true);
-                          }}
-                          onDragLeave={() => setDragOver(false)}
-                          onDrop={() => setDragOver(false)}
-                          className={cn(
-                            "rounded-lg border-2 border-dashed p-6 text-center transition-all",
-                            dragOver
-                              ? "border-primary bg-primary/5"
-                              : "border-border bg-muted/30"
-                          )}
-                        >
-                          <GripVertical className="mx-auto h-8 w-8 text-muted-foreground" />
-                          <p className="mt-2 font-medium text-foreground">
-                            Drag & drop file tugas Anda di sini
+                      <div className="mt-4 pt-4 border-t border-border space-y-4" onClick={(e) => e.stopPropagation()}>
+                        {/* Drag & Drop File Area */}
+                        <div>
+                          <label className="text-sm font-medium text-foreground">Upload File</label>
+                          <div
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              setDragOver(true);
+                            }}
+                            onDragLeave={() => setDragOver(false)}
+                            onDrop={() => setDragOver(false)}
+                            className={cn(
+                              "mt-1.5 rounded-lg border-2 border-dashed p-6 text-center transition-all",
+                              dragOver
+                                ? "border-primary bg-primary/5"
+                                : "border-border bg-muted/30"
+                            )}
+                          >
+                            <GripVertical className="mx-auto h-8 w-8 text-muted-foreground" />
+                            <p className="mt-2 font-medium text-foreground">
+                              Drag & drop file tugas Anda di sini
+                            </p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
+                            </p>
+                          </div>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Format didukung: PDF, Word, Excel, atau Link Eksternal
                           </p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
-                          </p>
-                          <p className="mt-2 text-xs text-muted-foreground">PDF, DOC, DOCX (max 10MB)</p>
                         </div>
-                        <button className="mt-3 w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">
+
+                        {/* Input Link */}
+                        <div>
+                          <label className="text-sm font-medium text-foreground">Link (Opsional)</label>
+                          <div className="relative mt-1.5">
+                            <Link className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <input
+                              type="url"
+                              placeholder="Link GDrive / Youtube / Project"
+                              className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Notes Text Area */}
+                        <div>
+                          <label className="text-sm font-medium text-foreground">Catatan (Opsional)</label>
+                          <textarea
+                            rows={3}
+                            placeholder="Tulis catatan untuk dosen..."
+                            className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                          />
+                        </div>
+
+                        <button className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">
                           <Upload className="mr-2 inline h-4 w-4" />
                           Upload Tugas
                         </button>

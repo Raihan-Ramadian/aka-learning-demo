@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { ChevronDown, Users, BookOpen, GraduationCap, Building, Search, Download, Filter, MoreHorizontal, Plus, Upload, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, Users, BookOpen, GraduationCap, Building, Search, Download, Filter, MoreHorizontal, Plus, Upload, Pencil, Trash2, FileSpreadsheet } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -469,10 +470,39 @@ export function AdminDashboard() {
             </DialogContent>
           </Dialog>
 
-          <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-md hover:bg-primary-hover transition-colors">
-            <Download className="h-4 w-4" />
-            Export Data
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-md hover:bg-primary-hover transition-colors">
+                <Download className="h-4 w-4" />
+                Export Data
+                <ChevronDown className="h-4 w-4 ml-1" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem 
+                onClick={() => alert("Export Data Mahasiswa (.CSV) berhasil!")}
+                className="cursor-pointer"
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Export Data Mahasiswa (.CSV)
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => alert("Export Data Dosen (.CSV) berhasil!")}
+                className="cursor-pointer"
+              >
+                <GraduationCap className="mr-2 h-4 w-4" />
+                Export Data Dosen (.CSV)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => alert("Export Data Mata Kuliah (.CSV) berhasil!")}
+                className="cursor-pointer"
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
+                Export Data Mata Kuliah (.CSV)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
