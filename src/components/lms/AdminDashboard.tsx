@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Users, BookOpen, GraduationCap, Building, Search, Download, Filter, MoreHorizontal, Plus, Upload, Pencil, Trash2, FileSpreadsheet } from "lucide-react";
+import { ChevronDown, Users, BookOpen, GraduationCap, Building, Search, Download, Filter, MoreHorizontal, Plus, Upload, Pencil, Trash2, FileSpreadsheet, UserPlus, Check } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -88,10 +88,44 @@ export function AdminDashboard() {
   const [importOpen, setImportOpen] = useState(false);
   const [editCourseOpen, setEditCourseOpen] = useState(false);
   const [editClassOpen, setEditClassOpen] = useState(false);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [selectedClassForMember, setSelectedClassForMember] = useState<typeof classesTableData[0] | null>(null);
+  const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   
   // Edit data states
   const [editingCourse, setEditingCourse] = useState<typeof coursesTableData[0] | null>(null);
   const [editingClass, setEditingClass] = useState<typeof classesTableData[0] | null>(null);
+
+  // Available students to add to class
+  const availableStudentsForClass = [
+    { id: 101, name: "Andi Pratama", nim: "2024010", prodi: "D3 Analisis Kimia", angkatan: "2024" },
+    { id: 102, name: "Budi Setiawan", nim: "2024011", prodi: "D3 Analisis Kimia", angkatan: "2024" },
+    { id: 103, name: "Citra Dewi", nim: "2024012", prodi: "D3 Analisis Kimia", angkatan: "2024" },
+    { id: 104, name: "Dian Puspita", nim: "2023020", prodi: "D3 Analisis Kimia", angkatan: "2023" },
+    { id: 105, name: "Eka Fitriani", nim: "2023021", prodi: "D3 Analisis Kimia", angkatan: "2023" },
+    { id: 106, name: "Fajar Hidayat", nim: "2024015", prodi: "D3 Teknik Informatika", angkatan: "2024" },
+  ];
+
+  const handleOpenAddMember = (classItem: typeof classesTableData[0]) => {
+    setSelectedClassForMember(classItem);
+    setSelectedStudents([]);
+    setAddMemberOpen(true);
+  };
+
+  const toggleStudentSelection = (studentId: number) => {
+    setSelectedStudents(prev => 
+      prev.includes(studentId) 
+        ? prev.filter(id => id !== studentId)
+        : [...prev, studentId]
+    );
+  };
+
+  const handleAddMembers = () => {
+    alert(`${selectedStudents.length} mahasiswa berhasil ditambahkan ke kelas ${selectedClassForMember?.className}!`);
+    setAddMemberOpen(false);
+    setSelectedStudents([]);
+    setSelectedClassForMember(null);
+  };
 
   const currentData = userTab === "mahasiswa" ? studentsData : lecturersData;
 
@@ -830,6 +864,13 @@ export function AdminDashboard() {
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button 
+                            onClick={() => handleOpenAddMember(classItem)}
+                            className="rounded-lg p-2 hover:bg-primary/10 transition-colors"
+                            title="Tambah Anggota"
+                          >
+                            <UserPlus className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                          </button>
+                          <button 
                             onClick={() => handleEditClass(classItem)}
                             className="rounded-lg p-2 hover:bg-muted transition-colors"
                             title="Edit"
@@ -856,6 +897,121 @@ export function AdminDashboard() {
               </p>
             </div>
           </div>
+
+          {/* Modal Tambah Anggota Kelas */}
+          <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Tambah Anggota Kelas</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                {selectedClassForMember && (
+                  <div className="rounded-lg bg-muted/50 border border-border p-3">
+                    <p className="text-sm text-muted-foreground">Kelas:</p>
+                    <p className="font-semibold text-foreground">{selectedClassForMember.courseName} - {selectedClassForMember.className}</p>
+                    <p className="text-xs text-muted-foreground mt-1">Dosen: {selectedClassForMember.lecturer}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Filter Prodi</label>
+                    <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                      <option value="all">Semua Prodi</option>
+                      {prodiOptions.slice(1).map((prodi) => (
+                        <option key={prodi.value} value={prodi.value}>{prodi.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Filter Angkatan</label>
+                    <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                      <option value="all">Semua Angkatan</option>
+                      <option value="2024">2024</option>
+                      <option value="2023">2023</option>
+                      <option value="2022">2022</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-foreground">Pilih Mahasiswa</label>
+                  <p className="text-xs text-muted-foreground mb-2">Centang mahasiswa yang ingin ditambahkan ke kelas</p>
+                  <div className="max-h-60 overflow-y-auto rounded-lg border border-border divide-y divide-border">
+                    {availableStudentsForClass.map((student) => (
+                      <label
+                        key={student.id}
+                        className={cn(
+                          "flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-colors",
+                          selectedStudents.includes(student.id) && "bg-primary/5"
+                        )}
+                      >
+                        <div className={cn(
+                          "flex h-5 w-5 items-center justify-center rounded border-2 transition-colors",
+                          selectedStudents.includes(student.id) 
+                            ? "bg-primary border-primary" 
+                            : "border-border"
+                        )}>
+                          {selectedStudents.includes(student.id) && (
+                            <Check className="h-3 w-3 text-primary-foreground" />
+                          )}
+                        </div>
+                        <input
+                          type="checkbox"
+                          className="sr-only"
+                          checked={selectedStudents.includes(student.id)}
+                          onChange={() => toggleStudentSelection(student.id)}
+                        />
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                          {student.name.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{student.name}</p>
+                          <p className="text-xs text-muted-foreground">{student.nim} • {student.prodi}</p>
+                        </div>
+                        <span className="text-xs rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
+                          {student.angkatan}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedStudents.length > 0 && (
+                  <div className="rounded-lg bg-primary/5 border border-primary/20 p-3">
+                    <p className="text-sm text-primary font-medium">
+                      {selectedStudents.length} mahasiswa dipilih
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      setAddMemberOpen(false);
+                      setSelectedStudents([]);
+                    }}
+                    className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleAddMembers}
+                    disabled={selectedStudents.length === 0}
+                    className={cn(
+                      "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                      selectedStudents.length > 0
+                        ? "bg-primary text-primary-foreground hover:bg-primary-hover"
+                        : "bg-muted text-muted-foreground cursor-not-allowed"
+                    )}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4 inline" />
+                    Tambah ke Kelas
+                  </button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
       </Tabs>
     </div>
