@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, Users, BookOpen, GraduationCap, Building, Search, Download, Filter, MoreHorizontal, Plus, Upload, Pencil, Trash2, FileSpreadsheet, UserPlus, Check } from "lucide-react";
+import { ChevronDown, Users, BookOpen, GraduationCap, Building, Search, Download, Filter, MoreHorizontal, Plus, Upload, Pencil, Trash2, FileSpreadsheet, UserPlus, Check, Eye, Mail, Phone, MapPin } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +13,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -41,19 +53,19 @@ const lecturerOptions = [
 const dayOptions = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
 const studentsData = [
-  { id: 1, name: "Siti Rahayu", nim: "2024001", prodi: "D3 Analisis Kimia", email: "siti@mhs.aka.ac.id", status: "Aktif" },
-  { id: 2, name: "Ahmad Fadli", nim: "2024002", prodi: "D3 Analisis Kimia", email: "ahmad@mhs.aka.ac.id", status: "Aktif" },
-  { id: 3, name: "Dewi Lestari", nim: "2024003", prodi: "D3 Teknik Informatika", email: "dewi@mhs.aka.ac.id", status: "Aktif" },
-  { id: 4, name: "Budi Santoso", nim: "2023015", prodi: "D4 Analisis Kimia", email: "budi@mhs.aka.ac.id", status: "Cuti" },
-  { id: 5, name: "Rina Wulandari", nim: "2024005", prodi: "D3 Analisis Kimia", email: "rina@mhs.aka.ac.id", status: "Aktif" },
-  { id: 6, name: "Eko Prasetyo", nim: "2023008", prodi: "D3 Teknik Informatika", email: "eko@mhs.aka.ac.id", status: "Aktif" },
+  { id: 1, name: "Siti Rahayu", nim: "2024001", prodi: "D3 Analisis Kimia", email: "siti@mhs.aka.ac.id", status: "Aktif", phone: "081234567890", address: "Jl. Merdeka No. 10, Bogor", angkatan: "2024" },
+  { id: 2, name: "Ahmad Fadli", nim: "2024002", prodi: "D3 Analisis Kimia", email: "ahmad@mhs.aka.ac.id", status: "Aktif", phone: "081234567891", address: "Jl. Sudirman No. 5, Bogor", angkatan: "2024" },
+  { id: 3, name: "Dewi Lestari", nim: "2024003", prodi: "D3 Teknik Informatika", email: "dewi@mhs.aka.ac.id", status: "Aktif", phone: "081234567892", address: "Jl. Ahmad Yani No. 15, Bogor", angkatan: "2024" },
+  { id: 4, name: "Budi Santoso", nim: "2023015", prodi: "D4 Analisis Kimia", email: "budi@mhs.aka.ac.id", status: "Cuti", phone: "081234567893", address: "Jl. Pahlawan No. 20, Bogor", angkatan: "2023" },
+  { id: 5, name: "Rina Wulandari", nim: "2024005", prodi: "D3 Analisis Kimia", email: "rina@mhs.aka.ac.id", status: "Aktif", phone: "081234567894", address: "Jl. Diponegoro No. 8, Bogor", angkatan: "2024" },
+  { id: 6, name: "Eko Prasetyo", nim: "2023008", prodi: "D3 Teknik Informatika", email: "eko@mhs.aka.ac.id", status: "Aktif", phone: "081234567895", address: "Jl. Gatot Subroto No. 12, Bogor", angkatan: "2023" },
 ];
 
 const lecturersData = [
-  { id: 1, name: "Dr. Ahmad Wijaya", nip: "198501012010011001", prodi: "D3 Analisis Kimia", email: "ahmad@dosen.aka.ac.id", status: "Aktif" },
-  { id: 2, name: "Prof. Sari Dewi", nip: "197805152005012001", prodi: "D3 Analisis Kimia", email: "sari@dosen.aka.ac.id", status: "Aktif" },
-  { id: 3, name: "Pak Budi Santoso", nip: "198203202008011003", prodi: "D3 Teknik Informatika", email: "budi@dosen.aka.ac.id", status: "Aktif" },
-  { id: 4, name: "Dr. Maya Putri", nip: "198906302015012001", prodi: "D4 Analisis Kimia", email: "maya@dosen.aka.ac.id", status: "Cuti" },
+  { id: 1, name: "Dr. Ahmad Wijaya", nip: "198501012010011001", prodi: "D3 Analisis Kimia", email: "ahmad@dosen.aka.ac.id", status: "Aktif", phone: "081234567801", address: "Jl. Profesor No. 1, Bogor", jabatan: "Lektor Kepala" },
+  { id: 2, name: "Prof. Sari Dewi", nip: "197805152005012001", prodi: "D3 Analisis Kimia", email: "sari@dosen.aka.ac.id", status: "Aktif", phone: "081234567802", address: "Jl. Akademik No. 5, Bogor", jabatan: "Guru Besar" },
+  { id: 3, name: "Pak Budi Santoso", nip: "198203202008011003", prodi: "D3 Teknik Informatika", email: "budi@dosen.aka.ac.id", status: "Aktif", phone: "081234567803", address: "Jl. Pendidikan No. 10, Bogor", jabatan: "Lektor" },
+  { id: 4, name: "Dr. Maya Putri", nip: "198906302015012001", prodi: "D4 Analisis Kimia", email: "maya@dosen.aka.ac.id", status: "Cuti", phone: "081234567804", address: "Jl. Ilmu No. 3, Bogor", jabatan: "Asisten Ahli" },
 ];
 
 const coursesTableData = [
@@ -94,6 +106,15 @@ export function AdminDashboard() {
   
   // Edit data states
   const [editingCourse, setEditingCourse] = useState<typeof coursesTableData[0] | null>(null);
+  
+  // User action modal states
+  const [viewUserOpen, setViewUserOpen] = useState(false);
+  const [editUserOpen, setEditUserOpen] = useState(false);
+  const [deleteUserOpen, setDeleteUserOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<typeof studentsData[0] | typeof lecturersData[0] | null>(null);
+  
+  // CSV Import for class enrollment
+  const [importClassCSVOpen, setImportClassCSVOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<typeof classesTableData[0] | null>(null);
 
   // Available students to add to class
@@ -160,6 +181,39 @@ export function AdminDashboard() {
   const handleEditClass = (classItem: typeof classesTableData[0]) => {
     setEditingClass(classItem);
     setEditClassOpen(true);
+  };
+
+  // User action handlers
+  const handleViewUser = (user: typeof studentsData[0] | typeof lecturersData[0]) => {
+    setSelectedUser(user);
+    setViewUserOpen(true);
+  };
+
+  const handleEditUser = (user: typeof studentsData[0] | typeof lecturersData[0]) => {
+    setSelectedUser(user);
+    setEditUserOpen(true);
+  };
+
+  const handleDeleteUser = (user: typeof studentsData[0] | typeof lecturersData[0]) => {
+    setSelectedUser(user);
+    setDeleteUserOpen(true);
+  };
+
+  const confirmDeleteUser = () => {
+    alert(`User ${selectedUser?.name} berhasil dihapus!`);
+    setDeleteUserOpen(false);
+    setSelectedUser(null);
+  };
+
+  const handleSaveEditUser = () => {
+    alert(`Data ${selectedUser?.name} berhasil diperbarui!`);
+    setEditUserOpen(false);
+    setSelectedUser(null);
+  };
+
+  const handleImportClassCSV = () => {
+    alert("Import CSV mahasiswa ke kelas berhasil!");
+    setImportClassCSVOpen(false);
   };
 
   return (
@@ -693,10 +747,29 @@ export function AdminDashboard() {
                               <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                             </button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-32 bg-popover border border-border shadow-lg">
-                            <DropdownMenuItem className="cursor-pointer">Lihat Detail</DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer">Edit</DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer text-destructive">Hapus</DropdownMenuItem>
+                          <DropdownMenuContent align="end" className="w-36 bg-popover border border-border shadow-lg">
+                            <DropdownMenuItem 
+                              className="cursor-pointer"
+                              onClick={() => handleViewUser(user)}
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              Lihat Detail
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="cursor-pointer"
+                              onClick={() => handleEditUser(user)}
+                            >
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="cursor-pointer text-destructive focus:text-destructive"
+                              onClick={() => handleDeleteUser(user)}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Hapus
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
@@ -814,6 +887,13 @@ export function AdminDashboard() {
             <div className="border-b border-border p-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-foreground">Manajemen Kelas</h2>
+                <button 
+                  onClick={() => setImportClassCSVOpen(true)}
+                  className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                >
+                  <Upload className="h-4 w-4" />
+                  Import CSV Mahasiswa
+                </button>
               </div>
             </div>
 
@@ -1014,6 +1094,248 @@ export function AdminDashboard() {
           </Dialog>
         </TabsContent>
       </Tabs>
+
+      {/* Modal Lihat Detail User */}
+      <Dialog open={viewUserOpen} onOpenChange={setViewUserOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detail {userTab === "mahasiswa" ? "Mahasiswa" : "Dosen"}</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4 pt-4">
+              {/* Avatar & Name */}
+              <div className="flex items-center gap-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
+                  {selectedUser.name.charAt(0)}
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">{selectedUser.name}</h3>
+                  <p className="text-sm text-muted-foreground font-mono">
+                    {userTab === "mahasiswa" ? (selectedUser as typeof studentsData[0]).nim : (selectedUser as typeof lecturersData[0]).nip}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Badge */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">Status:</span>
+                <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", getStatusStyle(selectedUser.status))}>
+                  {selectedUser.status}
+                </span>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-3 rounded-lg border border-border p-4">
+                <div className="flex items-start gap-3">
+                  <Building className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Program Studi</p>
+                    <p className="text-sm font-medium text-foreground">{selectedUser.prodi}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="text-sm font-medium text-foreground">{selectedUser.email}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Telepon</p>
+                    <p className="text-sm font-medium text-foreground">{(selectedUser as any).phone}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Alamat</p>
+                    <p className="text-sm font-medium text-foreground">{(selectedUser as any).address}</p>
+                  </div>
+                </div>
+                {userTab === "mahasiswa" && (
+                  <div className="flex items-start gap-3">
+                    <GraduationCap className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Angkatan</p>
+                      <p className="text-sm font-medium text-foreground">{(selectedUser as typeof studentsData[0]).angkatan}</p>
+                    </div>
+                  </div>
+                )}
+                {userTab === "dosen" && (
+                  <div className="flex items-start gap-3">
+                    <GraduationCap className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Jabatan Fungsional</p>
+                      <p className="text-sm font-medium text-foreground">{(selectedUser as typeof lecturersData[0]).jabatan}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={() => setViewUserOpen(false)}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Edit User */}
+      <Dialog open={editUserOpen} onOpenChange={setEditUserOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit {userTab === "mahasiswa" ? "Mahasiswa" : "Dosen"}</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4 pt-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Nama Lengkap</label>
+                <input
+                  type="text"
+                  defaultValue={selectedUser.name}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">
+                  {userTab === "mahasiswa" ? "NIM" : "NIP"}
+                </label>
+                <input
+                  type="text"
+                  defaultValue={userTab === "mahasiswa" ? (selectedUser as typeof studentsData[0]).nim : (selectedUser as typeof lecturersData[0]).nip}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Program Studi</label>
+                <select 
+                  defaultValue={selectedUser.prodi === "D3 Analisis Kimia" ? "d3-ak" : selectedUser.prodi === "D3 Teknik Informatika" ? "d3-ti" : "d4-ak"}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  {prodiOptions.slice(1).map((prodi) => (
+                    <option key={prodi.value} value={prodi.value}>{prodi.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Status</label>
+                <select 
+                  defaultValue={selectedUser.status}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="Aktif">Aktif</option>
+                  <option value="Cuti">Cuti</option>
+                  <option value="Alumni">Alumni</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setEditUserOpen(false)}
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSaveEditUser}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                >
+                  Simpan Perubahan
+                </button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Alert Dialog Hapus User */}
+      <AlertDialog open={deleteUserOpen} onOpenChange={setDeleteUserOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus <span className="font-semibold text-foreground">{selectedUser?.name}</span>? 
+              Tindakan ini tidak dapat dibatalkan dan semua data terkait user ini akan dihapus secara permanen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteUser}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Ya, Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Modal Import CSV untuk Enrollment Kelas */}
+      <Dialog open={importClassCSVOpen} onOpenChange={setImportClassCSVOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import CSV Mahasiswa ke Kelas</DialogTitle>
+            <DialogDescription>
+              Upload file CSV untuk memasukkan mahasiswa ke kelas secara massal.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">Pilih Kelas Tujuan</label>
+              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">Pilih Kelas</option>
+                {classesTableData.map((classItem) => (
+                  <option key={classItem.id} value={classItem.id}>
+                    {classItem.courseName} - {classItem.className}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Upload File CSV</label>
+              <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-6 text-center">
+                <FileSpreadsheet className="mx-auto h-10 w-10 text-muted-foreground" />
+                <p className="mt-3 font-medium text-foreground">
+                  Drag & drop file CSV di sini
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
+                </p>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Format: .csv (max 5MB)
+                </p>
+              </div>
+            </div>
+            <div className="rounded-lg bg-muted/50 border border-border p-3">
+              <p className="text-xs font-medium text-foreground mb-1">Format CSV yang didukung:</p>
+              <p className="text-xs text-muted-foreground">NIM, Nama (header opsional)</p>
+              <p className="text-xs text-muted-foreground font-mono mt-1">2024001, Siti Rahayu</p>
+              <p className="text-xs text-muted-foreground font-mono">2024002, Ahmad Fadli</p>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setImportClassCSVOpen(false)}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleImportClassCSV}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+              >
+                <Upload className="mr-2 h-4 w-4 inline" />
+                Import
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
