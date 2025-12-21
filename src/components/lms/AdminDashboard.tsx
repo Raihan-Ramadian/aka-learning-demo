@@ -88,6 +88,21 @@ const stats = [
   { label: "Total Mata Kuliah", value: "124", icon: BookOpen, color: "text-accent-foreground", bg: "bg-accent", change: "+5%" },
 ];
 
+const jabatanOptions = [
+  { value: "asisten-ahli", label: "Asisten Ahli" },
+  { value: "lektor", label: "Lektor" },
+  { value: "lektor-kepala", label: "Lektor Kepala" },
+  { value: "guru-besar", label: "Guru Besar" },
+];
+
+const angkatanOptions = ["2021", "2022", "2023", "2024"];
+
+const statusOptions = [
+  { value: "Aktif", label: "Aktif" },
+  { value: "Cuti", label: "Cuti" },
+  { value: "Non-Aktif", label: "Non-Aktif" },
+];
+
 export function AdminDashboard() {
   const [selectedProdi, setSelectedProdi] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,6 +116,8 @@ export function AdminDashboard() {
   const [editCourseOpen, setEditCourseOpen] = useState(false);
   const [editClassOpen, setEditClassOpen] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [addUserOpen, setAddUserOpen] = useState(false);
+  const [addUserType, setAddUserType] = useState<"mahasiswa" | "dosen">("mahasiswa");
   const [selectedClassForMember, setSelectedClassForMember] = useState<typeof classesTableData[0] | null>(null);
   const [selectedStudents, setSelectedStudents] = useState<number[]>([]);
   
@@ -214,6 +231,16 @@ export function AdminDashboard() {
   const handleImportClassCSV = () => {
     alert("Import CSV mahasiswa ke kelas berhasil!");
     setImportClassCSVOpen(false);
+  };
+
+  const handleAddUser = () => {
+    alert(`${addUserType === "mahasiswa" ? "Mahasiswa" : "Dosen"} baru berhasil ditambahkan!`);
+    setAddUserOpen(false);
+  };
+
+  const openAddUserModal = (type: "mahasiswa" | "dosen") => {
+    setAddUserType(type);
+    setAddUserOpen(true);
   };
 
   return (
@@ -664,6 +691,13 @@ export function AdminDashboard() {
                       className="h-9 w-64 rounded-lg border border-input bg-background pl-9 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                     />
                   </div>
+                  <button
+                    onClick={() => openAddUserModal(userTab === "mahasiswa" ? "mahasiswa" : "dosen")}
+                    className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Tambah {userTab === "mahasiswa" ? "Mahasiswa" : "Dosen"}
+                  </button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium transition-all hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20">
@@ -1331,6 +1365,152 @@ export function AdminDashboard() {
               >
                 <Upload className="mr-2 h-4 w-4 inline" />
                 Import
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Tambah User Lengkap */}
+      <Dialog open={addUserOpen} onOpenChange={setAddUserOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Tambah {addUserType === "mahasiswa" ? "Mahasiswa" : "Dosen"} Baru</DialogTitle>
+            <DialogDescription>
+              Lengkapi data {addUserType === "mahasiswa" ? "mahasiswa" : "dosen"} baru di bawah ini.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            {/* Data Utama */}
+            <div className="space-y-1">
+              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                Data Utama
+              </h4>
+              <div className="h-px bg-border" />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium text-foreground">Nama Lengkap <span className="text-destructive">*</span></label>
+              <input
+                type="text"
+                placeholder="Contoh: Ahmad Fadli"
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Email <span className="text-destructive">*</span></label>
+                <input
+                  type="email"
+                  placeholder={addUserType === "mahasiswa" ? "nama@mhs.aka.ac.id" : "nama@dosen.aka.ac.id"}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">
+                  {addUserType === "mahasiswa" ? "NIM" : "NIP"} <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder={addUserType === "mahasiswa" ? "Contoh: 2024001" : "Contoh: 198501012010011001"}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground">Program Studi <span className="text-destructive">*</span></label>
+              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">Pilih Program Studi</option>
+                {prodiOptions.slice(1).map((prodi) => (
+                  <option key={prodi.value} value={prodi.value}>{prodi.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Data Detail */}
+            <div className="space-y-1 pt-2">
+              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" />
+                Data Detail
+              </h4>
+              <div className="h-px bg-border" />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground">Alamat Lengkap</label>
+              <textarea
+                rows={2}
+                placeholder="Contoh: Jl. Merdeka No. 10, Kelurahan Tanah Sareal, Kota Bogor"
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Nomor Telepon</label>
+                <input
+                  type="tel"
+                  placeholder="Contoh: 081234567890"
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              {addUserType === "mahasiswa" ? (
+                <div>
+                  <label className="text-sm font-medium text-foreground">Angkatan</label>
+                  <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">Pilih Angkatan</option>
+                    {angkatanOptions.map((tahun) => (
+                      <option key={tahun} value={tahun}>{tahun}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="text-sm font-medium text-foreground">Jabatan Akademik</label>
+                  <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                    <option value="">Pilih Jabatan</option>
+                    {jabatanOptions.map((jabatan) => (
+                      <option key={jabatan.value} value={jabatan.value}>{jabatan.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Status */}
+            <div className="space-y-1 pt-2">
+              <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Check className="h-4 w-4 text-primary" />
+                Status
+              </h4>
+              <div className="h-px bg-border" />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-foreground">Status Akademik <span className="text-destructive">*</span></label>
+              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                {statusOptions.map((status) => (
+                  <option key={status.value} value={status.value}>{status.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+              <button
+                onClick={() => setAddUserOpen(false)}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleAddUser}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+              >
+                <Plus className="mr-2 h-4 w-4 inline" />
+                Tambah {addUserType === "mahasiswa" ? "Mahasiswa" : "Dosen"}
               </button>
             </div>
           </div>

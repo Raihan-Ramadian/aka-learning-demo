@@ -1,11 +1,13 @@
-import { ChevronDown, Bell, Search, User } from "lucide-react";
+import { ChevronDown, Bell, Search, User, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 export type UserRole = "student" | "lecturer" | "admin";
 
@@ -27,6 +29,13 @@ const roleColors: Record<UserRole, string> = {
 };
 
 export function Header({ currentRole, onRoleChange }: HeaderProps) {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // Simulate logout - navigate to login page
+    navigate("/login");
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card px-6 shadow-sm">
       {/* Search */}
@@ -75,10 +84,31 @@ export function Header({ currentRole, onRoleChange }: HeaderProps) {
           <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-destructive" />
         </button>
 
-        {/* Profile */}
-        <button className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <User className="h-5 w-5" />
-        </button>
+        {/* Profile Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary-hover transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50">
+              <User className="h-5 w-5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48 bg-popover border border-border shadow-lg">
+            <DropdownMenuItem
+              onClick={() => navigate("/profile")}
+              className="cursor-pointer"
+            >
+              <User className="mr-2 h-4 w-4" />
+              Lihat Profil
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              className="cursor-pointer text-destructive focus:text-destructive"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
