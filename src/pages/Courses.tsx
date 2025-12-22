@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/lms/Sidebar";
 import { Header, UserRole } from "@/components/lms/Header";
-import { BookOpen, Search, Filter, ChevronDown, Clock, Users, GraduationCap, Grid3X3, List, Plus, Pencil, Trash2, Calendar } from "lucide-react";
+import { BookOpen, Search, Filter, ChevronDown, Clock, Users, GraduationCap, Plus, Pencil, Trash2, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 // Master data for all courses (Admin view)
 const allCourses = [
@@ -72,8 +73,8 @@ export default function Courses() {
   const [selectedSks, setSelectedSks] = useState("all");
   const [selectedSemester, setSelectedSemester] = useState("all");
   const [selectedProdi, setSelectedProdi] = useState("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [addCourseOpen, setAddCourseOpen] = useState(false);
+  const { toast } = useToast();
 
   const filteredCourses = allCourses.filter((course) => {
     const matchesSearch = 
@@ -105,6 +106,14 @@ export default function Courses() {
       case "student":
         return "Kelas yang Anda ikuti semester ini";
     }
+  };
+
+  const handleAddCourse = () => {
+    toast({
+      title: "Mata Kuliah Ditambahkan!",
+      description: "Mata kuliah baru berhasil ditambahkan ke kurikulum.",
+    });
+    setAddCourseOpen(false);
   };
 
   // Admin View - Master Data Management
@@ -184,6 +193,14 @@ export default function Courses() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <button 
+          onClick={() => setAddCourseOpen(true)}
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Tambah Mata Kuliah
+        </button>
       </div>
 
       {/* Results Count */}
@@ -254,6 +271,85 @@ export default function Courses() {
           </p>
         </div>
       </div>
+
+      {/* Add Course Modal */}
+      <Dialog open={addCourseOpen} onOpenChange={setAddCourseOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Tambah Mata Kuliah Baru</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Kode Mata Kuliah <span className="text-destructive">*</span></label>
+                <input
+                  type="text"
+                  placeholder="Contoh: KIM101"
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">SKS <span className="text-destructive">*</span></label>
+                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <option value="">Pilih SKS</option>
+                  <option value="2">2 SKS</option>
+                  <option value="3">3 SKS</option>
+                  <option value="4">4 SKS</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Nama Mata Kuliah <span className="text-destructive">*</span></label>
+              <input
+                type="text"
+                placeholder="Contoh: Kimia Dasar"
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Program Studi <span className="text-destructive">*</span></label>
+                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <option value="">Pilih Prodi</option>
+                  {prodiOptions.slice(1).map((prodi) => (
+                    <option key={prodi.value} value={prodi.value}>{prodi.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Semester <span className="text-destructive">*</span></label>
+                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <option value="">Pilih Semester</option>
+                  <option value="Ganjil">Semester Ganjil</option>
+                  <option value="Genap">Semester Genap</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Deskripsi</label>
+              <textarea
+                placeholder="Deskripsi mata kuliah..."
+                rows={3}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setAddCourseOpen(false)}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleAddCourse}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+              >
+                Tambah Mata Kuliah
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 
@@ -339,7 +435,7 @@ export default function Courses() {
                 </span>
               </div>
               <div className="absolute top-3 left-3">
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-success text-success-foreground">
+                <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary text-primary-foreground">
                   {classItem.className}
                 </span>
               </div>
@@ -389,134 +485,18 @@ export default function Courses() {
         <main className="p-6">
           <div className="animate-fade-in space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">{getPageTitle()}</h1>
-                <p className="mt-1 text-muted-foreground">{getPageDescription()}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                {currentRole === "admin" && (
-                  <>
-                    {/* View Toggle */}
-                    <div className="flex rounded-lg border border-border bg-muted p-1">
-                      <button
-                        onClick={() => setViewMode("grid")}
-                        className={cn(
-                          "p-2 rounded-md transition-colors",
-                          viewMode === "grid" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
-                        )}
-                      >
-                        <Grid3X3 className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => setViewMode("list")}
-                        className={cn(
-                          "p-2 rounded-md transition-colors",
-                          viewMode === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
-                        )}
-                      >
-                        <List className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => setAddCourseOpen(true)}
-                      className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-md hover:bg-primary-hover transition-colors"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Tambah Mata Kuliah
-                    </button>
-                  </>
-                )}
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">{getPageTitle()}</h1>
+              <p className="mt-1 text-muted-foreground">{getPageDescription()}</p>
             </div>
 
-            {/* Role-based Content */}
+            {/* Content based on role */}
             {currentRole === "admin" && renderAdminView()}
             {currentRole === "student" && renderStudentView()}
             {currentRole === "lecturer" && renderLecturerView()}
           </div>
         </main>
       </div>
-
-      {/* Add Course Modal (Admin) */}
-      <Dialog open={addCourseOpen} onOpenChange={setAddCourseOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tambah Mata Kuliah Baru</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div>
-              <label className="text-sm font-medium text-foreground">Nama Mata Kuliah</label>
-              <input
-                type="text"
-                placeholder="Contoh: Kimia Dasar"
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Kode Mata Kuliah</label>
-              <input
-                type="text"
-                placeholder="Contoh: KIM101"
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">Program Studi</label>
-                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                  <option value="">Pilih Prodi</option>
-                  {prodiOptions.slice(1).map((prodi) => (
-                    <option key={prodi.value} value={prodi.value}>{prodi.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">SKS</label>
-                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                  <option value="">Pilih SKS</option>
-                  <option value="2">2 SKS</option>
-                  <option value="3">3 SKS</option>
-                  <option value="4">4 SKS</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Semester</label>
-              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                <option value="">Pilih Semester</option>
-                <option value="Ganjil">Semester Ganjil</option>
-                <option value="Genap">Semester Genap</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Deskripsi</label>
-              <textarea
-                rows={2}
-                placeholder="Deskripsi singkat mata kuliah..."
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-              />
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => setAddCourseOpen(false)}
-                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={() => {
-                  alert("Mata kuliah berhasil ditambahkan!");
-                  setAddCourseOpen(false);
-                }}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
-              >
-                Simpan
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

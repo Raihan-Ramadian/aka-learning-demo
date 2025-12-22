@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 
+// Demo credentials for role-based login
+const demoCredentials = {
+  student: { id: "2024001", password: "demo123", role: "student" },
+  lecturer: { id: "198501012010011001", password: "demo123", role: "lecturer" },
+  admin: { id: "admin", password: "admin123", role: "admin" },
+};
+
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [nimNip, setNimNip] = useState("");
@@ -17,14 +24,47 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login
+    // Simulate login with role detection
     setTimeout(() => {
       setIsLoading(false);
+      
+      // Check credentials and determine role
+      let role = "student";
+      let userName = "User";
+      
+      if (nimNip === demoCredentials.admin.id && password === demoCredentials.admin.password) {
+        role = "admin";
+        userName = "Admin";
+      } else if (nimNip === demoCredentials.lecturer.id && password === demoCredentials.lecturer.password) {
+        role = "lecturer";
+        userName = "Dr. Ahmad Wijaya";
+      } else if (nimNip === demoCredentials.student.id && password === demoCredentials.student.password) {
+        role = "student";
+        userName = "Siti Rahayu";
+      } else if (nimNip && password) {
+        // Default to student for any other credentials
+        role = "student";
+        userName = "Mahasiswa";
+      } else {
+        toast({
+          title: "Login Gagal",
+          description: "NIM/NIP atau password salah.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Store role in localStorage for simulation
+      localStorage.setItem("userRole", role);
+      localStorage.setItem("userName", userName);
+      
       toast({
         title: "Login Berhasil!",
-        description: "Selamat datang di AKA Learning.",
+        description: `Selamat datang, ${userName}.`,
       });
-      navigate("/dashboard");
+      
+      // Navigate to dashboard (role is handled in Index page)
+      navigate("/");
     }, 1000);
   };
 
@@ -195,9 +235,9 @@ export default function Login() {
           <div className="mt-6 p-4 bg-muted rounded-xl">
             <p className="text-sm font-medium text-foreground mb-2">Demo Account:</p>
             <div className="text-xs text-muted-foreground space-y-1">
-              <p>Mahasiswa: NIM <strong>2024001</strong></p>
-              <p>Dosen: NIP <strong>198501012010011001</strong></p>
-              <p>Password: <strong>demo123</strong></p>
+              <p>Mahasiswa: NIM <strong>2024001</strong> | Password: <strong>demo123</strong></p>
+              <p>Dosen: NIP <strong>198501012010011001</strong> | Password: <strong>demo123</strong></p>
+              <p>Admin: ID <strong>admin</strong> | Password: <strong>admin123</strong></p>
             </div>
           </div>
         </div>
