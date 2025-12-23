@@ -1,54 +1,23 @@
-import { useState } from "react";
 import { Sidebar } from "@/components/lms/Sidebar";
 import { Header } from "@/components/lms/Header";
 import { StudentDashboard } from "@/components/lms/StudentDashboard";
 import { LecturerDashboard } from "@/components/lms/LecturerDashboard";
 import { AdminDashboard } from "@/components/lms/AdminDashboard";
-import { CourseDetail } from "@/components/lms/CourseDetail";
-import { getUserRole, UserRole } from "@/types/roles";
-
-interface SelectedCourse {
-  id: number;
-  name: string;
-  code: string;
-  lecturer: string;
-  color: string;
-}
+import { getUserRole } from "@/types/roles";
 
 const Index = () => {
   const currentRole = getUserRole();
-  const [selectedCourse, setSelectedCourse] = useState<SelectedCourse | null>(null);
-
-  const handleCourseClick = (course: SelectedCourse) => {
-    setSelectedCourse(course);
-  };
-
-  const handleBackToDashboard = () => {
-    setSelectedCourse(null);
-  };
 
   const renderContent = () => {
-    // If a course is selected (for student or lecturer), show course detail
-    if (selectedCourse && (currentRole === "student" || currentRole === "lecturer")) {
-      return (
-        <CourseDetail
-          course={selectedCourse}
-          userRole={currentRole}
-          onBack={handleBackToDashboard}
-        />
-      );
-    }
-
-    // Otherwise, show the appropriate dashboard
     switch (currentRole) {
       case "student":
-        return <StudentDashboard onCourseClick={handleCourseClick} />;
+        return <StudentDashboard />;
       case "lecturer":
-        return <LecturerDashboard onCourseClick={handleCourseClick} />;
+        return <LecturerDashboard />;
       case "admin":
         return <AdminDashboard />;
       default:
-        return <StudentDashboard onCourseClick={handleCourseClick} />;
+        return <StudentDashboard />;
     }
   };
 
