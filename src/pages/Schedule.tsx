@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Sidebar } from "@/components/lms/Sidebar";
 import { Header } from "@/components/lms/Header";
 import { getUserRole } from "@/types/roles";
-import { Calendar, Download, Upload, Clock, MapPin, User, ChevronLeft, ChevronRight, FileImage, Users, BookOpen, Plus, Pencil, Trash2, FileSpreadsheet } from "lucide-react";
+import { useAcademicData, Student, ClassSchedule } from "@/contexts/AcademicDataContext";
+import { Calendar, Download, Upload, Clock, MapPin, User, ChevronLeft, ChevronRight, FileImage, Users, Plus, Pencil, Trash2, FileSpreadsheet, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,50 +12,60 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-
-// Student/Lecturer schedule
-const personalScheduleData = [
-  { id: 1, day: "Senin", time: "08:00 - 09:40", course: "Kimia Dasar", room: "Lab Kimia A", lecturer: "Dr. Ahmad Wijaya", className: "D3-AK-2A", color: "bg-primary/10 border-primary/30 text-primary" },
-  { id: 2, day: "Senin", time: "10:00 - 11:40", course: "Matematika Terapan", room: "R. 201", lecturer: "Prof. Sari Dewi", className: "D3-AK-2A", color: "bg-success/10 border-success/30 text-success" },
-  { id: 3, day: "Selasa", time: "08:00 - 09:40", course: "Kimia Organik", room: "Lab Kimia B", lecturer: "Prof. Sari Dewi", className: "D3-AK-2A", color: "bg-warning/10 border-warning/30 text-warning" },
-  { id: 4, day: "Selasa", time: "13:00 - 14:40", course: "Biokimia", room: "R. 302", lecturer: "Pak Budi Santoso", className: "D3-AK-2A", color: "bg-accent border-accent text-accent-foreground" },
-  { id: 5, day: "Rabu", time: "10:00 - 11:40", course: "Fisika Dasar", room: "R. 105", lecturer: "Dr. Maya Putri", className: "D3-AK-2A", color: "bg-destructive/10 border-destructive/30 text-destructive" },
-  { id: 6, day: "Kamis", time: "08:00 - 09:40", course: "Praktikum Kimia", room: "Lab Kimia A", lecturer: "Dr. Ahmad Wijaya", className: "D3-AK-2A", color: "bg-primary/10 border-primary/30 text-primary" },
-  { id: 7, day: "Kamis", time: "13:00 - 15:30", course: "Analisis Instrumen", room: "Lab Instrumen", lecturer: "Prof. Sari Dewi", className: "D4-AK-4A", color: "bg-success/10 border-success/30 text-success" },
-  { id: 8, day: "Jumat", time: "08:00 - 09:40", course: "Bahasa Inggris", room: "R. 201", lecturer: "Ms. Linda", className: "D3-AK-2A", color: "bg-warning/10 border-warning/30 text-warning" },
-];
-
-// Admin: All classes schedule
-const allClassesSchedule = [
-  { id: 1, className: "D3-AK-2A", course: "Kimia Dasar", lecturer: "Dr. Ahmad Wijaya", day: "Senin", time: "08:00 - 09:40", room: "Lab Kimia A", students: 32 },
-  { id: 2, className: "D3-AK-2B", course: "Kimia Dasar", lecturer: "Dr. Ahmad Wijaya", day: "Rabu", time: "08:00 - 09:40", room: "Lab Kimia A", students: 28 },
-  { id: 3, className: "D3-AK-2A", course: "Kimia Organik", lecturer: "Prof. Sari Dewi", day: "Selasa", time: "08:00 - 09:40", room: "Lab Kimia B", students: 32 },
-  { id: 4, className: "D3-AK-3A", course: "Biokimia", lecturer: "Pak Budi Santoso", day: "Selasa", time: "13:00 - 14:40", room: "R. 302", students: 30 },
-  { id: 5, className: "D4-AK-4A", course: "Analisis Instrumen", lecturer: "Prof. Sari Dewi", day: "Kamis", time: "13:00 - 15:30", room: "Lab Instrumen", students: 25 },
-  { id: 6, className: "D3-TI-2A", course: "Pemrograman Dasar", lecturer: "Pak Eko Prasetyo", day: "Senin", time: "10:00 - 11:40", room: "Lab Komputer", students: 35 },
-  { id: 7, className: "D3-TI-2A", course: "Basis Data", lecturer: "Dr. Rina Wulandari", day: "Rabu", time: "13:00 - 14:40", room: "Lab Komputer", students: 35 },
-];
+import { toast } from "sonner";
 
 const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
 export default function Schedule() {
   const currentRole = getUserRole();
+  const { academicEvents, schedules, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule } = useAcademicData();
+  
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [uploadAcademicOpen, setUploadAcademicOpen] = useState(false);
   const [addScheduleOpen, setAddScheduleOpen] = useState(false);
   const [importScheduleOpen, setImportScheduleOpen] = useState(false);
 
+  // Student Management Modal
+  const [studentModalOpen, setStudentModalOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<ClassSchedule | null>(null);
+  const [addStudentOpen, setAddStudentOpen] = useState(false);
+  const [editStudentOpen, setEditStudentOpen] = useState(false);
+  const [deleteStudentOpen, setDeleteStudentOpen] = useState(false);
+  const [importStudentOpen, setImportStudentOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [newStudentNim, setNewStudentNim] = useState("");
+  const [newStudentName, setNewStudentName] = useState("");
+
+  // Edit Schedule Modal
+  const [editScheduleOpen, setEditScheduleOpen] = useState(false);
+  const [editScheduleData, setEditScheduleData] = useState({
+    day: "",
+    time: "",
+    room: "",
+    lecturer: "",
+  });
+
   const getScheduleByDay = (day: string) => {
-    return personalScheduleData.filter(s => s.day === day);
+    return schedules.filter(s => s.day === day);
   };
 
   const handleDownloadPDF = () => {
-    alert("Download Jadwal (PDF) berhasil! File akan tersimpan di folder Downloads.");
+    toast.success("Download Jadwal (PDF) berhasil!");
   };
 
   const handleUploadAcademic = () => {
-    alert("Kalender Akademik berhasil diupload!");
+    toast.success("Kalender Akademik berhasil diupload!");
     setUploadAcademicOpen(false);
   };
 
@@ -81,9 +92,96 @@ export default function Schedule() {
   };
 
   const handleImportSchedule = () => {
-    alert("Jadwal berhasil diimport dari file CSV/Excel!");
+    toast.success("Jadwal berhasil diimport dari file CSV/Excel!");
     setImportScheduleOpen(false);
   };
+
+  // Student Management Handlers
+  const handleOpenStudentModal = (schedule: ClassSchedule) => {
+    setSelectedSchedule(schedule);
+    setStudentModalOpen(true);
+  };
+
+  const handleAddStudent = () => {
+    if (!selectedSchedule || !newStudentNim || !newStudentName) {
+      toast.error("Mohon lengkapi data mahasiswa!");
+      return;
+    }
+    const newStudent: Student = {
+      id: Date.now(),
+      name: newStudentName,
+      nim: newStudentNim,
+    };
+    addStudentToClass(selectedSchedule.id, newStudent);
+    toast.success("Mahasiswa berhasil ditambahkan!");
+    setNewStudentNim("");
+    setNewStudentName("");
+    setAddStudentOpen(false);
+  };
+
+  const handleEditStudent = () => {
+    if (!selectedSchedule || !selectedStudent) return;
+    updateStudentInClass(selectedSchedule.id, {
+      ...selectedStudent,
+      name: newStudentName || selectedStudent.name,
+      nim: newStudentNim || selectedStudent.nim,
+    });
+    toast.success("Data mahasiswa berhasil diperbarui!");
+    setEditStudentOpen(false);
+    setSelectedStudent(null);
+    setNewStudentNim("");
+    setNewStudentName("");
+  };
+
+  const handleDeleteStudent = () => {
+    if (!selectedSchedule || !selectedStudent) return;
+    removeStudentFromClass(selectedSchedule.id, selectedStudent.id);
+    toast.success("Mahasiswa berhasil dikeluarkan dari kelas!");
+    setDeleteStudentOpen(false);
+    setSelectedStudent(null);
+  };
+
+  const handleImportStudentCSV = () => {
+    toast.success("Data mahasiswa berhasil diimport dari CSV!");
+    setImportStudentOpen(false);
+  };
+
+  const openEditStudent = (student: Student) => {
+    setSelectedStudent(student);
+    setNewStudentName(student.name);
+    setNewStudentNim(student.nim);
+    setEditStudentOpen(true);
+  };
+
+  const openDeleteStudent = (student: Student) => {
+    setSelectedStudent(student);
+    setDeleteStudentOpen(true);
+  };
+
+  // Edit Schedule Handlers
+  const handleOpenEditSchedule = (schedule: ClassSchedule) => {
+    setSelectedSchedule(schedule);
+    setEditScheduleData({
+      day: schedule.day,
+      time: schedule.time,
+      room: schedule.room,
+      lecturer: schedule.lecturer,
+    });
+    setEditScheduleOpen(true);
+  };
+
+  const handleSaveEditSchedule = () => {
+    if (!selectedSchedule) return;
+    updateSchedule(selectedSchedule.id, editScheduleData);
+    toast.success("Jadwal berhasil diperbarui!");
+    setEditScheduleOpen(false);
+    setSelectedSchedule(null);
+  };
+
+  // Get current schedule from context
+  const currentSchedule = selectedSchedule 
+    ? schedules.find(s => s.id === selectedSchedule.id) 
+    : null;
 
   // Admin View - Schedule Management
   const renderAdminView = () => (
@@ -127,7 +225,7 @@ export default function Schedule() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {allClassesSchedule.map((schedule, index) => (
+              {schedules.map((schedule, index) => (
                 <tr
                   key={schedule.id}
                   className="hover:bg-muted/30 transition-colors animate-fade-in"
@@ -143,10 +241,22 @@ export default function Schedule() {
                   <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.day}</td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.time}</td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.room}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.students}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => handleOpenStudentModal(schedule)}
+                      className="flex items-center gap-1.5 text-sm text-primary hover:underline font-medium"
+                    >
+                      <Users className="h-4 w-4" />
+                      {schedule.students.length} mhs
+                    </button>
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="rounded-lg p-2 hover:bg-muted transition-colors" title="Edit">
+                      <button 
+                        onClick={() => handleOpenEditSchedule(schedule)}
+                        className="rounded-lg p-2 hover:bg-muted transition-colors" 
+                        title="Edit"
+                      >
                         <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
                       </button>
                       <button className="rounded-lg p-2 hover:bg-destructive/10 transition-colors" title="Hapus">
@@ -161,7 +271,7 @@ export default function Schedule() {
         </div>
         <div className="border-t border-border p-4">
           <p className="text-sm text-muted-foreground">
-            Total <span className="font-medium text-foreground">{allClassesSchedule.length}</span> jadwal kelas
+            Total <span className="font-medium text-foreground">{schedules.length}</span> jadwal kelas
           </p>
         </div>
       </div>
@@ -199,6 +309,291 @@ export default function Schedule() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Student Management Modal */}
+      <Dialog open={studentModalOpen} onOpenChange={setStudentModalOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Daftar Mahasiswa Kelas {currentSchedule?.className}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {currentSchedule?.course} • {currentSchedule?.lecturer}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setImportStudentOpen(true)}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Import CSV
+                </Button>
+                <Button size="sm" onClick={() => setAddStudentOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Tambah Manual
+                </Button>
+              </div>
+            </div>
+            
+            <div className="rounded-lg border border-border overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">No</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama</th>
+                    <th className="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">NIM</th>
+                    <th className="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {currentSchedule?.students.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                        Belum ada mahasiswa terdaftar di kelas ini
+                      </td>
+                    </tr>
+                  ) : (
+                    currentSchedule?.students.map((student, index) => (
+                      <tr key={student.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-2 text-sm text-muted-foreground">{index + 1}</td>
+                        <td className="px-4 py-2 text-sm font-medium text-foreground">{student.name}</td>
+                        <td className="px-4 py-2 text-sm text-muted-foreground font-mono">{student.nim}</td>
+                        <td className="px-4 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button 
+                              onClick={() => openEditStudent(student)}
+                              className="rounded-lg p-1.5 hover:bg-muted transition-colors" 
+                              title="Edit"
+                            >
+                              <Pencil className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                            </button>
+                            <button 
+                              onClick={() => openDeleteStudent(student)}
+                              className="rounded-lg p-1.5 hover:bg-destructive/10 transition-colors" 
+                              title="Hapus"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="flex justify-between items-center pt-2">
+              <p className="text-sm text-muted-foreground">
+                Total: <span className="font-medium text-foreground">{currentSchedule?.students.length || 0}</span> mahasiswa
+              </p>
+              <Button variant="outline" onClick={() => setStudentModalOpen(false)}>
+                Tutup
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Student Modal */}
+      <Dialog open={addStudentOpen} onOpenChange={setAddStudentOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tambah Mahasiswa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">NIM</label>
+              <input
+                type="text"
+                value={newStudentNim}
+                onChange={(e) => setNewStudentNim(e.target.value)}
+                placeholder="Contoh: 2024001"
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Nama Lengkap</label>
+              <input
+                type="text"
+                value={newStudentName}
+                onChange={(e) => setNewStudentName(e.target.value)}
+                placeholder="Contoh: Siti Rahayu"
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setAddStudentOpen(false)}>
+                Batal
+              </Button>
+              <Button onClick={handleAddStudent}>
+                <Plus className="mr-2 h-4 w-4" />
+                Tambah
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Student Modal */}
+      <Dialog open={editStudentOpen} onOpenChange={setEditStudentOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Data Mahasiswa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">NIM</label>
+              <input
+                type="text"
+                value={newStudentNim}
+                onChange={(e) => setNewStudentNim(e.target.value)}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Nama Lengkap</label>
+              <input
+                type="text"
+                value={newStudentName}
+                onChange={(e) => setNewStudentName(e.target.value)}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setEditStudentOpen(false)}>
+                Batal
+              </Button>
+              <Button onClick={handleEditStudent}>
+                Simpan
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Student Confirmation */}
+      <AlertDialog open={deleteStudentOpen} onOpenChange={setDeleteStudentOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Keluarkan Mahasiswa dari Kelas?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin mengeluarkan <span className="font-medium">{selectedStudent?.name}</span> dari kelas ini? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteStudent} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Keluarkan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Import Student CSV Modal */}
+      <Dialog open={importStudentOpen} onOpenChange={setImportStudentOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import Data Mahasiswa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="rounded-lg border-2 border-dashed border-border bg-muted/50 p-8 text-center">
+              <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground" />
+              <p className="mt-3 font-medium text-foreground">
+                Drag & drop file CSV di sini
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">Format: CSV (max 5MB)</p>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm font-medium text-foreground mb-2">Format Kolom:</p>
+              <p className="text-xs text-muted-foreground">NIM, Nama</p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setImportStudentOpen(false)}>
+                Batal
+              </Button>
+              <Button onClick={handleImportStudentCSV}>
+                <Upload className="mr-2 h-4 w-4" />
+                Import
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Schedule Modal */}
+      <Dialog open={editScheduleOpen} onOpenChange={setEditScheduleOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Jadwal Kelas</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm font-medium text-foreground">{selectedSchedule?.className} - {selectedSchedule?.course}</p>
+              <p className="text-xs text-muted-foreground mt-1">{selectedSchedule?.students.length} mahasiswa terdaftar</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Hari</label>
+              <select 
+                value={editScheduleData.day}
+                onChange={(e) => setEditScheduleData({...editScheduleData, day: e.target.value})}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                {daysOfWeek.map((day) => (
+                  <option key={day} value={day}>{day}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Jam</label>
+              <input
+                type="text"
+                value={editScheduleData.time}
+                onChange={(e) => setEditScheduleData({...editScheduleData, time: e.target.value})}
+                placeholder="Contoh: 08:00 - 09:40"
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Ruangan</label>
+              <input
+                type="text"
+                value={editScheduleData.room}
+                onChange={(e) => setEditScheduleData({...editScheduleData, room: e.target.value})}
+                placeholder="Contoh: Lab Kimia A"
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Dosen Pengampu</label>
+              <select 
+                value={editScheduleData.lecturer}
+                onChange={(e) => setEditScheduleData({...editScheduleData, lecturer: e.target.value})}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="Dr. Ahmad Wijaya">Dr. Ahmad Wijaya</option>
+                <option value="Prof. Sari Dewi">Prof. Sari Dewi</option>
+                <option value="Pak Budi Santoso">Pak Budi Santoso</option>
+                <option value="Dr. Maya Putri">Dr. Maya Putri</option>
+                <option value="Pak Eko Prasetyo">Pak Eko Prasetyo</option>
+                <option value="Dr. Rina Wulandari">Dr. Rina Wulandari</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setEditScheduleOpen(false)}>
+                Batal
+              </Button>
+              <Button onClick={handleSaveEditSchedule}>
+                Simpan Perubahan
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 
@@ -221,7 +616,7 @@ export default function Schedule() {
                   {daySchedule.map((schedule) => (
                     <div key={schedule.id} className="p-4 hover:bg-muted/30 transition-colors">
                       <div className="flex items-start gap-4">
-                        <div className={cn("w-1 h-full min-h-[60px] rounded-full", schedule.color.split(" ")[0])} />
+                        <div className={cn("w-1 h-full min-h-[60px] rounded-full", schedule.color?.split(" ")[0] || "bg-primary")} />
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h4 className="font-semibold text-foreground">{schedule.course}</h4>
@@ -244,7 +639,7 @@ export default function Schedule() {
                             </span>
                           </div>
                         </div>
-                        <span className={cn("px-3 py-1 rounded-full text-xs font-medium border", schedule.color)}>
+                        <span className={cn("px-3 py-1 rounded-full text-xs font-medium border", schedule.color || "bg-primary/10 border-primary/30 text-primary")}>
                           {schedule.time.split(" ")[0]}
                         </span>
                       </div>
@@ -271,7 +666,7 @@ export default function Schedule() {
                 {getScheduleByDay(day).map((schedule) => (
                   <div
                     key={schedule.id}
-                    className={cn("p-3 rounded-lg border text-xs", schedule.color)}
+                    className={cn("p-3 rounded-lg border text-xs", schedule.color || "bg-primary/10 border-primary/30 text-primary")}
                   >
                     <p className="font-semibold">{schedule.course}</p>
                     <p className="mt-1 opacity-80">{schedule.time}</p>
@@ -285,6 +680,19 @@ export default function Schedule() {
       )}
     </>
   );
+
+  const getEventStyle = (type: string) => {
+    switch (type) {
+      case "uas":
+        return "bg-destructive/10 border-destructive/20 text-destructive";
+      case "libur":
+        return "bg-warning/10 border-warning/20 text-warning";
+      case "semester":
+        return "bg-success/10 border-success/20 text-success";
+      default:
+        return "bg-muted border-border text-muted-foreground";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -386,18 +794,12 @@ export default function Schedule() {
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3 text-sm">
-                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                  <p className="font-medium text-destructive">16 - 27 Des</p>
-                  <p className="text-muted-foreground text-xs mt-1">UAS Semester Ganjil</p>
-                </div>
-                <div className="p-3 rounded-lg bg-warning/10 border border-warning/20">
-                  <p className="font-medium text-warning">28 Des - 5 Jan</p>
-                  <p className="text-muted-foreground text-xs mt-1">Libur Akhir Tahun</p>
-                </div>
-                <div className="p-3 rounded-lg bg-success/10 border border-success/20">
-                  <p className="font-medium text-success">6 Jan 2025</p>
-                  <p className="text-muted-foreground text-xs mt-1">Mulai Semester Genap</p>
-                </div>
+                {academicEvents.map((event) => (
+                  <div key={event.id} className={cn("p-3 rounded-lg border", getEventStyle(event.type))}>
+                    <p className="font-medium">{event.dateRange}</p>
+                    <p className="text-muted-foreground text-xs mt-1">{event.title}</p>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -485,7 +887,7 @@ export default function Schedule() {
               </button>
               <button
                 onClick={() => {
-                  alert("Jadwal berhasil ditambahkan!");
+                  toast.success("Jadwal berhasil ditambahkan!");
                   setAddScheduleOpen(false);
                 }}
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"

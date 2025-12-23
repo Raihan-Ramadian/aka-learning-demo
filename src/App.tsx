@@ -16,6 +16,7 @@ import { StudentDashboard } from "./components/lms/StudentDashboard";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
 import { Sidebar } from "./components/lms/Sidebar";
 import { Header } from "./components/lms/Header";
+import { AcademicDataProvider } from "./contexts/AcademicDataContext";
 
 const queryClient = new QueryClient();
 
@@ -32,25 +33,27 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => (
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/admin" element={<DashboardLayout><AdminDashboard /></DashboardLayout>} />
-          <Route path="/lecturer" element={<DashboardLayout><LecturerDashboard /></DashboardLayout>} />
-          <Route path="/dashboard" element={<DashboardLayout><StudentDashboard /></DashboardLayout>} />
-          <Route path="/course/:courseId" element={<CourseDetailPage />} />
-          <Route path="/schedule" element={<Schedule />} />
-          <Route path="/courses" element={<Courses />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/profile" element={<Profile />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+    <AcademicDataProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/admin" element={<DashboardLayout><AdminDashboard /></DashboardLayout>} />
+            <Route path="/lecturer" element={<DashboardLayout><LecturerDashboard /></DashboardLayout>} />
+            <Route path="/dashboard" element={<DashboardLayout><StudentDashboard /></DashboardLayout>} />
+            <Route path="/course/:courseId" element={<CourseDetailPage />} />
+            <Route path="/schedule" element={<Schedule />} />
+            <Route path="/courses" element={<Courses />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/profile" element={<Profile />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </AcademicDataProvider>
   </QueryClientProvider>
 );
 
