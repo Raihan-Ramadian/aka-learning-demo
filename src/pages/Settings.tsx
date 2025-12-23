@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/lms/Sidebar";
-import { Header, UserRole } from "@/components/lms/Header";
+import { Header } from "@/components/lms/Header";
 import { Settings as SettingsIcon, Lock, Bell, Eye, EyeOff, Shield, Save, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,6 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 export default function Settings() {
-  const [currentRole, setCurrentRole] = useState<UserRole>("student");
   const { toast } = useToast();
 
   // Password form
@@ -68,7 +67,7 @@ export default function Settings() {
     <div className="min-h-screen bg-background">
       <Sidebar />
       <div className="ml-64">
-        <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
+        <Header />
         <main className="p-6">
           <div className="animate-fade-in space-y-6 max-w-4xl">
             {/* Header */}

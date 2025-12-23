@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/lms/Sidebar";
-import { Header, UserRole } from "@/components/lms/Header";
+import { Header } from "@/components/lms/Header";
+import { getUserRole } from "@/types/roles";
 import { BookOpen, Search, Filter, ChevronDown, Clock, Users, GraduationCap, Plus, Pencil, Trash2, Calendar, Upload, FileSpreadsheet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -70,7 +71,7 @@ const prodiOptions = [
 ];
 
 export default function Courses() {
-  const [currentRole, setCurrentRole] = useState<UserRole>("student");
+  const currentRole = getUserRole();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSks, setSelectedSks] = useState("all");
   const [selectedSemester, setSelectedSemester] = useState("all");
@@ -662,7 +663,7 @@ export default function Courses() {
     <div className="min-h-screen bg-background">
       <Sidebar />
       <div className="ml-64">
-        <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
+        <Header />
         <main className="p-6">
           <div className="animate-fade-in space-y-6">
             {/* Header */}

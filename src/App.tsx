@@ -10,8 +10,24 @@ import Schedule from "./pages/Schedule";
 import Courses from "./pages/Courses";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
+import { AdminDashboard } from "./components/lms/AdminDashboard";
+import { LecturerDashboard } from "./components/lms/LecturerDashboard";
+import { StudentDashboard } from "./components/lms/StudentDashboard";
+import { Sidebar } from "./components/lms/Sidebar";
+import { Header } from "./components/lms/Header";
 
 const queryClient = new QueryClient();
+
+// Layout wrapper for authenticated pages
+const DashboardLayout = ({ children }: { children: React.ReactNode }) => (
+  <div className="min-h-screen bg-background">
+    <Sidebar />
+    <div className="ml-64">
+      <Header />
+      <main className="p-6">{children}</main>
+    </div>
+  </div>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -21,7 +37,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Login />} />
-          <Route path="/dashboard" element={<Index />} />
+          <Route path="/admin" element={<DashboardLayout><AdminDashboard /></DashboardLayout>} />
+          <Route path="/lecturer" element={<DashboardLayout><LecturerDashboard /></DashboardLayout>} />
+          <Route path="/dashboard" element={<DashboardLayout><StudentDashboard /></DashboardLayout>} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/settings" element={<Settings />} />

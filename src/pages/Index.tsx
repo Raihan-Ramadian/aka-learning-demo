@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/lms/Sidebar";
-import { Header, UserRole } from "@/components/lms/Header";
+import { Header } from "@/components/lms/Header";
 import { StudentDashboard } from "@/components/lms/StudentDashboard";
 import { LecturerDashboard } from "@/components/lms/LecturerDashboard";
 import { AdminDashboard } from "@/components/lms/AdminDashboard";
 import { CourseDetail } from "@/components/lms/CourseDetail";
+import { getUserRole, UserRole } from "@/types/roles";
 
 interface SelectedCourse {
   id: number;
@@ -15,7 +16,7 @@ interface SelectedCourse {
 }
 
 const Index = () => {
-  const [currentRole, setCurrentRole] = useState<UserRole>("student");
+  const currentRole = getUserRole();
   const [selectedCourse, setSelectedCourse] = useState<SelectedCourse | null>(null);
 
   const handleCourseClick = (course: SelectedCourse) => {
@@ -23,12 +24,6 @@ const Index = () => {
   };
 
   const handleBackToDashboard = () => {
-    setSelectedCourse(null);
-  };
-
-  // Reset course detail when role changes
-  const handleRoleChange = (role: UserRole) => {
-    setCurrentRole(role);
     setSelectedCourse(null);
   };
 
@@ -65,7 +60,7 @@ const Index = () => {
       {/* Main Content */}
       <div className="ml-64">
         {/* Header */}
-        <Header currentRole={currentRole} onRoleChange={handleRoleChange} />
+        <Header />
 
         {/* Dashboard Content */}
         <main className="p-6">
