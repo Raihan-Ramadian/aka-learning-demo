@@ -21,8 +21,6 @@ const initialUserData = {
     status: "Aktif",
     avatar: null,
     semester: "3",
-    ipk: "3.75",
-    dosen_wali: "Dr. Ahmad Wijaya",
   },
   lecturer: {
     name: "Dr. Ahmad Wijaya, M.Sc.",
@@ -55,7 +53,7 @@ export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
   
-  // Editable form state for contact info
+  // Editable form state for contact info AND work info for lecturer/admin
   const [formData, setFormData] = useState({
     student: {
       phone: initialUserData.student.phone,
@@ -64,17 +62,20 @@ export default function Profile() {
     lecturer: {
       phone: initialUserData.lecturer.phone,
       address: initialUserData.lecturer.address,
+      jabatan: initialUserData.lecturer.jabatan,
+      bidang_keahlian: initialUserData.lecturer.bidang_keahlian,
     },
     admin: {
       phone: initialUserData.admin.phone,
       address: initialUserData.admin.address,
+      jabatan: initialUserData.admin.jabatan,
     },
   });
 
   const user = initialUserData[currentRole];
   const currentFormData = formData[currentRole];
 
-  const handleInputChange = (field: 'phone' | 'address', value: string) => {
+  const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [currentRole]: {
@@ -87,7 +88,7 @@ export default function Profile() {
   const handleSaveProfile = () => {
     toast({
       title: "Profil Berhasil Diperbarui!",
-      description: "Perubahan data kontak Anda telah tersimpan.",
+      description: "Perubahan data Anda telah tersimpan.",
     });
     setIsEditing(false);
   };
@@ -102,17 +103,20 @@ export default function Profile() {
       lecturer: {
         phone: initialUserData.lecturer.phone,
         address: initialUserData.lecturer.address,
+        jabatan: initialUserData.lecturer.jabatan,
+        bidang_keahlian: initialUserData.lecturer.bidang_keahlian,
       },
       admin: {
         phone: initialUserData.admin.phone,
         address: initialUserData.admin.address,
+        jabatan: initialUserData.admin.jabatan,
       },
     });
     setIsEditing(false);
   };
 
-  // Check if current role can edit (student & lecturer only)
-  const canEdit = currentRole === "student" || currentRole === "lecturer";
+  // All roles can edit their profile
+  const canEdit = true;
 
   return (
     <div className="min-h-screen bg-background">
@@ -126,7 +130,7 @@ export default function Profile() {
               <div>
                 <h1 className="text-2xl font-bold text-foreground">Profil Saya 👤</h1>
                 <p className="mt-1 text-muted-foreground">
-                  {canEdit ? "Lihat dan kelola informasi profil Anda" : "Lihat informasi profil Anda"}
+                  Lihat dan kelola informasi profil Anda
                 </p>
               </div>
               {canEdit && (
@@ -161,7 +165,7 @@ export default function Profile() {
                     <div className="h-24 w-24 rounded-full bg-muted border-4 border-card flex items-center justify-center shadow-lg">
                       <User className="h-12 w-12 text-muted-foreground" />
                     </div>
-                    {isEditing && canEdit && (
+                    {isEditing && (
                       <button className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:bg-primary-hover transition-colors">
                         <Camera className="h-4 w-4" />
                       </button>
@@ -190,12 +194,12 @@ export default function Profile() {
 
             {/* Detail Information */}
             <div className="grid grid-cols-2 gap-6">
-              {/* Contact Information - Editable for Student/Lecturer */}
+              {/* Contact Information - Editable */}
               <div className="rounded-xl bg-card border border-border/50 shadow-card overflow-hidden">
                 <div className="bg-muted/50 px-6 py-4 border-b border-border">
                   <h3 className="font-semibold text-foreground">
                     Informasi Kontak
-                    {isEditing && canEdit && (
+                    {isEditing && (
                       <span className="ml-2 text-xs text-primary font-normal">(Dapat diedit)</span>
                     )}
                   </h3>
@@ -214,7 +218,7 @@ export default function Profile() {
                       <Phone className="h-4 w-4" />
                       No. Telepon
                     </label>
-                    {isEditing && canEdit ? (
+                    {isEditing ? (
                       <Input 
                         value={currentFormData.phone} 
                         onChange={(e) => handleInputChange('phone', e.target.value)}
@@ -229,7 +233,7 @@ export default function Profile() {
                       <MapPin className="h-4 w-4" />
                       Alamat Lengkap
                     </label>
-                    {isEditing && canEdit ? (
+                    {isEditing ? (
                       <Textarea 
                         value={currentFormData.address} 
                         onChange={(e) => handleInputChange('address', e.target.value)}
@@ -243,11 +247,17 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Academic/Work Information - Read Only */}
+              {/* Academic/Work Information */}
               <div className="rounded-xl bg-card border border-border/50 shadow-card overflow-hidden">
                 <div className="bg-muted/50 px-6 py-4 border-b border-border">
                   <h3 className="font-semibold text-foreground">
                     {currentRole === "student" ? "Informasi Akademik" : "Informasi Pekerjaan"}
+                    {isEditing && currentRole !== "student" && (
+                      <span className="ml-2 text-xs text-primary font-normal">(Dapat diedit)</span>
+                    )}
+                    {isEditing && currentRole === "student" && (
+                      <span className="ml-2 text-xs text-muted-foreground font-normal">(Tidak dapat diubah)</span>
+                    )}
                   </h3>
                 </div>
                 <div className="p-6 space-y-5">
@@ -273,19 +283,6 @@ export default function Profile() {
                           <p className="font-medium text-foreground">Semester {(user as typeof initialUserData.student).semester}</p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm text-muted-foreground mb-2 block">IPK</label>
-                          <p className="font-bold text-xl text-primary">{(user as typeof initialUserData.student).ipk}</p>
-                        </div>
-                        <div>
-                          <label className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                            <GraduationCap className="h-4 w-4" />
-                            Dosen Wali
-                          </label>
-                          <p className="font-medium text-foreground">{(user as typeof initialUserData.student).dosen_wali}</p>
-                        </div>
-                      </div>
                     </>
                   )}
 
@@ -303,7 +300,20 @@ export default function Profile() {
                           <Briefcase className="h-4 w-4" />
                           Jabatan Akademik
                         </label>
-                        <p className="font-medium text-foreground">{(user as typeof initialUserData.lecturer).jabatan}</p>
+                        {isEditing ? (
+                          <select 
+                            value={(currentFormData as typeof formData.lecturer).jabatan}
+                            onChange={(e) => handleInputChange('jabatan', e.target.value)}
+                            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          >
+                            <option value="Asisten Ahli">Asisten Ahli</option>
+                            <option value="Lektor">Lektor</option>
+                            <option value="Lektor Kepala">Lektor Kepala</option>
+                            <option value="Guru Besar">Guru Besar</option>
+                          </select>
+                        ) : (
+                          <p className="font-medium text-foreground">{(user as typeof initialUserData.lecturer).jabatan}</p>
+                        )}
                       </div>
                       <div>
                         <label className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -314,7 +324,15 @@ export default function Profile() {
                       </div>
                       <div>
                         <label className="text-sm text-muted-foreground mb-2 block">Bidang Keahlian</label>
-                        <p className="font-medium text-foreground">{(user as typeof initialUserData.lecturer).bidang_keahlian}</p>
+                        {isEditing ? (
+                          <Input 
+                            value={(currentFormData as typeof formData.lecturer).bidang_keahlian}
+                            onChange={(e) => handleInputChange('bidang_keahlian', e.target.value)}
+                            placeholder="Masukkan bidang keahlian"
+                          />
+                        ) : (
+                          <p className="font-medium text-foreground">{(user as typeof initialUserData.lecturer).bidang_keahlian}</p>
+                        )}
                       </div>
                     </>
                   )}
@@ -326,7 +344,15 @@ export default function Profile() {
                           <Briefcase className="h-4 w-4" />
                           Jabatan
                         </label>
-                        <p className="font-medium text-foreground">{(user as typeof initialUserData.admin).jabatan}</p>
+                        {isEditing ? (
+                          <Input 
+                            value={(currentFormData as typeof formData.admin).jabatan}
+                            onChange={(e) => handleInputChange('jabatan', e.target.value)}
+                            placeholder="Masukkan jabatan"
+                          />
+                        ) : (
+                          <p className="font-medium text-foreground">{(user as typeof initialUserData.admin).jabatan}</p>
+                        )}
                       </div>
                       <div>
                         <label className="flex items-center gap-2 text-sm text-muted-foreground mb-2">

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/lms/Sidebar";
 import { Header, UserRole } from "@/components/lms/Header";
-import { BookOpen, Search, Filter, ChevronDown, Clock, Users, GraduationCap, Plus, Pencil, Trash2, Calendar } from "lucide-react";
+import { BookOpen, Search, Filter, ChevronDown, Clock, Users, GraduationCap, Plus, Pencil, Trash2, Calendar, Upload, FileSpreadsheet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -16,9 +16,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 // Master data for all courses (Admin view)
-const allCourses = [
+const initialCourses = [
   { id: 1, code: "KIM101", name: "Kimia Dasar", sks: 3, semester: "Ganjil", prodi: "D3 Analisis Kimia", description: "Mempelajari dasar-dasar ilmu kimia termasuk struktur atom, ikatan kimia, dan reaksi kimia dasar.", students: 120, lecturer: "Dr. Ahmad Wijaya", color: "from-primary/20 to-primary/5" },
   { id: 2, code: "KIM201", name: "Kimia Organik", sks: 4, semester: "Genap", prodi: "D3 Analisis Kimia", description: "Kajian mendalam tentang senyawa organik, reaksi, dan mekanisme dalam kimia organik.", students: 85, lecturer: "Prof. Sari Dewi", color: "from-success/20 to-success/5" },
   { id: 3, code: "BIO201", name: "Biokimia", sks: 4, semester: "Ganjil", prodi: "D3 Analisis Kimia", description: "Studi tentang proses kimia dalam organisme hidup, termasuk metabolisme dan enzimologi.", students: 92, lecturer: "Pak Budi Santoso", color: "from-warning/20 to-warning/5" },
@@ -74,7 +76,20 @@ export default function Courses() {
   const [selectedSemester, setSelectedSemester] = useState("all");
   const [selectedProdi, setSelectedProdi] = useState("all");
   const [addCourseOpen, setAddCourseOpen] = useState(false);
+  const [editCourseOpen, setEditCourseOpen] = useState(false);
+  const [importCsvOpen, setImportCsvOpen] = useState(false);
+  const [allCourses, setAllCourses] = useState(initialCourses);
+  const [editingCourse, setEditingCourse] = useState<typeof initialCourses[0] | null>(null);
   const { toast } = useToast();
+
+  // Form state for add/edit
+  const [formData, setFormData] = useState({
+    code: "",
+    name: "",
+    sks: "",
+    semester: "",
+    prodi: "",
+  });
 
   const filteredCourses = allCourses.filter((course) => {
     const matchesSearch = 
@@ -114,6 +129,44 @@ export default function Courses() {
       description: "Mata kuliah baru berhasil ditambahkan ke kurikulum.",
     });
     setAddCourseOpen(false);
+    setFormData({ code: "", name: "", sks: "", semester: "", prodi: "" });
+  };
+
+  const handleEditCourse = (course: typeof initialCourses[0]) => {
+    setEditingCourse(course);
+    setFormData({
+      code: course.code,
+      name: course.name,
+      sks: course.sks.toString(),
+      semester: course.semester,
+      prodi: course.prodi,
+    });
+    setEditCourseOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingCourse) {
+      setAllCourses(prev => prev.map(c => 
+        c.id === editingCourse.id 
+          ? { ...c, code: formData.code, name: formData.name, sks: parseInt(formData.sks), semester: formData.semester, prodi: formData.prodi }
+          : c
+      ));
+      toast({
+        title: "Mata Kuliah Diperbarui!",
+        description: `${formData.name} berhasil diperbarui.`,
+      });
+      setEditCourseOpen(false);
+      setEditingCourse(null);
+      setFormData({ code: "", name: "", sks: "", semester: "", prodi: "" });
+    }
+  };
+
+  const handleImportCsv = () => {
+    toast({
+      title: "Import CSV Berhasil!",
+      description: "Data mata kuliah berhasil diimport dari file CSV.",
+    });
+    setImportCsvOpen(false);
   };
 
   // Admin View - Master Data Management
@@ -194,13 +247,22 @@ export default function Courses() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <button 
+        <Button 
+          variant="outline"
+          onClick={() => setImportCsvOpen(true)}
+          className="gap-2"
+        >
+          <FileSpreadsheet className="h-4 w-4" />
+          Import CSV
+        </Button>
+
+        <Button 
           onClick={() => setAddCourseOpen(true)}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+          className="gap-2"
         >
           <Plus className="h-4 w-4" />
           Tambah Mata Kuliah
-        </button>
+        </Button>
       </div>
 
       {/* Results Count */}
@@ -252,7 +314,11 @@ export default function Courses() {
                   <td className="px-4 py-3 text-sm text-muted-foreground">{course.lecturer}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="rounded-lg p-2 hover:bg-muted transition-colors" title="Edit">
+                      <button 
+                        onClick={() => handleEditCourse(course)}
+                        className="rounded-lg p-2 hover:bg-muted transition-colors" 
+                        title="Edit"
+                      >
                         <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
                       </button>
                       <button className="rounded-lg p-2 hover:bg-destructive/10 transition-colors" title="Hapus">
@@ -271,6 +337,121 @@ export default function Courses() {
           </p>
         </div>
       </div>
+
+      {/* Import CSV Modal */}
+      <Dialog open={importCsvOpen} onOpenChange={setImportCsvOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Import Data Mata Kuliah</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="rounded-lg border-2 border-dashed border-border bg-muted/50 p-8 text-center">
+              <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground" />
+              <p className="mt-3 font-medium text-foreground">
+                Drag & drop file CSV/Excel di sini
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">Format: CSV, XLS, XLSX (max 10MB)</p>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm font-medium text-foreground mb-2">Format Kolom CSV:</p>
+              <p className="text-xs text-muted-foreground">Kode, Nama Matkul, Prodi, Semester, SKS, Dosen</p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setImportCsvOpen(false)}>
+                Batal
+              </Button>
+              <Button onClick={handleImportCsv}>
+                <Upload className="mr-2 h-4 w-4" />
+                Import
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Course Modal */}
+      <Dialog open={editCourseOpen} onOpenChange={setEditCourseOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Mata Kuliah</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Kode Mata Kuliah <span className="text-destructive">*</span></label>
+                <Input
+                  type="text"
+                  placeholder="Contoh: KIM101"
+                  value={formData.code}
+                  onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">SKS <span className="text-destructive">*</span></label>
+                <select 
+                  value={formData.sks}
+                  onChange={(e) => setFormData(prev => ({ ...prev, sks: e.target.value }))}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">Pilih SKS</option>
+                  <option value="2">2 SKS</option>
+                  <option value="3">3 SKS</option>
+                  <option value="4">4 SKS</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Nama Mata Kuliah <span className="text-destructive">*</span></label>
+              <Input
+                type="text"
+                placeholder="Contoh: Kimia Dasar"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="mt-1.5"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Program Studi <span className="text-destructive">*</span></label>
+                <select 
+                  value={formData.prodi}
+                  onChange={(e) => setFormData(prev => ({ ...prev, prodi: e.target.value }))}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">Pilih Prodi</option>
+                  {prodiOptions.slice(1).map((prodi) => (
+                    <option key={prodi.value} value={prodi.value}>{prodi.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Semester <span className="text-destructive">*</span></label>
+                <select 
+                  value={formData.semester}
+                  onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">Pilih Semester</option>
+                  <option value="Ganjil">Ganjil</option>
+                  <option value="Genap">Genap</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-4">
+              <Button variant="outline" onClick={() => setEditCourseOpen(false)}>
+                Batal
+              </Button>
+              <Button onClick={handleSaveEdit}>
+                Simpan Perubahan
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Course Modal */}
       <Dialog open={addCourseOpen} onOpenChange={setAddCourseOpen}>
