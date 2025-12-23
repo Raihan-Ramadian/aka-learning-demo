@@ -49,14 +49,14 @@ export default function Login() {
         role = "admin";
         userName = "Admin";
         roleLabel = "Admin";
-        redirectPath = "/dashboard";
+        redirectPath = "/admin";
       } 
       // Check for NIP format (starts with '19' - lecturer/dosen)
       else if (nimNip.startsWith("19")) {
         role = "lecturer";
         userName = "Dosen";
         roleLabel = "Dosen";
-        redirectPath = "/dashboard";
+        redirectPath = "/lecturer";
       } 
       // Check for NIM format (starts with '20' - student/mahasiswa)
       else if (nimNip.startsWith("20")) {
@@ -64,7 +64,7 @@ export default function Login() {
         userName = "Mahasiswa";
         roleLabel = "Mahasiswa";
         redirectPath = "/dashboard";
-      } 
+      }
       // Invalid format
       else {
         toast({

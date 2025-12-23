@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/lms/Sidebar";
-import { Header, UserRole } from "@/components/lms/Header";
+import { Header } from "@/components/lms/Header";
+import { getUserRole } from "@/types/roles";
 import { User, Mail, Phone, MapPin, GraduationCap, Calendar, Building, Briefcase, Edit3, Camera, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +50,7 @@ const initialUserData = {
 };
 
 export default function Profile() {
-  const [currentRole, setCurrentRole] = useState<UserRole>("student");
+  const currentRole = getUserRole();
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
   
@@ -122,7 +123,7 @@ export default function Profile() {
     <div className="min-h-screen bg-background">
       <Sidebar />
       <div className="ml-64">
-        <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
+        <Header />
         <main className="p-6">
           <div className="animate-fade-in space-y-6 max-w-4xl">
             {/* Header */}

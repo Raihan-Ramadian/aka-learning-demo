@@ -8,20 +8,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 
-export type UserRole = "student" | "lecturer" | "admin";
-
-interface HeaderProps {
-  currentRole: UserRole;
-  onRoleChange: (role: UserRole) => void;
-}
-
-export function Header({ currentRole, onRoleChange }: HeaderProps) {
+export function Header() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
     localStorage.removeItem("userName");
-    navigate("/login");
+    localStorage.removeItem("userNimNip");
+    navigate("/");
   };
 
   return (

@@ -2,15 +2,37 @@ import { LayoutDashboard, BookOpen, Calendar, Settings, GraduationCap } from "lu
 import { cn } from "@/lib/utils";
 import { useLocation, Link } from "react-router-dom";
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-  { icon: BookOpen, label: "Courses", path: "/courses" },
-  { icon: Calendar, label: "Schedule", path: "/schedule" },
-  { icon: Settings, label: "Settings", path: "/settings" },
-];
+// Get dashboard path based on user role
+const getDashboardPath = () => {
+  const role = localStorage.getItem("userRole");
+  switch (role) {
+    case "admin":
+      return "/admin";
+    case "lecturer":
+      return "/lecturer";
+    default:
+      return "/dashboard";
+  }
+};
 
 export function Sidebar() {
   const location = useLocation();
+  const dashboardPath = getDashboardPath();
+  
+  const menuItems = [
+    { icon: LayoutDashboard, label: "Dashboard", path: dashboardPath },
+    { icon: BookOpen, label: "Courses", path: "/courses" },
+    { icon: Calendar, label: "Schedule", path: "/schedule" },
+    { icon: Settings, label: "Settings", path: "/settings" },
+  ];
+
+  const isActivePath = (path: string) => {
+    // Check if current path matches, or if we're on a role-specific dashboard
+    if (path === dashboardPath) {
+      return location.pathname === "/admin" || location.pathname === "/lecturer" || location.pathname === "/dashboard";
+    }
+    return location.pathname === path;
+  };
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-sidebar text-sidebar-foreground">
@@ -29,7 +51,7 @@ export function Sidebar() {
       <nav className="mt-6 px-4">
         <ul className="space-y-1">
           {menuItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = isActivePath(item.path);
             return (
               <li key={item.label}>
                 <Link

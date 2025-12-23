@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/lms/Sidebar";
-import { Header, UserRole } from "@/components/lms/Header";
+import { Header } from "@/components/lms/Header";
+import { getUserRole } from "@/types/roles";
 import { Calendar, Download, Upload, Clock, MapPin, User, ChevronLeft, ChevronRight, FileImage, Users, BookOpen, Plus, Pencil, Trash2, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,7 +39,7 @@ const allClassesSchedule = [
 const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
 export default function Schedule() {
-  const [currentRole, setCurrentRole] = useState<UserRole>("student");
+  const currentRole = getUserRole();
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [uploadAcademicOpen, setUploadAcademicOpen] = useState(false);
   const [addScheduleOpen, setAddScheduleOpen] = useState(false);
@@ -289,7 +290,7 @@ export default function Schedule() {
     <div className="min-h-screen bg-background">
       <Sidebar />
       <div className="ml-64">
-        <Header currentRole={currentRole} onRoleChange={setCurrentRole} />
+        <Header />
         <main className="p-6">
           <div className="animate-fade-in space-y-6">
             {/* Header */}
