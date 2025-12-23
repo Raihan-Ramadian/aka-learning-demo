@@ -60,11 +60,13 @@ export default function Login() {
       
       toast({
         title: "Login Berhasil!",
-        description: `Selamat datang, ${userName}.`,
+        description: `Selamat datang, ${userName}. Mengalihkan ke Dashboard...`,
       });
       
-      // Navigate to dashboard (role is handled in Index page)
-      navigate("/");
+      // Auto redirect after toast - navigate to dashboard based on role
+      setTimeout(() => {
+        navigate("/");
+      }, 500);
     }, 1000);
   };
 

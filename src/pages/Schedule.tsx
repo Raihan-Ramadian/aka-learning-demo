@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/lms/Sidebar";
 import { Header, UserRole } from "@/components/lms/Header";
-import { Calendar, Download, Upload, Clock, MapPin, User, ChevronLeft, ChevronRight, FileImage, Users, BookOpen, Plus, Pencil, Trash2 } from "lucide-react";
+import { Calendar, Download, Upload, Clock, MapPin, User, ChevronLeft, ChevronRight, FileImage, Users, BookOpen, Plus, Pencil, Trash2, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,6 +42,7 @@ export default function Schedule() {
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [uploadAcademicOpen, setUploadAcademicOpen] = useState(false);
   const [addScheduleOpen, setAddScheduleOpen] = useState(false);
+  const [importScheduleOpen, setImportScheduleOpen] = useState(false);
 
   const getScheduleByDay = (day: string) => {
     return personalScheduleData.filter(s => s.day === day);
@@ -78,6 +79,11 @@ export default function Schedule() {
     }
   };
 
+  const handleImportSchedule = () => {
+    alert("Jadwal berhasil diimport dari file CSV/Excel!");
+    setImportScheduleOpen(false);
+  };
+
   // Admin View - Schedule Management
   const renderAdminView = () => (
     <>
@@ -86,13 +92,23 @@ export default function Schedule() {
         <div className="border-b border-border p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Daftar Jadwal Kelas</h2>
-            <button
-              onClick={() => setAddScheduleOpen(true)}
-              className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              Tambah Jadwal
-            </button>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setImportScheduleOpen(true)}
+                className="gap-2"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                Import Jadwal
+              </Button>
+              <button
+                onClick={() => setAddScheduleOpen(true)}
+                className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Tambah Jadwal
+              </button>
+            </div>
           </div>
         </div>
         <div className="overflow-x-auto">
@@ -148,6 +164,40 @@ export default function Schedule() {
           </p>
         </div>
       </div>
+
+      {/* Import Schedule Modal */}
+      <Dialog open={importScheduleOpen} onOpenChange={setImportScheduleOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Import Data Jadwal</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="rounded-lg border-2 border-dashed border-border bg-muted/50 p-8 text-center">
+              <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground" />
+              <p className="mt-3 font-medium text-foreground">
+                Drag & drop file CSV/Excel di sini
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
+              </p>
+              <p className="mt-3 text-xs text-muted-foreground">Format: CSV, XLS, XLSX (max 10MB)</p>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm font-medium text-foreground mb-2">Format Kolom:</p>
+              <p className="text-xs text-muted-foreground">Kelas, Matkul, Dosen, Hari, Jam, Ruangan</p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setImportScheduleOpen(false)}>
+                Batal
+              </Button>
+              <Button onClick={handleImportSchedule}>
+                <Upload className="mr-2 h-4 w-4" />
+                Import
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 
@@ -290,12 +340,12 @@ export default function Schedule() {
                         <div className="rounded-lg border-2 border-dashed border-border bg-muted/50 p-8 text-center">
                           <FileImage className="mx-auto h-12 w-12 text-muted-foreground" />
                           <p className="mt-3 font-medium text-foreground">
-                            Drag & drop gambar atau PDF di sini
+                            Drag & drop file di sini
                           </p>
                           <p className="mt-1 text-sm text-muted-foreground">
                             atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
                           </p>
-                          <p className="mt-3 text-xs text-muted-foreground">Format: JPG, PNG, PDF (max 10MB)</p>
+                          <p className="mt-3 text-xs text-muted-foreground">Format: JPG, PNG, PDF, XLS, XLSX, CSV (max 10MB)</p>
                         </div>
                         <div className="flex justify-end gap-3">
                           <Button variant="outline" onClick={() => setUploadAcademicOpen(false)}>

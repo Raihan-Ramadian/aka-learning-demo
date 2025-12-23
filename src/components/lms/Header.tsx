@@ -1,4 +1,4 @@
-import { ChevronDown, Bell, Search, User, LogOut } from "lucide-react";
+import { Bell, Search, User, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,7 +6,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 
 export type UserRole = "student" | "lecturer" | "admin";
@@ -16,23 +15,12 @@ interface HeaderProps {
   onRoleChange: (role: UserRole) => void;
 }
 
-const roleLabels: Record<UserRole, string> = {
-  student: "Student View",
-  lecturer: "Lecturer View",
-  admin: "Admin View",
-};
-
-const roleColors: Record<UserRole, string> = {
-  student: "bg-primary",
-  lecturer: "bg-success",
-  admin: "bg-warning",
-};
-
 export function Header({ currentRole, onRoleChange }: HeaderProps) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Simulate logout - navigate to login page
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userName");
     navigate("/login");
   };
 
@@ -52,32 +40,6 @@ export function Header({ currentRole, onRoleChange }: HeaderProps) {
 
       {/* Right Section */}
       <div className="flex items-center gap-4">
-        {/* Role Switcher */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium transition-all hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20">
-              <span className={cn("h-2 w-2 rounded-full", roleColors[currentRole])} />
-              <span>Simulate Role</span>
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-popover border border-border shadow-lg">
-            {(Object.keys(roleLabels) as UserRole[]).map((role) => (
-              <DropdownMenuItem
-                key={role}
-                onClick={() => onRoleChange(role)}
-                className={cn(
-                  "flex items-center gap-2 cursor-pointer",
-                  currentRole === role && "bg-accent"
-                )}
-              >
-                <span className={cn("h-2 w-2 rounded-full", roleColors[role])} />
-                {roleLabels[role]}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
         {/* Notifications */}
         <button className="relative rounded-lg p-2 hover:bg-muted transition-colors">
           <Bell className="h-5 w-5 text-muted-foreground" />
