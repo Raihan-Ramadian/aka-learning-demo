@@ -24,31 +24,52 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login with role detection
+    // Simulate login delay
     setTimeout(() => {
       setIsLoading(false);
       
-      // Check credentials and determine role
-      let role = "student";
-      let userName = "User";
-      
-      if (nimNip === demoCredentials.admin.id && password === demoCredentials.admin.password) {
-        role = "admin";
-        userName = "Admin";
-      } else if (nimNip === demoCredentials.lecturer.id && password === demoCredentials.lecturer.password) {
-        role = "lecturer";
-        userName = "Dr. Ahmad Wijaya";
-      } else if (nimNip === demoCredentials.student.id && password === demoCredentials.student.password) {
-        role = "student";
-        userName = "Siti Rahayu";
-      } else if (nimNip && password) {
-        // Default to student for any other credentials
-        role = "student";
-        userName = "Mahasiswa";
-      } else {
+      // Validate credentials
+      if (!nimNip || !password) {
         toast({
           title: "Login Gagal",
-          description: "NIM/NIP atau password salah.",
+          description: "NIM/NIP dan password harus diisi.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Determine role based on NIM/NIP format
+      let role = "student";
+      let userName = "User";
+      let roleLabel = "Mahasiswa";
+      let redirectPath = "/dashboard";
+      
+      // Check for admin login
+      if (nimNip.toLowerCase() === "admin") {
+        role = "admin";
+        userName = "Admin";
+        roleLabel = "Admin";
+        redirectPath = "/dashboard";
+      } 
+      // Check for NIP format (starts with '19' - lecturer/dosen)
+      else if (nimNip.startsWith("19")) {
+        role = "lecturer";
+        userName = "Dosen";
+        roleLabel = "Dosen";
+        redirectPath = "/dashboard";
+      } 
+      // Check for NIM format (starts with '20' - student/mahasiswa)
+      else if (nimNip.startsWith("20")) {
+        role = "student";
+        userName = "Mahasiswa";
+        roleLabel = "Mahasiswa";
+        redirectPath = "/dashboard";
+      } 
+      // Invalid format
+      else {
+        toast({
+          title: "Login Gagal",
+          description: "Format NIM/NIP tidak valid. NIM harus diawali '20', NIP diawali '19', atau gunakan 'admin'.",
           variant: "destructive",
         });
         return;
@@ -57,17 +78,19 @@ export default function Login() {
       // Store role in localStorage for simulation
       localStorage.setItem("userRole", role);
       localStorage.setItem("userName", userName);
+      localStorage.setItem("userNimNip", nimNip);
       
+      // Show success toast with role-specific message
       toast({
         title: "Login Berhasil!",
-        description: `Selamat datang, ${userName}. Mengalihkan ke Dashboard...`,
+        description: `Selamat datang, ${roleLabel}. Mengalihkan ke Dashboard...`,
       });
       
-      // Auto redirect after toast - navigate to dashboard based on role
+      // Auto redirect after 1 second
       setTimeout(() => {
-        navigate("/");
-      }, 500);
-    }, 1000);
+        navigate(redirectPath);
+      }, 1000);
+    }, 500);
   };
 
   return (
