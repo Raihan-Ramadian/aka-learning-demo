@@ -1,9 +1,6 @@
 import { AlertTriangle, Upload, BookOpen, Clock, FileText, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-
-interface StudentDashboardProps {
-  onCourseClick?: (course: { id: number; name: string; code: string; lecturer: string; color: string }) => void;
-}
 
 const courses = [
   {
@@ -41,12 +38,17 @@ const courses = [
 ];
 
 const upcomingTasks = [
-  { id: 1, course: "Kimia Dasar", task: "Laporan Praktikum 3", deadline: "2 hari lagi", urgent: true },
-  { id: 2, course: "Biokimia", task: "Quiz Bab 5", deadline: "3 hari lagi", urgent: true },
-  { id: 3, course: "Kimia Analitik", task: "Tugas Kelompok", deadline: "1 minggu lagi", urgent: false },
+  { id: 1, courseId: 1, course: "Kimia Dasar", task: "Laporan Praktikum 3", deadline: "2 hari lagi", urgent: true },
+  { id: 2, courseId: 2, course: "Biokimia", task: "Quiz Bab 5", deadline: "3 hari lagi", urgent: true },
+  { id: 3, courseId: 3, course: "Kimia Analitik", task: "Tugas Kelompok", deadline: "1 minggu lagi", urgent: false },
 ];
 
-export function StudentDashboard({ onCourseClick }: StudentDashboardProps) {
+export function StudentDashboard() {
+  const navigate = useNavigate();
+
+  const handleCourseClick = (courseId: number) => {
+    navigate(`/course/${courseId}`);
+  };
   return (
     <div className="animate-fade-in space-y-6">
       {/* Welcome Header */}
@@ -113,7 +115,7 @@ export function StudentDashboard({ onCourseClick }: StudentDashboardProps) {
             {courses.map((course, index) => (
               <div
                 key={course.id}
-                onClick={() => onCourseClick?.(course)}
+                onClick={() => handleCourseClick(course.id)}
                 className="group rounded-xl bg-card border border-border/50 overflow-hidden shadow-card hover:shadow-lg transition-all duration-300 animate-fade-in cursor-pointer"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
@@ -171,8 +173,9 @@ export function StudentDashboard({ onCourseClick }: StudentDashboardProps) {
             {upcomingTasks.map((task, index) => (
               <div
                 key={task.id}
+                onClick={() => handleCourseClick(task.courseId)}
                 className={cn(
-                  "rounded-xl border p-4 transition-all hover:shadow-md animate-slide-in",
+                  "rounded-xl border p-4 transition-all hover:shadow-md animate-slide-in cursor-pointer",
                   task.urgent
                     ? "border-destructive/30 bg-destructive-light"
                     : "border-border/50 bg-card"

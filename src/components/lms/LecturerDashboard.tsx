@@ -1,14 +1,11 @@
 import { Plus, Users, Clock, BookOpen, FileText, Calendar, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-interface LecturerDashboardProps {
-  onCourseClick?: (course: { id: number; name: string; code: string; lecturer: string; color: string }) => void;
-}
-
 const todaySchedule = [
-  { id: 1, time: "08:00 - 09:40", course: "Kimia Dasar", class: "D3-AK-2A", room: "Lab Kimia 1", students: 32 },
-  { id: 2, time: "10:00 - 11:40", course: "Kimia Organik", class: "D3-AK-3B", room: "R.201", students: 28 },
-  { id: 3, time: "13:00 - 14:40", course: "Praktikum Kimia", class: "D3-AK-2A", room: "Lab Kimia 2", students: 16 },
+  { id: 1, time: "08:00 - 09:40", course: "Kimia Dasar", class: "D3-AK-2A", room: "Lab Kimia 1", students: 32, courseId: 1 },
+  { id: 2, time: "10:00 - 11:40", course: "Kimia Organik", class: "D3-AK-3B", room: "R.201", students: 28, courseId: 4 },
+  { id: 3, time: "13:00 - 14:40", course: "Praktikum Kimia", class: "D3-AK-2A", room: "Lab Kimia 2", students: 16, courseId: 5 },
 ];
 
 const courses = [
@@ -45,11 +42,16 @@ const courses = [
 ];
 
 const pendingTasks = [
-  { id: 1, type: "Koreksi", count: 24, course: "Kimia Dasar" },
-  { id: 2, type: "Tugas Baru", count: 12, course: "Kimia Organik" },
+  { id: 1, type: "Koreksi", count: 24, course: "Kimia Dasar", courseId: 1 },
+  { id: 2, type: "Tugas Baru", count: 12, course: "Kimia Organik", courseId: 4 },
 ];
 
-export function LecturerDashboard({ onCourseClick }: LecturerDashboardProps) {
+export function LecturerDashboard() {
+  const navigate = useNavigate();
+
+  const handleCourseClick = (courseId: number) => {
+    navigate(`/course/${courseId}`);
+  };
   return (
     <div className="animate-fade-in space-y-6">
       {/* Welcome Header */}
@@ -182,7 +184,7 @@ export function LecturerDashboard({ onCourseClick }: LecturerDashboardProps) {
           {courses.map((course, index) => (
             <div
               key={course.id}
-              onClick={() => onCourseClick?.(course)}
+              onClick={() => handleCourseClick(course.id)}
               className="group rounded-xl bg-card border border-border/50 overflow-hidden shadow-card hover:shadow-lg transition-all animate-scale-in cursor-pointer"
               style={{ animationDelay: `${index * 100}ms` }}
             >
@@ -221,7 +223,7 @@ export function LecturerDashboard({ onCourseClick }: LecturerDashboardProps) {
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
-                    onCourseClick?.(course);
+                    handleCourseClick(course.id);
                   }}
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
                 >

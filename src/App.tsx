@@ -13,6 +13,7 @@ import Profile from "./pages/Profile";
 import { AdminDashboard } from "./components/lms/AdminDashboard";
 import { LecturerDashboard } from "./components/lms/LecturerDashboard";
 import { StudentDashboard } from "./components/lms/StudentDashboard";
+import { CourseDetailPage } from "./pages/CourseDetailPage";
 import { Sidebar } from "./components/lms/Sidebar";
 import { Header } from "./components/lms/Header";
 
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/admin" element={<DashboardLayout><AdminDashboard /></DashboardLayout>} />
           <Route path="/lecturer" element={<DashboardLayout><LecturerDashboard /></DashboardLayout>} />
           <Route path="/dashboard" element={<DashboardLayout><StudentDashboard /></DashboardLayout>} />
+          <Route path="/course/:courseId" element={<CourseDetailPage />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/settings" element={<Settings />} />
