@@ -22,12 +22,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { FileDropZone } from "@/components/ui/file-dropzone";
+import { downloadPDF, generateSchedulePDFContent } from "@/lib/file-utils";
 
 const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
 export default function Schedule() {
   const currentRole = getUserRole();
-  const { academicEvents, schedules, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule } = useAcademicData();
+  const { academicEvents, schedules, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule, deleteSchedule, addSchedule } = useAcademicData();
   
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [uploadAcademicOpen, setUploadAcademicOpen] = useState(false);
@@ -45,6 +47,24 @@ export default function Schedule() {
   const [newStudentNim, setNewStudentNim] = useState("");
   const [newStudentName, setNewStudentName] = useState("");
 
+  // Delete Schedule Confirmation
+  const [deleteScheduleOpen, setDeleteScheduleOpen] = useState(false);
+  const [scheduleToDelete, setScheduleToDelete] = useState<ClassSchedule | null>(null);
+
+  // Import file state
+  const [importedScheduleFile, setImportedScheduleFile] = useState<File | null>(null);
+  const [importedStudentFile, setImportedStudentFile] = useState<File | null>(null);
+
+  // Add schedule form states
+  const [newScheduleData, setNewScheduleData] = useState({
+    className: "",
+    course: "",
+    lecturer: "",
+    day: "Senin",
+    time: "",
+    room: "",
+  });
+
   // Edit Schedule Modal
   const [editScheduleOpen, setEditScheduleOpen] = useState(false);
   const [editScheduleData, setEditScheduleData] = useState({
@@ -59,6 +79,8 @@ export default function Schedule() {
   };
 
   const handleDownloadPDF = () => {
+    const content = generateSchedulePDFContent(schedules);
+    downloadPDF("Jadwal_Kuliah", content);
     toast.success("Download Jadwal (PDF) berhasil!");
   };
 
@@ -90,8 +112,58 @@ export default function Schedule() {
   };
 
   const handleImportSchedule = () => {
-    toast.success("Jadwal berhasil diimport dari file CSV/Excel!");
-    setImportScheduleOpen(false);
+    if (importedScheduleFile) {
+      toast.success(`Jadwal berhasil diimport dari ${importedScheduleFile.name}!`);
+      setImportScheduleOpen(false);
+      setImportedScheduleFile(null);
+    } else {
+      toast.error("Pilih file terlebih dahulu!");
+    }
+  };
+
+  // Delete schedule handler
+  const handleDeleteSchedule = (schedule: ClassSchedule) => {
+    setScheduleToDelete(schedule);
+    setDeleteScheduleOpen(true);
+  };
+
+  const confirmDeleteSchedule = () => {
+    if (scheduleToDelete) {
+      deleteSchedule(scheduleToDelete.id);
+      toast.success(`Jadwal ${scheduleToDelete.className} - ${scheduleToDelete.course} berhasil dihapus!`);
+    }
+    setDeleteScheduleOpen(false);
+    setScheduleToDelete(null);
+  };
+
+  // Add schedule handler
+  const handleAddSchedule = () => {
+    if (!newScheduleData.className || !newScheduleData.course || !newScheduleData.time || !newScheduleData.room) {
+      toast.error("Lengkapi semua data jadwal!");
+      return;
+    }
+    
+    addSchedule({
+      className: newScheduleData.className,
+      course: newScheduleData.course,
+      lecturer: newScheduleData.lecturer,
+      day: newScheduleData.day,
+      time: newScheduleData.time,
+      room: newScheduleData.room,
+      students: [],
+      color: "bg-primary/10 border-primary/30 text-primary",
+    });
+    
+    toast.success("Jadwal baru berhasil ditambahkan!");
+    setAddScheduleOpen(false);
+    setNewScheduleData({
+      className: "",
+      course: "",
+      lecturer: "",
+      day: "Senin",
+      time: "",
+      room: "",
+    });
   };
 
   // Student Management Handlers
@@ -257,7 +329,11 @@ export default function Schedule() {
                       >
                         <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
                       </button>
-                      <button className="rounded-lg p-2 hover:bg-destructive/10 transition-colors" title="Hapus">
+                      <button 
+                        onClick={() => handleDeleteSchedule(schedule)}
+                        className="rounded-lg p-2 hover:bg-destructive/10 transition-colors" 
+                        title="Hapus"
+                      >
                         <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                       </button>
                     </div>
@@ -281,22 +357,19 @@ export default function Schedule() {
             <DialogTitle>Import Data Jadwal</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            <div className="rounded-lg border-2 border-dashed border-border bg-muted/50 p-8 text-center">
-              <FileSpreadsheet className="mx-auto h-12 w-12 text-muted-foreground" />
-              <p className="mt-3 font-medium text-foreground">
-                Drag & drop file CSV/Excel di sini
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
-              </p>
-              <p className="mt-3 text-xs text-muted-foreground">Format: CSV, XLS, XLSX (max 10MB)</p>
-            </div>
+            <FileDropZone
+              onFileSelect={(file) => setImportedScheduleFile(file)}
+              accept=".csv,.xls,.xlsx"
+              maxSize={10}
+              placeholder="Drag & drop file CSV/Excel di sini"
+              acceptedFormats="Format: CSV, XLS, XLSX (max 10MB)"
+            />
             <div className="p-3 bg-muted rounded-lg">
               <p className="text-sm font-medium text-foreground mb-2">Format Kolom:</p>
               <p className="text-xs text-muted-foreground">Kelas, Matkul, Dosen, Hari, Jam, Ruangan</p>
             </div>
             <div className="flex justify-end gap-3">
-              <Button variant="outline" onClick={() => setImportScheduleOpen(false)}>
+              <Button variant="outline" onClick={() => { setImportScheduleOpen(false); setImportedScheduleFile(null); }}>
                 Batal
               </Button>
               <Button onClick={handleImportSchedule}>
@@ -307,6 +380,24 @@ export default function Schedule() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Schedule Confirmation */}
+      <AlertDialog open={deleteScheduleOpen} onOpenChange={setDeleteScheduleOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Jadwal</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus jadwal <span className="font-semibold">{scheduleToDelete?.className} - {scheduleToDelete?.course}</span>? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteSchedule} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Ya, Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Student Management Modal */}
       <Dialog open={studentModalOpen} onOpenChange={setStudentModalOpen}>

@@ -27,6 +27,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useAcademicData } from "@/contexts/AcademicDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { FileDropZone } from "@/components/ui/file-dropzone";
+import { downloadCSV, downloadPDF, generateSchedulePDFContent } from "@/lib/file-utils";
 
 const prodiOptions = [
   { value: "all", label: "Semua Prodi" },
@@ -63,6 +65,7 @@ export function AdminDashboard() {
   const [importOpen, setImportOpen] = useState(false);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [addUserType, setAddUserType] = useState<"mahasiswa" | "dosen">("mahasiswa");
+  const [importedFile, setImportedFile] = useState<File | null>(null);
   
   // User action modal states
   const [viewUserOpen, setViewUserOpen] = useState(false);
@@ -190,26 +193,38 @@ export function AdminDashboard() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground">Upload File CSV</label>
-                  <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-8 text-center">
-                    <Upload className="mx-auto h-10 w-10 text-muted-foreground" />
-                    <p className="mt-3 font-medium text-foreground">
-                      Drag & drop file CSV di sini
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
-                    </p>
-                    <p className="mt-3 text-xs text-muted-foreground">Format: .csv (max 5MB)</p>
-                  </div>
+                  <FileDropZone
+                    onFileSelect={(file) => setImportedFile(file)}
+                    accept=".csv"
+                    maxSize={5}
+                    className="mt-1.5"
+                    placeholder="Drag & drop file CSV di sini"
+                    acceptedFormats="Format: .csv (max 5MB)"
+                  />
                 </div>
                 <div className="flex justify-end gap-3 pt-2">
                   <button
-                    onClick={() => setImportOpen(false)}
+                    onClick={() => {
+                      setImportOpen(false);
+                      setImportedFile(null);
+                    }}
                     className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
                   >
                     Batal
                   </button>
                   <button
-                    onClick={() => setImportOpen(false)}
+                    onClick={() => {
+                      if (importedFile) {
+                        toast({
+                          title: "Data berhasil di-import!",
+                          description: `File ${importedFile.name} telah diproses.`,
+                        });
+                        setImportOpen(false);
+                        setImportedFile(null);
+                      } else {
+                        toast({ title: "Pilih file terlebih dahulu!", variant: "destructive" });
+                      }
+                    }}
                     className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
                   >
                     Import
@@ -229,14 +244,35 @@ export function AdminDashboard() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem 
-                onClick={() => alert("Export Data Mahasiswa (.CSV) berhasil!")}
+                onClick={() => {
+                  const data = studentsData.map(s => ({
+                    NIM: s.nim,
+                    Nama: s.name,
+                    Prodi: s.prodi,
+                    Email: s.email,
+                    Status: s.status,
+                  }));
+                  downloadCSV(data, "data_mahasiswa");
+                  toast({ title: "Export berhasil!", description: "Data Mahasiswa berhasil di-export." });
+                }}
                 className="cursor-pointer"
               >
                 <Users className="mr-2 h-4 w-4" />
                 Export Data Mahasiswa (.CSV)
               </DropdownMenuItem>
               <DropdownMenuItem 
-                onClick={() => alert("Export Data Dosen (.CSV) berhasil!")}
+                onClick={() => {
+                  const data = lecturersData.map(l => ({
+                    NIP: l.nip,
+                    Nama: l.name,
+                    Prodi: l.prodi,
+                    Email: l.email,
+                    Jabatan: l.jabatan,
+                    Status: l.status,
+                  }));
+                  downloadCSV(data, "data_dosen");
+                  toast({ title: "Export berhasil!", description: "Data Dosen berhasil di-export." });
+                }}
                 className="cursor-pointer"
               >
                 <GraduationCap className="mr-2 h-4 w-4" />

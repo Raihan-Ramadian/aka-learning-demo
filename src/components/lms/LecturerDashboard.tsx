@@ -10,16 +10,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { FileDropZone } from "@/components/ui/file-dropzone";
 
 const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 
 export function LecturerDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { courses, getLecturerSchedules, submissions, tasks, materialWeeks } = useAcademicData();
+  const { courses, getLecturerSchedules, submissions, tasks, materialWeeks, addMaterial, addMaterialWeek } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
   const [materialType, setMaterialType] = useState<"document" | "video">("document");
+  
+  // Form states
+  const [selectedWeek, setSelectedWeek] = useState("Pertemuan 1");
+  const [materialTitle, setMaterialTitle] = useState("");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState("");
   
   // Filter courses for lecturer (ids 1, 4, 5)
   const lecturerCourses = courses.filter(c => [1, 4, 5].includes(c.id));
@@ -50,13 +57,46 @@ export function LecturerDashboard() {
   };
 
   const handleUploadSubmit = () => {
+    if (!selectedCourseForUpload || !materialTitle) {
+      toast({ title: "Lengkapi data materi!", variant: "destructive" });
+      return;
+    }
+    
+    // Find or create week
+    const existingWeeks = materialWeeks.filter(w => w.courseId === selectedCourseForUpload.id);
+    let weekId = existingWeeks.find(w => w.week === selectedWeek)?.id;
+    
+    if (!weekId) {
+      weekId = addMaterialWeek(selectedCourseForUpload.id, selectedWeek, materialTitle);
+    }
+    
+    // Add material
+    if (materialType === "document" && uploadedFile) {
+      addMaterial(weekId, selectedCourseForUpload.id, {
+        name: uploadedFile.name,
+        type: "pdf",
+        size: `${(uploadedFile.size / (1024 * 1024)).toFixed(1)} MB`,
+      });
+    } else if (materialType === "video" && videoUrl) {
+      addMaterial(weekId, selectedCourseForUpload.id, {
+        name: materialTitle,
+        type: "video",
+        duration: "Video Link",
+      });
+    }
+    
     toast({
       title: "Materi berhasil diupload!",
       description: `Materi untuk ${selectedCourseForUpload?.name} telah ditambahkan.`,
     });
+    
+    // Reset form
     setUploadModalOpen(false);
     setSelectedCourseForUpload(null);
     setMaterialType("document");
+    setMaterialTitle("");
+    setUploadedFile(null);
+    setVideoUrl("");
   };
 
   const handlePendingTaskClick = (courseId: number) => {
@@ -274,7 +314,11 @@ export function LecturerDashboard() {
           <div className="space-y-4 pt-4">
             <div>
               <label className="text-sm font-medium text-foreground">Pertemuan</label>
-              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+              <select 
+                value={selectedWeek}
+                onChange={(e) => setSelectedWeek(e.target.value)}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
                 <option>Pertemuan 1</option>
                 <option>Pertemuan 2</option>
                 <option>Pertemuan 3</option>
@@ -285,6 +329,8 @@ export function LecturerDashboard() {
               <label className="text-sm font-medium text-foreground">Judul Materi</label>
               <input
                 type="text"
+                value={materialTitle}
+                onChange={(e) => setMaterialTitle(e.target.value)}
                 placeholder="Masukkan judul materi"
                 className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
@@ -327,13 +373,14 @@ export function LecturerDashboard() {
             {materialType === "document" ? (
               <div className="animate-fade-in">
                 <label className="text-sm font-medium text-foreground">Upload Dokumen</label>
-                <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-6 text-center hover:border-primary/50 transition-colors">
-                  <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span>
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">PDF, PPT, PPTX, DOC, DOCX (max 50MB)</p>
-                </div>
+                <FileDropZone
+                  onFileSelect={(file) => setUploadedFile(file)}
+                  accept=".pdf,.ppt,.pptx,.doc,.docx"
+                  maxSize={50}
+                  className="mt-1.5"
+                  placeholder="Drag & drop file atau"
+                  acceptedFormats="PDF, PPT, PPTX, DOC, DOCX (max 50MB)"
+                />
               </div>
             ) : (
               <div className="animate-fade-in">
@@ -342,6 +389,8 @@ export function LecturerDashboard() {
                   <Video className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <input
                     type="url"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
                     placeholder="Tempel link Youtube atau Google Drive di sini"
                     className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />

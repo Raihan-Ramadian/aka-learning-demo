@@ -10,18 +10,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { FileDropZone } from "@/components/ui/file-dropzone";
 
 const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 
 export function StudentDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { courses, getStudentSchedules, submissions, tasks } = useAcademicData();
+  const { courses, getStudentSchedules, submissions, tasks, submitAssignment } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
+  const [selectedTask, setSelectedTask] = useState("");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [studentNote, setStudentNote] = useState("");
   
   // Simulated student NIM - in real app this would come from auth
   const studentNim = "2024001";
+  const studentName = "Siti Rahayu";
   const mySchedules = getStudentSchedules(studentNim);
 
   // Get student's submissions for progress calculation
@@ -69,12 +74,28 @@ export function StudentDashboard() {
   };
 
   const handleUploadSubmit = () => {
+    if (!uploadedFile) {
+      toast({ title: "Pilih file terlebih dahulu!", variant: "destructive" });
+      return;
+    }
+    
+    // Find the task for the selected course
+    const courseTask = tasks.find(t => t.courseId === selectedCourseForUpload?.id);
+    if (courseTask && selectedCourseForUpload) {
+      submitAssignment(courseTask.id, selectedCourseForUpload.id, studentNim, studentName, uploadedFile.name);
+    }
+    
     toast({
       title: "Tugas berhasil diupload!",
       description: `Tugas untuk ${selectedCourseForUpload?.name} telah dikirim.`,
     });
+    
+    // Reset form
     setUploadModalOpen(false);
     setSelectedCourseForUpload(null);
+    setUploadedFile(null);
+    setStudentNote("");
+    setSelectedTask("");
   };
 
   const handleViewAllCourses = () => {
@@ -272,40 +293,58 @@ export function StudentDashboard() {
           <div className="space-y-4 pt-4">
             <div>
               <label className="text-sm font-medium text-foreground">Pilih Tugas</label>
-              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                <option>Laporan Praktikum 1</option>
-                <option>Quiz Bab 1-2</option>
-                <option>Tugas Kelompok: Presentasi</option>
+              <select 
+                value={selectedTask}
+                onChange={(e) => setSelectedTask(e.target.value)}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">Pilih tugas...</option>
+                <option value="laporan1">Laporan Praktikum 1</option>
+                <option value="quiz">Quiz Bab 1-2</option>
+                <option value="kelompok">Tugas Kelompok: Presentasi</option>
               </select>
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Upload File</label>
-              <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-6 text-center hover:border-primary/50 transition-colors">
-                <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span>
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">PDF, DOC, DOCX (max 25MB)</p>
-              </div>
+              <FileDropZone
+                onFileSelect={(file) => setUploadedFile(file)}
+                accept=".pdf,.doc,.docx"
+                maxSize={25}
+                className="mt-1.5"
+                placeholder="Drag & drop file atau"
+                acceptedFormats="PDF, DOC, DOCX (max 25MB)"
+              />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Catatan (Opsional)</label>
               <textarea
                 rows={3}
+                value={studentNote}
+                onChange={(e) => setStudentNote(e.target.value)}
                 placeholder="Tulis catatan untuk dosen..."
                 className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
               />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button
-                onClick={() => setUploadModalOpen(false)}
+                onClick={() => {
+                  setUploadModalOpen(false);
+                  setUploadedFile(null);
+                  setStudentNote("");
+                }}
                 className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
               >
                 Batal
               </button>
               <button
                 onClick={handleUploadSubmit}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                disabled={!uploadedFile}
+                className={cn(
+                  "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                  uploadedFile 
+                    ? "bg-primary text-primary-foreground hover:bg-primary-hover" 
+                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                )}
               >
                 Upload Tugas
               </button>
