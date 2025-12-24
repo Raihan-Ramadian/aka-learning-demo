@@ -22,7 +22,7 @@ const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 export function LecturerDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { academicEvents, getLecturerSchedules, submissions, tasks } = useAcademicData();
+  const { getLecturerSchedules, submissions, tasks } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
   const [materialType, setMaterialType] = useState<"document" | "video">("document");
@@ -71,15 +71,6 @@ export function LecturerDashboard() {
     navigate("/courses");
   };
 
-  const getEventStyle = (type: string) => {
-    switch (type) {
-      case "uas": return "bg-destructive/10 border-destructive/20 text-destructive";
-      case "libur": return "bg-warning/10 border-warning/20 text-warning";
-      case "semester": return "bg-success/10 border-success/20 text-success";
-      default: return "bg-muted border-border text-muted-foreground";
-    }
-  };
-
   const getScheduleByDay = (day: string) => mySchedules.filter(s => s.day === day);
 
   // Get today's schedule
@@ -102,22 +93,6 @@ export function LecturerDashboard() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Halo, Prof. Sari Dewi 👋</h1>
           <p className="mt-1 text-muted-foreground">Dosen Prodi D3 Analisis Kimia</p>
-        </div>
-      </div>
-
-      {/* Academic Calendar Summary */}
-      <div className="rounded-xl bg-card border border-border/50 shadow-card p-4">
-        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-          <Calendar className="h-4 w-4 text-primary" />
-          Kalender Akademik
-        </h2>
-        <div className="grid grid-cols-3 gap-3 text-sm">
-          {academicEvents.map((event) => (
-            <div key={event.id} className={cn("p-2.5 rounded-lg border", getEventStyle(event.type))}>
-              <p className="font-medium text-xs">{event.dateRange}</p>
-              <p className="text-muted-foreground text-xs mt-0.5">{event.title}</p>
-            </div>
-          ))}
         </div>
       </div>
 

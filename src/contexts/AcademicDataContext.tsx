@@ -50,6 +50,8 @@ export interface Task {
   hasAttachment: boolean;
   attachmentName?: string;
   attachmentType?: string;
+  externalLink?: string;
+  additionalNotes?: string;
 }
 
 // Initial Data
@@ -167,10 +169,10 @@ const initialSchedules: ClassSchedule[] = [
 ];
 
 const initialTasks: Task[] = [
-  { id: 1, courseId: 1, title: "Laporan Praktikum 1", description: "Buat laporan praktikum tentang reaksi kimia dasar", deadline: "20 Desember 2024", maxScore: 100, hasAttachment: true, attachmentName: "Instruksi_Laporan_Praktikum.pdf", attachmentType: "file" },
-  { id: 2, courseId: 1, title: "Quiz Bab 1-2", description: "Quiz online tentang struktur atom dan tabel periodik", deadline: "22 Desember 2024", maxScore: 50, hasAttachment: false },
+  { id: 1, courseId: 1, title: "Laporan Praktikum 1", description: "Buat laporan praktikum tentang reaksi kimia dasar", deadline: "20 Desember 2024", maxScore: 100, hasAttachment: true, attachmentName: "Instruksi_Laporan_Praktikum.pdf", attachmentType: "file", additionalNotes: "Pastikan menggunakan format laporan standar. Sertakan grafik hasil pengamatan dan analisis data. Deadline tidak bisa diperpanjang." },
+  { id: 2, courseId: 1, title: "Quiz Bab 1-2", description: "Quiz online tentang struktur atom dan tabel periodik", deadline: "22 Desember 2024", maxScore: 50, hasAttachment: false, externalLink: "https://forms.google.com/quiz123", additionalNotes: "Quiz bersifat open book. Waktu pengerjaan 30 menit setelah link dibuka." },
   { id: 3, courseId: 1, title: "Tugas Kelompok: Presentasi", description: "Presentasi tentang aplikasi kimia dalam kehidupan sehari-hari", deadline: "5 Januari 2025", maxScore: 100, hasAttachment: true, attachmentName: "Template_Presentasi.pptx", attachmentType: "file" },
-  { id: 4, courseId: 2, title: "Laporan Biokimia", description: "Laporan tentang metabolisme karbohidrat", deadline: "23 Desember 2024", maxScore: 100, hasAttachment: true, attachmentName: "Template_Laporan.docx", attachmentType: "file" },
+  { id: 4, courseId: 2, title: "Laporan Biokimia", description: "Laporan tentang metabolisme karbohidrat", deadline: "23 Desember 2024", maxScore: 100, hasAttachment: true, attachmentName: "Template_Laporan.docx", attachmentType: "file", additionalNotes: "Gunakan referensi jurnal internasional minimal 3 sumber." },
   { id: 5, courseId: 3, title: "Tugas Kelompok Analitik", description: "Analisis sampel air dengan metode titrasi", deadline: "28 Desember 2024", maxScore: 100, hasAttachment: false },
 ];
 
