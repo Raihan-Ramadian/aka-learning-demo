@@ -328,6 +328,7 @@ interface AcademicDataContextType {
   addAcademicEvent: (event: Omit<AcademicEvent, 'id'>) => void;
   updateAcademicEvent: (id: number, updates: Partial<AcademicEvent>) => void;
   deleteAcademicEvent: (id: number) => void;
+  importSchedulesFromCSV: (schedules: Omit<ClassSchedule, 'id'>[]) => void;
 }
 
 const AcademicDataContext = createContext<AcademicDataContextType | undefined>(undefined);
@@ -596,6 +597,11 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
     setAcademicEvents(prev => prev.filter(e => e.id !== id));
   };
 
+  const importSchedulesFromCSV = (schedulesToImport: Omit<ClassSchedule, 'id'>[]) => {
+    const newSchedules = schedulesToImport.map((s, i) => ({ ...s, id: Date.now() + i }));
+    setSchedules(prev => [...prev, ...newSchedules]);
+  };
+
   return (
     <AcademicDataContext.Provider value={{
       // User management
@@ -655,6 +661,7 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
       addAcademicEvent,
       updateAcademicEvent,
       deleteAcademicEvent,
+      importSchedulesFromCSV,
     }}>
       {children}
     </AcademicDataContext.Provider>

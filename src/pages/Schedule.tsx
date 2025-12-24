@@ -29,7 +29,7 @@ const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
 export default function Schedule() {
   const currentRole = getUserRole();
-  const { academicEvents, schedules, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule, deleteSchedule, addSchedule, addAcademicEvent, deleteAcademicEvent } = useAcademicData();
+  const { academicEvents, schedules, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule, deleteSchedule, addSchedule, addAcademicEvent, deleteAcademicEvent, importSchedulesFromCSV } = useAcademicData();
   
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [addEventOpen, setAddEventOpen] = useState(false);
@@ -186,13 +186,44 @@ export default function Schedule() {
   };
 
   const handleImportSchedule = () => {
-    if (importedScheduleFile) {
-      toast.success(`Jadwal berhasil diimport dari ${importedScheduleFile.name}!`);
+    if (!importedScheduleFile) {
+      toast.error("Pilih file terlebih dahulu!");
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      // Skip header row if exists
+      const dataLines = lines.slice(1);
+      
+      const schedulesData: Omit<ClassSchedule, 'id'>[] = dataLines.map(line => {
+        const [className, course, lecturer, day, time, room] = line.split(',').map(s => s.trim().replace(/"/g, ''));
+        return {
+          className: className || "",
+          course: course || "",
+          lecturer: lecturer || "",
+          day: day || "Senin",
+          time: time || "",
+          room: room || "",
+          students: [],
+          color: "bg-primary/10 border-primary/30 text-primary",
+        };
+      }).filter(s => s.className && s.course);
+      
+      if (schedulesData.length > 0) {
+        importSchedulesFromCSV(schedulesData);
+        toast.success(`${schedulesData.length} jadwal berhasil diimport dari ${importedScheduleFile.name}!`);
+      } else {
+        toast.error("Tidak ada data valid dalam file CSV!");
+      }
+      
       setImportScheduleOpen(false);
       setImportedScheduleFile(null);
-    } else {
-      toast.error("Pilih file terlebih dahulu!");
-    }
+    };
+    reader.readAsText(importedScheduleFile);
   };
 
   // Delete schedule handler
@@ -286,8 +317,43 @@ export default function Schedule() {
   };
 
   const handleImportStudentCSV = () => {
-    toast.success("Data mahasiswa berhasil diimport dari CSV!");
-    setImportStudentOpen(false);
+    if (!selectedSchedule || !importedStudentFile) {
+      toast.error("Pilih file terlebih dahulu!");
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      // Skip header row if exists
+      const dataLines = lines.slice(1);
+      
+      let addedCount = 0;
+      dataLines.forEach(line => {
+        const [nim, name] = line.split(',').map(s => s.trim().replace(/"/g, ''));
+        if (nim && name) {
+          const newStudent: Student = {
+            id: Date.now() + addedCount,
+            name,
+            nim,
+          };
+          addStudentToClass(selectedSchedule.id, newStudent);
+          addedCount++;
+        }
+      });
+      
+      if (addedCount > 0) {
+        toast.success(`${addedCount} mahasiswa berhasil diimport dari CSV!`);
+      } else {
+        toast.error("Tidak ada data valid dalam file CSV!");
+      }
+      
+      setImportStudentOpen(false);
+      setImportedStudentFile(null);
+    };
+    reader.readAsText(importedStudentFile);
   };
 
   const openEditStudent = (student: Student) => {
