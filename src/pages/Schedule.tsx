@@ -435,51 +435,59 @@ export default function Schedule() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {schedules.map((schedule, index) => (
-                <tr
-                  key={schedule.id}
-                  className="hover:bg-muted/30 transition-colors animate-fade-in"
-                  style={{ animationDelay: `${index * 30}ms` }}
-                >
-                  <td className="px-4 py-3">
-                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-                      {schedule.className}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-medium text-foreground">{schedule.course}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.lecturer}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.day}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.time}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.room}</td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleOpenStudentModal(schedule)}
-                      className="flex items-center gap-1.5 text-sm text-primary hover:underline font-medium"
-                    >
-                      <Users className="h-4 w-4" />
-                      {schedule.students.length} mhs
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button 
-                        onClick={() => handleOpenEditSchedule(schedule)}
-                        className="rounded-lg p-2 hover:bg-muted transition-colors" 
-                        title="Edit"
-                      >
-                        <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteSchedule(schedule)}
-                        className="rounded-lg p-2 hover:bg-destructive/10 transition-colors" 
-                        title="Hapus"
-                      >
-                        <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                      </button>
-                    </div>
+              {schedules.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                    Belum ada data jadwal. Klik "Tambah Jadwal" untuk menambahkan jadwal baru.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                schedules.map((schedule, index) => (
+                  <tr
+                    key={schedule.id}
+                    className="hover:bg-muted/30 transition-colors animate-fade-in"
+                    style={{ animationDelay: `${index * 30}ms` }}
+                  >
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                        {schedule.className}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-foreground">{schedule.course}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.lecturer}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.day}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.time}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{schedule.room}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleOpenStudentModal(schedule)}
+                        className="flex items-center gap-1.5 text-sm text-primary hover:underline font-medium"
+                      >
+                        <Users className="h-4 w-4" />
+                        {schedule.students.length} mhs
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button 
+                          onClick={() => handleOpenEditSchedule(schedule)}
+                          className="rounded-lg p-2 hover:bg-muted transition-colors" 
+                          title="Edit"
+                        >
+                          <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteSchedule(schedule)}
+                          className="rounded-lg p-2 hover:bg-destructive/10 transition-colors" 
+                          title="Hapus"
+                        >
+                          <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
