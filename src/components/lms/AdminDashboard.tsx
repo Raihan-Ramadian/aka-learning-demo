@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { useAcademicData } from "@/contexts/AcademicDataContext";
+import { useToast } from "@/hooks/use-toast";
 
 const prodiOptions = [
   { value: "all", label: "Semua Prodi" },
@@ -49,14 +51,10 @@ const lecturersData = [
   { id: 4, name: "Dr. Maya Putri", nip: "198906302015012001", prodi: "D4 Analisis Kimia", email: "maya@dosen.aka.ac.id", status: "Cuti", phone: "081234567804", address: "Jl. Ilmu No. 3, Bogor", jabatan: "Asisten Ahli" },
 ];
 
-const stats = [
-  { label: "Total User", value: "1,248", icon: Users, color: "text-primary", bg: "bg-primary/10", change: "+12%" },
-  { label: "Total Prodi", value: "8", icon: Building, color: "text-success", bg: "bg-success/10", change: "0%" },
-  { label: "Total Mahasiswa", value: "1,156", icon: Users, color: "text-warning", bg: "bg-warning/10", change: "+8%" },
-  { label: "Total Dosen", value: "86", icon: GraduationCap, color: "text-accent-foreground", bg: "bg-accent", change: "+3%" },
-];
-
 export function AdminDashboard() {
+  const { toast } = useToast();
+  const { courses, schedules } = useAcademicData();
+  
   const [selectedProdi, setSelectedProdi] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [userTab, setUserTab] = useState("mahasiswa");
@@ -71,6 +69,20 @@ export function AdminDashboard() {
   const [editUserOpen, setEditUserOpen] = useState(false);
   const [deleteUserOpen, setDeleteUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<typeof studentsData[0] | typeof lecturersData[0] | null>(null);
+
+  // Dynamic statistics
+  const totalMahasiswa = studentsData.length;
+  const totalDosen = lecturersData.length;
+  const totalUsers = totalMahasiswa + totalDosen;
+  const uniqueProdi = new Set([...studentsData.map(s => s.prodi), ...lecturersData.map(l => l.prodi)]);
+  const totalProdi = uniqueProdi.size;
+
+  const stats = [
+    { label: "Total User", value: String(totalUsers), icon: Users, color: "text-primary", bg: "bg-primary/10", change: "+12%" },
+    { label: "Total Prodi", value: String(totalProdi), icon: Building, color: "text-success", bg: "bg-success/10", change: "0%" },
+    { label: "Total Mahasiswa", value: String(totalMahasiswa), icon: Users, color: "text-warning", bg: "bg-warning/10", change: "+8%" },
+    { label: "Total Dosen", value: String(totalDosen), icon: GraduationCap, color: "text-accent-foreground", bg: "bg-accent", change: "+3%" },
+  ];
 
   const currentData = userTab === "mahasiswa" ? studentsData : lecturersData;
 
@@ -114,19 +126,28 @@ export function AdminDashboard() {
   };
 
   const confirmDeleteUser = () => {
-    alert(`User ${selectedUser?.name} berhasil dihapus!`);
+    toast({
+      title: "User Berhasil Dihapus",
+      description: `Data ${selectedUser?.name} telah dihapus dari sistem.`,
+    });
     setDeleteUserOpen(false);
     setSelectedUser(null);
   };
 
   const handleSaveEditUser = () => {
-    alert(`Data ${selectedUser?.name} berhasil diperbarui!`);
+    toast({
+      title: "Data Berhasil Diperbarui",
+      description: `Data ${selectedUser?.name} telah diperbarui.`,
+    });
     setEditUserOpen(false);
     setSelectedUser(null);
   };
 
   const handleAddUser = () => {
-    alert(`${addUserType === "mahasiswa" ? "Mahasiswa" : "Dosen"} baru berhasil ditambahkan!`);
+    toast({
+      title: `${addUserType === "mahasiswa" ? "Mahasiswa" : "Dosen"} Berhasil Ditambahkan`,
+      description: `Data ${addUserType === "mahasiswa" ? "mahasiswa" : "dosen"} baru telah disimpan.`,
+    });
     setAddUserOpen(false);
   };
 
