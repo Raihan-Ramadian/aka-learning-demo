@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getUserRole } from "@/types/roles";
-import { BookOpen, Search, Filter, ChevronDown, Clock, Users, GraduationCap, Plus, Pencil, Trash2, Calendar, Upload, FileSpreadsheet } from "lucide-react";
+import { BookOpen, Search, Filter, ChevronDown, Clock, Users, GraduationCap, Plus, Pencil, Trash2, Calendar, Upload, FileSpreadsheet, FileText, MapPin, Video, Link } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -82,8 +82,38 @@ export default function Courses() {
   const currentRole = getUserRole();
   const { toast } = useToast();
   
-  // Get data from context for Admin
-  const { courses, managedLecturers, addCourse, updateCourse, deleteCourse, importCoursesFromCSV } = useAcademicData();
+  // Get data from context for Admin and Lecturer
+  const { courses, managedLecturers, addCourse, updateCourse, deleteCourse, importCoursesFromCSV, getLecturerSchedules, materialWeeks, addMaterial, addMaterialWeek } = useAcademicData();
+  
+  // For Lecturer view - get schedules and derive courses
+  const lecturerName = "Sari Dewi"; // In real app from auth
+  const mySchedules = getLecturerSchedules(lecturerName);
+  
+  // Get unique courses from lecturer's schedules
+  const lecturerCourseNames = [...new Set(mySchedules.map(s => s.course))];
+  const lecturerCourses = lecturerCourseNames.map(courseName => {
+    const existingCourse = courses.find(c => c.name === courseName);
+    const schedulesForCourse = mySchedules.filter(s => s.course === courseName);
+    const totalStudents = schedulesForCourse.reduce((sum, s) => sum + s.students.length, 0);
+    if (existingCourse) {
+      return {
+        ...existingCourse,
+        totalStudents,
+        classes: schedulesForCourse.length,
+        schedulesForCourse,
+      };
+    }
+    return {
+      id: Date.now() + Math.random(),
+      name: courseName,
+      code: "N/A",
+      lecturer: lecturerName,
+      color: "from-primary to-primary/50",
+      classes: schedulesForCourse.length,
+      totalStudents,
+      schedulesForCourse,
+    };
+  });
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSks, setSelectedSks] = useState("all");
@@ -97,6 +127,15 @@ export default function Courses() {
   const [importCsvOpen, setImportCsvOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [importedFile, setImportedFile] = useState<File | null>(null);
+  
+  // Lecturer upload modal states
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof lecturerCourses[0] | null>(null);
+  const [materialType, setMaterialType] = useState<"document" | "video">("document");
+  const [selectedWeek, setSelectedWeek] = useState("Pertemuan 1");
+  const [materialTitle, setMaterialTitle] = useState("");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState("");
 
   // Form state
   const [formData, setFormData] = useState({
@@ -238,7 +277,53 @@ export default function Courses() {
     reader.readAsText(importedFile);
   };
 
-  // Admin View - Master Data Management
+  // Lecturer Upload Handler
+  const handleUploadClick = (e: React.MouseEvent, course: typeof lecturerCourses[0]) => {
+    e.stopPropagation();
+    setSelectedCourseForUpload(course);
+    setUploadModalOpen(true);
+  };
+
+  const handleUploadSubmit = () => {
+    if (!selectedCourseForUpload || !materialTitle) {
+      toast({ title: "Lengkapi data materi!", variant: "destructive" });
+      return;
+    }
+    
+    const existingWeeks = materialWeeks.filter(w => w.courseId === selectedCourseForUpload.id);
+    let weekId = existingWeeks.find(w => w.week === selectedWeek)?.id;
+    
+    if (!weekId) {
+      weekId = addMaterialWeek(selectedCourseForUpload.id, selectedWeek, materialTitle);
+    }
+    
+    if (materialType === "document" && uploadedFile) {
+      addMaterial(weekId, selectedCourseForUpload.id, {
+        name: uploadedFile.name,
+        type: "pdf",
+        size: `${(uploadedFile.size / (1024 * 1024)).toFixed(1)} MB`,
+      });
+    } else if (materialType === "video" && videoUrl) {
+      addMaterial(weekId, selectedCourseForUpload.id, {
+        name: materialTitle,
+        type: "video",
+        duration: "Video Link",
+      });
+    }
+    
+    toast({
+      title: "Materi berhasil diupload!",
+      description: `Materi untuk ${selectedCourseForUpload?.name} telah ditambahkan.`,
+    });
+    
+    setUploadModalOpen(false);
+    setSelectedCourseForUpload(null);
+    setMaterialType("document");
+    setMaterialTitle("");
+    setUploadedFile(null);
+    setVideoUrl("");
+  };
+
   const renderAdminView = () => (
     <>
       {/* Filters */}
@@ -722,66 +807,169 @@ export default function Courses() {
     </>
   );
 
-  // Lecturer View - My Classes to Teach
+  // Lecturer View - My Classes to Teach (Dynamic from Context)
   const renderLecturerView = () => (
     <>
-      <div className="grid grid-cols-2 gap-5">
-        {myActiveClasses.lecturer.map((classItem, index) => (
-          <div
-            key={classItem.id}
-            onClick={() => handleCourseClick(classItem.id)}
-            className="group rounded-xl bg-card border border-border/50 shadow-card overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in cursor-pointer"
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <div className={cn("h-20 bg-gradient-to-br relative", classItem.color)}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <BookOpen className="h-10 w-10 text-foreground/20" />
+      {lecturerCourses.length === 0 ? (
+        <div className="rounded-xl bg-card border border-border/50 p-12 text-center">
+          <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+          <p className="mt-4 text-lg font-medium text-foreground">Belum ada mata kuliah</p>
+          <p className="mt-1 text-muted-foreground">Anda belum memiliki jadwal mengajar yang terdaftar.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-5">
+          {lecturerCourses.map((course, index) => {
+            const materials = materialWeeks.filter(w => w.courseId === course.id).reduce((sum, w) => sum + w.materials.length, 0);
+            return (
+              <div
+                key={course.id}
+                onClick={() => handleCourseClick(course.id)}
+                className="group rounded-xl bg-card border border-border/50 shadow-card overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in cursor-pointer"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className={cn("h-20 bg-gradient-to-br relative", course.color || "from-primary to-primary/50")}>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <BookOpen className="h-10 w-10 text-foreground/20" />
+                  </div>
+                  <div className="absolute top-3 right-3">
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-background/90 text-foreground">
+                      {course.code}
+                    </span>
+                  </div>
+                  <div className="absolute top-3 left-3">
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary text-primary-foreground">
+                      {course.classes} Kelas
+                    </span>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                    {course.name}
+                  </h3>
+                  <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span>{course.totalStudents || 0} Mahasiswa</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      <span>{materials} Materi</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      <span>{course.sks || 3} SKS</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={(e) => handleUploadClick(e, course)} 
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />Upload Materi
+                  </button>
+                </div>
               </div>
-              <div className="absolute top-3 right-3">
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-background/90 text-foreground">
-                  {classItem.code}
-                </span>
-              </div>
-              <div className="absolute top-3 left-3">
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary text-primary-foreground">
-                  {classItem.className}
-                </span>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Upload Material Modal for Lecturer */}
+      <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload Materi - {selectedCourseForUpload?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">Pertemuan</label>
+              <select 
+                value={selectedWeek}
+                onChange={(e) => setSelectedWeek(e.target.value)}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option>Pertemuan 1</option>
+                <option>Pertemuan 2</option>
+                <option>Pertemuan 3</option>
+                <option>Pertemuan 4</option>
+                <option>Pertemuan 5</option>
+                <option>Pertemuan 6</option>
+                <option>Pertemuan 7</option>
+                <option>Pertemuan 8</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Judul Materi</label>
+              <input
+                type="text"
+                placeholder="Masukkan judul materi"
+                value={materialTitle}
+                onChange={(e) => setMaterialTitle(e.target.value)}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Tipe Materi</label>
+              <div className="mt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMaterialType("document")}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 rounded-lg border p-3 transition-colors",
+                    materialType === "document" 
+                      ? "border-primary bg-primary/10 text-primary" 
+                      : "border-border hover:border-primary/50"
+                  )}
+                >
+                  <FileText className="h-4 w-4" />
+                  Dokumen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMaterialType("video")}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 rounded-lg border p-3 transition-colors",
+                    materialType === "video" 
+                      ? "border-primary bg-primary/10 text-primary" 
+                      : "border-border hover:border-primary/50"
+                  )}
+                >
+                  <Video className="h-4 w-4" />
+                  Video
+                </button>
               </div>
             </div>
-            <div className="p-5">
-              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                {classItem.name}
-              </h3>
-              <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span>{classItem.students} Mahasiswa</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>{classItem.schedule}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>{classItem.sks} SKS • {classItem.room}</span>
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-                  <span>Progress Materi</span>
-                  <span className="font-medium text-foreground">{classItem.progress}%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-success rounded-full transition-all duration-500"
-                    style={{ width: `${classItem.progress}%` }}
+            {materialType === "document" ? (
+              <FileDropZone
+                onFileSelect={(file) => setUploadedFile(file || null)}
+                accept=".pdf,.doc,.docx,.ppt,.pptx"
+              />
+            ) : (
+              <div>
+                <label className="text-sm font-medium text-foreground">Link Video</label>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <Link className="h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="url"
+                    placeholder="https://youtube.com/..."
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   />
                 </div>
               </div>
+            )}
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setUploadModalOpen(false)}>
+                Batal
+              </Button>
+              <Button onClick={handleUploadSubmit}>
+                <Upload className="mr-2 h-4 w-4" />
+                Upload
+              </Button>
             </div>
           </div>
-        ))}
-      </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 
