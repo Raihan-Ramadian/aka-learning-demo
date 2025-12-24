@@ -15,23 +15,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-// Master data for all courses (Admin view)
-const initialCourses = [
-  { id: 1, code: "KIM101", name: "Kimia Dasar", sks: 3, semester: "Ganjil", prodi: "D3 Analisis Kimia", description: "Mempelajari dasar-dasar ilmu kimia termasuk struktur atom, ikatan kimia, dan reaksi kimia dasar.", students: 120, lecturer: "Dr. Ahmad Wijaya", color: "from-primary/20 to-primary/5" },
-  { id: 2, code: "KIM201", name: "Kimia Organik", sks: 4, semester: "Genap", prodi: "D3 Analisis Kimia", description: "Kajian mendalam tentang senyawa organik, reaksi, dan mekanisme dalam kimia organik.", students: 85, lecturer: "Prof. Sari Dewi", color: "from-success/20 to-success/5" },
-  { id: 3, code: "BIO201", name: "Biokimia", sks: 4, semester: "Ganjil", prodi: "D3 Analisis Kimia", description: "Studi tentang proses kimia dalam organisme hidup, termasuk metabolisme dan enzimologi.", students: 92, lecturer: "Pak Budi Santoso", color: "from-warning/20 to-warning/5" },
-  { id: 4, code: "KIM301", name: "Kimia Analitik", sks: 3, semester: "Ganjil", prodi: "D3 Analisis Kimia", description: "Teknik analisis kualitatif dan kuantitatif dalam kimia laboratorium.", students: 78, lecturer: "Dr. Maya Putri", color: "from-accent to-accent/50" },
-  { id: 5, code: "INF101", name: "Pemrograman Dasar", sks: 3, semester: "Ganjil", prodi: "D3 Teknik Informatika", description: "Pengenalan konsep pemrograman menggunakan bahasa Python dan logika algoritma.", students: 150, lecturer: "Pak Eko Prasetyo", color: "from-destructive/20 to-destructive/5" },
-  { id: 6, code: "INF201", name: "Basis Data", sks: 3, semester: "Genap", prodi: "D3 Teknik Informatika", description: "Desain dan implementasi sistem basis data relasional menggunakan SQL.", students: 130, lecturer: "Dr. Rina Wulandari", color: "from-primary/20 to-primary/5" },
-  { id: 7, code: "MAT101", name: "Matematika Terapan", sks: 3, semester: "Ganjil", prodi: "D3 Analisis Kimia", description: "Aplikasi matematika dalam ilmu kimia dan teknik.", students: 140, lecturer: "Prof. Sari Dewi", color: "from-success/20 to-success/5" },
-  { id: 8, code: "FIS101", name: "Fisika Dasar", sks: 3, semester: "Ganjil", prodi: "D3 Analisis Kimia", description: "Prinsip-prinsip dasar fisika klasik dan modern.", students: 135, lecturer: "Dr. Maya Putri", color: "from-warning/20 to-warning/5" },
-  { id: 9, code: "KIM401", name: "Analisis Instrumen", sks: 4, semester: "Genap", prodi: "D4 Analisis Kimia", description: "Penggunaan instrumen analitik modern untuk analisis kimia.", students: 65, lecturer: "Dr. Ahmad Wijaya", color: "from-accent to-accent/50" },
-  { id: 10, code: "ENG101", name: "Bahasa Inggris Akademik", sks: 2, semester: "Ganjil", prodi: "D3 Analisis Kimia", description: "Pengembangan kemampuan bahasa Inggris untuk keperluan akademik.", students: 180, lecturer: "Ms. Linda", color: "from-primary/20 to-primary/5" },
-];
+import { useAcademicData, Course } from "@/contexts/AcademicDataContext";
+import { FileDropZone } from "@/components/ui/file-dropzone";
 
 // Active classes for student/lecturer view
 const myActiveClasses = {
@@ -58,8 +56,10 @@ const sksOptions = [
 
 const semesterOptions = [
   { value: "all", label: "Semua Semester" },
-  { value: "Ganjil", label: "Semester Ganjil" },
-  { value: "Genap", label: "Semester Genap" },
+  { value: "1", label: "Semester 1" },
+  { value: "2", label: "Semester 2" },
+  { value: "3", label: "Semester 3" },
+  { value: "4", label: "Semester 4" },
 ];
 
 const prodiOptions = [
@@ -69,39 +69,57 @@ const prodiOptions = [
   { value: "D4 Analisis Kimia", label: "D4 Analisis Kimia" },
 ];
 
+const colorOptions = [
+  { value: "from-blue-500 to-cyan-500", label: "Biru" },
+  { value: "from-emerald-500 to-teal-500", label: "Hijau" },
+  { value: "from-violet-500 to-purple-500", label: "Ungu" },
+  { value: "from-orange-500 to-amber-500", label: "Oranye" },
+  { value: "from-pink-500 to-rose-500", label: "Pink" },
+];
+
 export default function Courses() {
   const navigate = useNavigate();
   const currentRole = getUserRole();
+  const { toast } = useToast();
+  
+  // Get data from context for Admin
+  const { courses, addCourse, updateCourse, deleteCourse, importCoursesFromCSV } = useAcademicData();
+  
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSks, setSelectedSks] = useState("all");
+  const [selectedSemester, setSelectedSemester] = useState("all");
+  const [selectedProdi, setSelectedProdi] = useState("all");
+  
+  // Modal states
+  const [addCourseOpen, setAddCourseOpen] = useState(false);
+  const [editCourseOpen, setEditCourseOpen] = useState(false);
+  const [deleteCourseOpen, setDeleteCourseOpen] = useState(false);
+  const [importCsvOpen, setImportCsvOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [importedFile, setImportedFile] = useState<File | null>(null);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    code: "",
+    name: "",
+    lecturer: "",
+    sks: "3",
+    semester: "1",
+    prodi: "",
+    color: "from-blue-500 to-cyan-500",
+  });
 
   const handleCourseClick = (courseId: number) => {
     navigate(`/course/${courseId}`);
   };
-  const [selectedSks, setSelectedSks] = useState("all");
-  const [selectedSemester, setSelectedSemester] = useState("all");
-  const [selectedProdi, setSelectedProdi] = useState("all");
-  const [addCourseOpen, setAddCourseOpen] = useState(false);
-  const [editCourseOpen, setEditCourseOpen] = useState(false);
-  const [importCsvOpen, setImportCsvOpen] = useState(false);
-  const [allCourses, setAllCourses] = useState(initialCourses);
-  const [editingCourse, setEditingCourse] = useState<typeof initialCourses[0] | null>(null);
-  const { toast } = useToast();
 
-  // Form state for add/edit
-  const [formData, setFormData] = useState({
-    code: "",
-    name: "",
-    sks: "",
-    semester: "",
-    prodi: "",
-  });
-
-  const filteredCourses = allCourses.filter((course) => {
+  // Filter courses from context
+  const filteredCourses = courses.filter((course) => {
     const matchesSearch = 
       course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.code.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSks = selectedSks === "all" || course.sks.toString() === selectedSks;
-    const matchesSemester = selectedSemester === "all" || course.semester === selectedSemester;
+    const matchesSks = selectedSks === "all" || (course.sks?.toString() === selectedSks);
+    const matchesSemester = selectedSemester === "all" || (course.semester?.toString() === selectedSemester);
     const matchesProdi = selectedProdi === "all" || course.prodi === selectedProdi;
     return matchesSearch && matchesSks && matchesSemester && matchesProdi;
   });
@@ -128,50 +146,96 @@ export default function Courses() {
     }
   };
 
-  const handleAddCourse = () => {
-    toast({
-      title: "Mata Kuliah Ditambahkan!",
-      description: "Mata kuliah baru berhasil ditambahkan ke kurikulum.",
-    });
-    setAddCourseOpen(false);
-    setFormData({ code: "", name: "", sks: "", semester: "", prodi: "" });
+  const resetForm = () => {
+    setFormData({ code: "", name: "", lecturer: "", sks: "3", semester: "1", prodi: "", color: "from-blue-500 to-cyan-500" });
   };
 
-  const handleEditCourse = (course: typeof initialCourses[0]) => {
-    setEditingCourse(course);
+  const handleAddCourse = () => {
+    if (!formData.code || !formData.name || !formData.lecturer) {
+      toast({ title: "Lengkapi data yang wajib!", variant: "destructive" });
+      return;
+    }
+    addCourse({
+      code: formData.code,
+      name: formData.name,
+      lecturer: formData.lecturer,
+      sks: parseInt(formData.sks),
+      semester: parseInt(formData.semester),
+      prodi: formData.prodi,
+      color: formData.color,
+      classes: 1,
+    });
+    toast({ title: "Mata Kuliah Ditambahkan!", description: `${formData.name} berhasil ditambahkan.` });
+    setAddCourseOpen(false);
+    resetForm();
+  };
+
+  const handleEditCourse = (course: Course) => {
+    setSelectedCourse(course);
     setFormData({
       code: course.code,
       name: course.name,
-      sks: course.sks.toString(),
-      semester: course.semester,
-      prodi: course.prodi,
+      lecturer: course.lecturer,
+      sks: String(course.sks || 3),
+      semester: String(course.semester || 1),
+      prodi: course.prodi || "",
+      color: course.color,
     });
     setEditCourseOpen(true);
   };
 
   const handleSaveEdit = () => {
-    if (editingCourse) {
-      setAllCourses(prev => prev.map(c => 
-        c.id === editingCourse.id 
-          ? { ...c, code: formData.code, name: formData.name, sks: parseInt(formData.sks), semester: formData.semester, prodi: formData.prodi }
-          : c
-      ));
-      toast({
-        title: "Mata Kuliah Diperbarui!",
-        description: `${formData.name} berhasil diperbarui.`,
-      });
-      setEditCourseOpen(false);
-      setEditingCourse(null);
-      setFormData({ code: "", name: "", sks: "", semester: "", prodi: "" });
-    }
+    if (!selectedCourse) return;
+    updateCourse(selectedCourse.id, {
+      code: formData.code,
+      name: formData.name,
+      lecturer: formData.lecturer,
+      sks: parseInt(formData.sks),
+      semester: parseInt(formData.semester),
+      prodi: formData.prodi,
+      color: formData.color,
+    });
+    toast({ title: "Mata Kuliah Diperbarui!", description: `${formData.name} berhasil diperbarui.` });
+    setEditCourseOpen(false);
+    setSelectedCourse(null);
+    resetForm();
+  };
+
+  const handleDeleteCourse = (course: Course) => {
+    setSelectedCourse(course);
+    setDeleteCourseOpen(true);
+  };
+
+  const confirmDeleteCourse = () => {
+    if (!selectedCourse) return;
+    deleteCourse(selectedCourse.id);
+    toast({ title: "Mata Kuliah Dihapus!", description: `${selectedCourse.name} berhasil dihapus.` });
+    setDeleteCourseOpen(false);
+    setSelectedCourse(null);
   };
 
   const handleImportCsv = () => {
-    toast({
-      title: "Import CSV Berhasil!",
-      description: "Data mata kuliah berhasil diimport dari file CSV.",
-    });
-    setImportCsvOpen(false);
+    if (!importedFile) {
+      toast({ title: "Pilih file terlebih dahulu!", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split('\n').filter(line => line.trim());
+      const dataLines = lines.slice(1);
+      const coursesData: Omit<Course, 'id'>[] = dataLines.map(line => {
+        const [code, name, lecturer, prodi, semester, sks] = line.split(',').map(s => s.trim().replace(/"/g, ''));
+        return { name: name || "", code: code || "", lecturer: lecturer || "", prodi: prodi || "", semester: parseInt(semester) || 1, sks: parseInt(sks) || 3, color: "from-blue-500 to-cyan-500", classes: 1 };
+      }).filter(c => c.code && c.name);
+      if (coursesData.length > 0) {
+        importCoursesFromCSV(coursesData);
+        toast({ title: `${coursesData.length} mata kuliah berhasil di-import!` });
+      }
+      setImportCsvOpen(false);
+      setImportedFile(null);
+    };
+    reader.readAsText(importedFile);
   };
 
   // Admin View - Master Data Management
@@ -272,7 +336,7 @@ export default function Courses() {
 
       {/* Results Count */}
       <p className="text-sm text-muted-foreground">
-        Menampilkan <strong>{filteredCourses.length}</strong> dari {allCourses.length} mata kuliah
+        Menampilkan <strong>{filteredCourses.length}</strong> dari {courses.length} mata kuliah
       </p>
 
       {/* Admin Table View */}
