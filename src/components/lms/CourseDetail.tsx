@@ -25,9 +25,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { useAcademicData } from "@/contexts/AcademicDataContext";
+import { useAcademicData, Task, PracticumGrade } from "@/contexts/AcademicDataContext";
 import { useToast } from "@/hooks/use-toast";
-import { downloadCSV, generateGradeReportCSV } from "@/lib/file-utils";
+import { downloadCSV, generateGradeReportCSV, generatePracticumGradeReportCSV } from "@/lib/file-utils";
 
 interface CourseDetailProps {
   course: {
@@ -55,16 +55,28 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
     addMaterial,
     addMaterialWeek,
     getMaterialsByCourse,
-    submitAssignment
+    submitAssignment,
+    getPracticumGrade,
+    updatePracticumGrade
   } = useAcademicData();
   
   const [addMaterialOpen, setAddMaterialOpen] = useState(false);
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<typeof courseTasks[0] | null>(null);
+  const [selectedAssignment, setSelectedAssignment] = useState<Task | null>(null);
   const [materialType, setMaterialType] = useState<"document" | "video">("document");
   const [grades, setGrades] = useState<Record<number, number | null>>({});
   const [notes, setNotes] = useState<Record<number, string>>({});
+  
+  // Practicum grades state (6 criteria per submission)
+  const [practicumGradesState, setPracticumGradesState] = useState<Record<number, {
+    laporanAwal: number | null;
+    apd: number | null;
+    k3: number | null;
+    skill: number | null;
+    kuis: number | null;
+    laporanAkhir: number | null;
+  }>>({});
   
   // Delete confirmation states
   const [deleteTaskOpen, setDeleteTaskOpen] = useState(false);
@@ -87,6 +99,7 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
   const [newTaskFile, setNewTaskFile] = useState<File | null>(null);
   const [newTaskLink, setNewTaskLink] = useState("");
   const [newTaskNotes, setNewTaskNotes] = useState("");
+  const [newTaskType, setNewTaskType] = useState<"regular" | "praktikum">("regular");
   const taskFileRef = useRef<HTMLInputElement>(null);
 
   // Student submission state
@@ -119,20 +132,90 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
     setNotes(prev => ({ ...prev, [submissionId]: value }));
   };
 
+  // Practicum grade handlers
+  const handlePracticumGradeChange = (submissionId: number, field: keyof typeof practicumGradesState[number], value: string) => {
+    const numValue = value === "" ? null : Math.min(100, Math.max(0, parseInt(value) || 0));
+    setPracticumGradesState(prev => ({
+      ...prev,
+      [submissionId]: {
+        ...prev[submissionId] || { laporanAwal: null, apd: null, k3: null, skill: null, kuis: null, laporanAkhir: null },
+        [field]: numValue
+      }
+    }));
+  };
+
+  const calculatePracticumAverage = (submissionId: number): number | null => {
+    const grades = practicumGradesState[submissionId];
+    if (!grades) return null;
+    const values = [grades.laporanAwal, grades.apd, grades.k3, grades.skill, grades.kuis, grades.laporanAkhir].filter(v => v !== null) as number[];
+    if (values.length === 0) return null;
+    return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+  };
+
   const handleSaveGrades = () => {
     const taskSubmissions = selectedAssignment ? getSubmissionsByTask(selectedAssignment.id) : [];
-    taskSubmissions.forEach(sub => {
-      const grade = grades[sub.id] ?? sub.grade;
-      const note = notes[sub.id] ?? sub.lecturerNote;
-      if (grade !== sub.grade || note !== sub.lecturerNote) {
-        updateSubmissionGrade(sub.id, grade, note || null);
-      }
-    });
+    
+    if (selectedAssignment?.taskType === "praktikum") {
+      // Save practicum grades with 6 criteria
+      taskSubmissions.forEach(sub => {
+        const grades = practicumGradesState[sub.id];
+        if (grades) {
+          updatePracticumGrade(sub.id, grades);
+        }
+      });
+    } else {
+      // Save regular grades
+      taskSubmissions.forEach(sub => {
+        const grade = grades[sub.id] ?? sub.grade;
+        const note = notes[sub.id] ?? sub.lecturerNote;
+        if (grade !== sub.grade || note !== sub.lecturerNote) {
+          updateSubmissionGrade(sub.id, grade, note || null);
+        }
+      });
+    }
+    
     toast({
       title: "Nilai berhasil disimpan!",
       description: "Nilai dan catatan telah diperbarui untuk mahasiswa.",
     });
     setSelectedAssignment(null);
+  };
+
+  const handleExportGrades = () => {
+    if (!selectedAssignment) return;
+    const taskSubmissions = getSubmissionsByTask(selectedAssignment.id);
+    
+    if (selectedAssignment.taskType === "praktikum") {
+      // Export practicum grades with 6 criteria
+      const data = taskSubmissions.map(sub => {
+        const pg = getPracticumGrade(sub.id) || practicumGradesState[sub.id];
+        return {
+          studentName: sub.studentName,
+          studentNim: sub.studentNim,
+          status: sub.status,
+          laporanAwal: pg?.laporanAwal ?? null,
+          apd: pg?.apd ?? null,
+          k3: pg?.k3 ?? null,
+          skill: pg?.skill ?? null,
+          kuis: pg?.kuis ?? null,
+          laporanAkhir: pg?.laporanAkhir ?? null,
+          average: pg ? calculatePracticumAverage(sub.id) : null,
+          submittedAt: sub.submittedAt,
+        };
+      });
+      downloadCSV(generatePracticumGradeReportCSV(data), `Rekap_Praktikum_${selectedAssignment.title}`);
+    } else {
+      // Export regular grades
+      const data = generateGradeReportCSV(taskSubmissions.map(sub => ({
+        studentName: sub.studentName,
+        studentNim: sub.studentNim,
+        status: sub.status,
+        grade: grades[sub.id] ?? sub.grade,
+        submittedAt: sub.submittedAt,
+      })));
+      downloadCSV(data, `Rekap_Nilai_${selectedAssignment.title}`);
+    }
+    toast({ title: "Export berhasil!", description: "Rekap nilai diekspor ke CSV." });
   };
 
   const handleDeleteTask = (taskId: number, e: React.MouseEvent) => {
@@ -206,7 +289,14 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
             <div className="border-b border-border bg-muted/50 p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-foreground">Daftar Pengumpulan Tugas</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground">Daftar Pengumpulan Tugas</h3>
+                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", 
+                      selectedAssignment.taskType === "praktikum" ? "bg-violet-500/10 text-violet-600" : "bg-primary/10 text-primary"
+                    )}>
+                      {selectedAssignment.taskType === "praktikum" ? "Praktikum" : "Reguler"}
+                    </span>
+                  </div>
                   <p className="text-sm text-muted-foreground mt-1">{selectedAssignment.description}</p>
                 </div>
                 <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
@@ -219,71 +309,91 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama Mahasiswa</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">NIM</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">File</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nilai</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Catatan Dosen</th>
+                    {selectedAssignment.taskType === "praktikum" ? (
+                      <>
+                        <th className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lap. Awal</th>
+                        <th className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">APD</th>
+                        <th className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">K3</th>
+                        <th className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">Skill</th>
+                        <th className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kuis</th>
+                        <th className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">Lap. Akhir</th>
+                        <th className="px-2 py-3 text-center text-xs font-semibold uppercase tracking-wider text-primary bg-primary/5">Rata-rata</th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">File</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nilai</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Catatan</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {getSubmissionsByTask(selectedAssignment.id).map((student, index) => (
-                    <tr key={student.id} className="hover:bg-muted/30 transition-colors animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                            {student.studentName.charAt(0)}
+                  {getSubmissionsByTask(selectedAssignment.id).map((student, index) => {
+                    const existingPG = getPracticumGrade(student.id);
+                    const currentPG = practicumGradesState[student.id] || {
+                      laporanAwal: existingPG?.laporanAwal ?? null,
+                      apd: existingPG?.apd ?? null,
+                      k3: existingPG?.k3 ?? null,
+                      skill: existingPG?.skill ?? null,
+                      kuis: existingPG?.kuis ?? null,
+                      laporanAkhir: existingPG?.laporanAkhir ?? null,
+                    };
+                    const avg = calculatePracticumAverage(student.id) ?? existingPG?.average;
+                    
+                    return (
+                      <tr key={student.id} className="hover:bg-muted/30 transition-colors animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                              {student.studentName.charAt(0)}
+                            </div>
+                            <span className="font-medium text-foreground text-sm">{student.studentName}</span>
                           </div>
-                          <span className="font-medium text-foreground">{student.studentName}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground font-mono">{student.studentNim}</td>
-                      <td className="px-4 py-3">
-                        <span className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-                          student.status !== "pending" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
-                        )}>
-                          {student.status !== "pending" ? <><Check className="h-3 w-3" /> Sudah Kumpul</> : <><X className="h-3 w-3" /> Belum Kumpul</>}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        {student.fileName ? (
-                          <button className="flex items-center gap-2 text-sm text-primary hover:underline">
-                            <Download className="h-4 w-4" />{student.fileName}
-                          </button>
-                        ) : <span className="text-sm text-muted-foreground">-</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          value={grades[student.id] ?? student.grade ?? ""}
-                          onChange={(e) => handleGradeChange(student.id, e.target.value)}
-                          placeholder="-"
-                          disabled={student.status === "pending"}
-                          className={cn(
-                            "w-20 rounded-lg border border-input bg-background px-3 py-1.5 text-sm text-center focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
-                            student.status === "pending" && "opacity-50 cursor-not-allowed"
-                          )}
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <textarea
-                          rows={2}
-                          value={notes[student.id] ?? student.lecturerNote ?? ""}
-                          onChange={(e) => handleNoteChange(student.id, e.target.value)}
-                          placeholder="Catatan untuk mahasiswa..."
-                          disabled={student.status === "pending"}
-                          className={cn(
-                            "w-48 rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none",
-                            student.status === "pending" && "opacity-50 cursor-not-allowed"
-                          )}
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-muted-foreground font-mono">{student.studentNim}</td>
+                        <td className="px-4 py-3">
+                          <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", student.status !== "pending" ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
+                            {student.status !== "pending" ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                            {student.status !== "pending" ? "Kumpul" : "Belum"}
+                          </span>
+                        </td>
+                        {selectedAssignment.taskType === "praktikum" ? (
+                          <>
+                            {(["laporanAwal", "apd", "k3", "skill", "kuis", "laporanAkhir"] as const).map((field) => (
+                              <td key={field} className="px-1 py-3">
+                                <input
+                                  type="number" min="0" max="100"
+                                  value={currentPG[field] ?? ""}
+                                  onChange={(e) => handlePracticumGradeChange(student.id, field, e.target.value)}
+                                  disabled={student.status === "pending"}
+                                  className={cn("w-14 rounded border border-input bg-background px-2 py-1 text-sm text-center focus:border-primary focus:outline-none", student.status === "pending" && "opacity-50 cursor-not-allowed")}
+                                />
+                              </td>
+                            ))}
+                            <td className="px-2 py-3 bg-primary/5">
+                              <div className="w-14 text-center font-bold text-primary">{avg ?? "-"}</div>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-4 py-3">
+                              {student.fileName ? <button className="flex items-center gap-1 text-sm text-primary hover:underline"><Download className="h-3 w-3" />{student.fileName}</button> : <span className="text-sm text-muted-foreground">-</span>}
+                            </td>
+                            <td className="px-4 py-3">
+                              <input type="number" min="0" max="100" value={grades[student.id] ?? student.grade ?? ""} onChange={(e) => handleGradeChange(student.id, e.target.value)} disabled={student.status === "pending"} className={cn("w-16 rounded border border-input bg-background px-2 py-1 text-sm text-center focus:border-primary focus:outline-none", student.status === "pending" && "opacity-50 cursor-not-allowed")} />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input type="text" value={notes[student.id] ?? student.lecturerNote ?? ""} onChange={(e) => handleNoteChange(student.id, e.target.value)} placeholder="Catatan..." disabled={student.status === "pending"} className={cn("w-32 rounded border border-input bg-background px-2 py-1 text-sm focus:border-primary focus:outline-none", student.status === "pending" && "opacity-50 cursor-not-allowed")} />
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -294,7 +404,7 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                   <span className="font-medium text-foreground">{getSubmissionsByTask(selectedAssignment.id).filter(s => s.status !== "pending").length}</span> dari <span className="font-medium text-foreground">{getSubmissionsByTask(selectedAssignment.id).length}</span> mahasiswa sudah mengumpulkan
                 </p>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => toast({ title: "Export berhasil!", description: "Rekap nilai diekspor ke Excel." })} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors">
+                  <button onClick={handleExportGrades} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors">
                     <Download className="h-4 w-4" />Export Rekap
                   </button>
                   <button onClick={handleSaveGrades} className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">

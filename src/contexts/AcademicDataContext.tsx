@@ -104,6 +104,20 @@ export interface Task {
   attachmentType?: string;
   externalLink?: string;
   additionalNotes?: string;
+  taskType: "regular" | "praktikum"; // New field for task type
+}
+
+// Practicum grade structure with 6 criteria
+export interface PracticumGrade {
+  id: number;
+  submissionId: number;
+  laporanAwal: number | null; // Laporan Awal
+  apd: number | null; // APD
+  k3: number | null; // K3
+  skill: number | null; // Skill
+  kuis: number | null; // Kuis
+  laporanAkhir: number | null; // Laporan Akhir
+  average: number | null; // Auto-calculated average
 }
 
 // Initial Data - Managed Users
@@ -227,11 +241,12 @@ const initialSchedules: ClassSchedule[] = [
 ];
 
 const initialTasks: Task[] = [
-  { id: 1, courseId: 1, title: "Laporan Praktikum 1", description: "Buat laporan praktikum tentang reaksi kimia dasar", deadline: "20 Desember 2024", maxScore: 100, hasAttachment: true, attachmentName: "Instruksi_Laporan_Praktikum.pdf", attachmentType: "file", additionalNotes: "Pastikan menggunakan format laporan standar. Sertakan grafik hasil pengamatan dan analisis data. Deadline tidak bisa diperpanjang." },
-  { id: 2, courseId: 1, title: "Quiz Bab 1-2", description: "Quiz online tentang struktur atom dan tabel periodik", deadline: "22 Desember 2024", maxScore: 50, hasAttachment: false, externalLink: "https://forms.google.com/quiz123", additionalNotes: "Quiz bersifat open book. Waktu pengerjaan 30 menit setelah link dibuka." },
-  { id: 3, courseId: 1, title: "Tugas Kelompok: Presentasi", description: "Presentasi tentang aplikasi kimia dalam kehidupan sehari-hari", deadline: "5 Januari 2025", maxScore: 100, hasAttachment: true, attachmentName: "Template_Presentasi.pptx", attachmentType: "file" },
-  { id: 4, courseId: 2, title: "Laporan Biokimia", description: "Laporan tentang metabolisme karbohidrat", deadline: "23 Desember 2024", maxScore: 100, hasAttachment: true, attachmentName: "Template_Laporan.docx", attachmentType: "file", additionalNotes: "Gunakan referensi jurnal internasional minimal 3 sumber." },
-  { id: 5, courseId: 3, title: "Tugas Kelompok Analitik", description: "Analisis sampel air dengan metode titrasi", deadline: "28 Desember 2024", maxScore: 100, hasAttachment: false },
+  { id: 1, courseId: 1, title: "Laporan Praktikum 1", description: "Buat laporan praktikum tentang reaksi kimia dasar", deadline: "20 Desember 2024", maxScore: 100, hasAttachment: true, attachmentName: "Instruksi_Laporan_Praktikum.pdf", attachmentType: "file", additionalNotes: "Pastikan menggunakan format laporan standar. Sertakan grafik hasil pengamatan dan analisis data. Deadline tidak bisa diperpanjang.", taskType: "praktikum" },
+  { id: 2, courseId: 1, title: "Quiz Bab 1-2", description: "Quiz online tentang struktur atom dan tabel periodik", deadline: "22 Desember 2024", maxScore: 50, hasAttachment: false, externalLink: "https://forms.google.com/quiz123", additionalNotes: "Quiz bersifat open book. Waktu pengerjaan 30 menit setelah link dibuka.", taskType: "regular" },
+  { id: 3, courseId: 1, title: "Tugas Kelompok: Presentasi", description: "Presentasi tentang aplikasi kimia dalam kehidupan sehari-hari", deadline: "5 Januari 2025", maxScore: 100, hasAttachment: true, attachmentName: "Template_Presentasi.pptx", attachmentType: "file", taskType: "regular" },
+  { id: 4, courseId: 2, title: "Laporan Biokimia", description: "Laporan tentang metabolisme karbohidrat", deadline: "23 Desember 2024", maxScore: 100, hasAttachment: true, attachmentName: "Template_Laporan.docx", attachmentType: "file", additionalNotes: "Gunakan referensi jurnal internasional minimal 3 sumber.", taskType: "regular" },
+  { id: 5, courseId: 3, title: "Tugas Kelompok Analitik", description: "Analisis sampel air dengan metode titrasi", deadline: "28 Desember 2024", maxScore: 100, hasAttachment: false, taskType: "regular" },
+  { id: 6, courseId: 5, title: "Praktikum Kimia Dasar", description: "Praktikum reaksi asam-basa dengan indikator", deadline: "30 Desember 2024", maxScore: 100, hasAttachment: true, attachmentName: "Modul_Praktikum.pdf", attachmentType: "file", additionalNotes: "Wajib hadir tepat waktu. Bawa perlengkapan K3 lengkap.", taskType: "praktikum" },
 ];
 
 const initialSubmissions: TaskSubmission[] = [
@@ -243,6 +258,12 @@ const initialSubmissions: TaskSubmission[] = [
   { id: 6, taskId: 1, courseId: 1, studentNim: "2024007", studentName: "Maya Putri", status: "submitted", fileName: "laporan_maya.pdf", grade: null, lecturerNote: null, submittedAt: "18 Desember 2024" },
   { id: 7, taskId: 2, courseId: 1, studentNim: "2024001", studentName: "Siti Rahayu", status: "graded", fileName: null, grade: 45, lecturerNote: "Jawaban quiz sudah benar sebagian besar.", submittedAt: "19 Desember 2024" },
   { id: 8, taskId: 3, courseId: 1, studentNim: "2024001", studentName: "Siti Rahayu", status: "pending", fileName: null, grade: null, lecturerNote: null, submittedAt: null },
+];
+
+// Practicum grades storage
+const initialPracticumGrades: PracticumGrade[] = [
+  { id: 1, submissionId: 1, laporanAwal: 85, apd: 90, k3: 88, skill: 85, kuis: 80, laporanAkhir: 87, average: 85.8 },
+  { id: 2, submissionId: 2, laporanAwal: 90, apd: 85, k3: 92, skill: 88, kuis: 85, laporanAkhir: 90, average: 88.3 },
 ];
 
 interface AcademicDataContextType {
@@ -271,6 +292,8 @@ interface AcademicDataContextType {
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
   submissions: TaskSubmission[];
   setSubmissions: React.Dispatch<React.SetStateAction<TaskSubmission[]>>;
+  practicumGrades: PracticumGrade[];
+  setPracticumGrades: React.Dispatch<React.SetStateAction<PracticumGrade[]>>;
   addStudentToClass: (scheduleId: number, student: Student) => void;
   removeStudentFromClass: (scheduleId: number, studentId: number) => void;
   updateStudentInClass: (scheduleId: number, student: Student) => void;
@@ -279,6 +302,8 @@ interface AcademicDataContextType {
   getLecturerSchedules: (lecturerName: string) => ClassSchedule[];
   getStudentSubmission: (taskId: number, studentNim: string) => TaskSubmission | undefined;
   updateSubmissionGrade: (submissionId: number, grade: number | null, lecturerNote: string | null) => void;
+  updatePracticumGrade: (submissionId: number, grades: Omit<PracticumGrade, 'id' | 'submissionId' | 'average'>) => void;
+  getPracticumGrade: (submissionId: number) => PracticumGrade | undefined;
   getTasksByCourse: (courseId: number) => Task[];
   getSubmissionsByTask: (taskId: number) => TaskSubmission[];
   getMaterialsByCourse: (courseId: number) => MaterialWeek[];
@@ -290,6 +315,9 @@ interface AcademicDataContextType {
   addMaterialWeek: (courseId: number, week: string, title: string) => number;
   addSchedule: (schedule: Omit<ClassSchedule, 'id'>) => void;
   submitAssignment: (taskId: number, courseId: number, studentNim: string, studentName: string, fileName: string) => void;
+  addAcademicEvent: (event: Omit<AcademicEvent, 'id'>) => void;
+  deleteAcademicEvent: (id: number) => void;
+  importAcademicEventsFromCSV: (events: Omit<AcademicEvent, 'id'>[]) => void;
 }
 
 const AcademicDataContext = createContext<AcademicDataContextType | undefined>(undefined);
@@ -305,6 +333,7 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
   const [schedules, setSchedules] = useState<ClassSchedule[]>(initialSchedules);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [submissions, setSubmissions] = useState<TaskSubmission[]>(initialSubmissions);
+  const [practicumGrades, setPracticumGrades] = useState<PracticumGrade[]>(initialPracticumGrades);
 
   // User management functions
   const addManagedStudent = (student: Omit<ManagedStudent, 'id'>) => {
@@ -489,6 +518,53 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Practicum grade functions
+  const updatePracticumGrade = (submissionId: number, grades: Omit<PracticumGrade, 'id' | 'submissionId' | 'average'>) => {
+    const { laporanAwal, apd, k3, skill, kuis, laporanAkhir } = grades;
+    const validGrades = [laporanAwal, apd, k3, skill, kuis, laporanAkhir].filter(g => g !== null) as number[];
+    const average = validGrades.length > 0 ? Math.round((validGrades.reduce((a, b) => a + b, 0) / validGrades.length) * 10) / 10 : null;
+    
+    const existingGrade = practicumGrades.find(pg => pg.submissionId === submissionId);
+    if (existingGrade) {
+      setPracticumGrades(prev => prev.map(pg => 
+        pg.submissionId === submissionId 
+          ? { ...pg, ...grades, average }
+          : pg
+      ));
+    } else {
+      setPracticumGrades(prev => [...prev, {
+        id: Date.now(),
+        submissionId,
+        ...grades,
+        average
+      }]);
+    }
+    
+    // Also update the submission's overall grade with the average
+    if (average !== null) {
+      updateSubmissionGrade(submissionId, Math.round(average), null);
+    }
+  };
+
+  const getPracticumGrade = (submissionId: number): PracticumGrade | undefined => {
+    return practicumGrades.find(pg => pg.submissionId === submissionId);
+  };
+
+  // Academic event functions
+  const addAcademicEvent = (event: Omit<AcademicEvent, 'id'>) => {
+    const newEvent: AcademicEvent = { ...event, id: Date.now() };
+    setAcademicEvents(prev => [...prev, newEvent]);
+  };
+
+  const deleteAcademicEvent = (id: number) => {
+    setAcademicEvents(prev => prev.filter(e => e.id !== id));
+  };
+
+  const importAcademicEventsFromCSV = (events: Omit<AcademicEvent, 'id'>[]) => {
+    const newEvents = events.map((e, i) => ({ ...e, id: Date.now() + i }));
+    setAcademicEvents(prev => [...prev, ...newEvents]);
+  };
+
   return (
     <AcademicDataContext.Provider value={{
       // User management
@@ -516,6 +592,8 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
       setTasks,
       submissions,
       setSubmissions,
+      practicumGrades,
+      setPracticumGrades,
       addStudentToClass,
       removeStudentFromClass,
       updateStudentInClass,
@@ -524,6 +602,8 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
       getLecturerSchedules,
       getStudentSubmission,
       updateSubmissionGrade,
+      updatePracticumGrade,
+      getPracticumGrade,
       getTasksByCourse,
       getSubmissionsByTask,
       getMaterialsByCourse,
@@ -535,6 +615,9 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
       addMaterialWeek,
       addSchedule,
       submitAssignment,
+      addAcademicEvent,
+      deleteAcademicEvent,
+      importAcademicEventsFromCSV,
     }}>
       {children}
     </AcademicDataContext.Provider>
