@@ -11,21 +11,18 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
-const courses = [
-  { id: 1, name: "Kimia Dasar", code: "KIM101", classes: 2, color: "from-blue-500 to-cyan-500" },
-  { id: 4, name: "Kimia Organik", code: "KIM301", classes: 3, color: "from-emerald-500 to-teal-500" },
-  { id: 5, name: "Praktikum Kimia", code: "KIM102", classes: 4, color: "from-violet-500 to-purple-500" },
-];
-
 const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 
 export function LecturerDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getLecturerSchedules, submissions, tasks } = useAcademicData();
+  const { courses, getLecturerSchedules, submissions, tasks, materialWeeks } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
   const [materialType, setMaterialType] = useState<"document" | "video">("document");
+  
+  // Filter courses for lecturer (ids 1, 4, 5)
+  const lecturerCourses = courses.filter(c => [1, 4, 5].includes(c.id));
   
   // Simulated lecturer name - in real app this would come from auth
   const lecturerName = "Sari Dewi";
@@ -34,8 +31,7 @@ export function LecturerDashboard() {
   // Calculate dynamic stats
   const totalStudents = mySchedules.reduce((sum, s) => sum + s.students.length, 0);
   const pendingSubmissions = submissions.filter(s => s.status === "submitted").length;
-  const gradedSubmissions = submissions.filter(s => s.status === "graded").length;
-  const totalMaterials = courses.reduce((sum, c) => sum + (c.id === 1 ? 12 : c.id === 4 ? 8 : 6), 0);
+  const totalMaterials = materialWeeks.reduce((sum, w) => sum + w.materials.length, 0);
 
   // Pending tasks for lecturer
   const pendingTasks = [
@@ -79,7 +75,7 @@ export function LecturerDashboard() {
   // Calculate students per course from schedules
   const getCourseStudents = (courseId: number) => {
     const courseSchedules = mySchedules.filter(s => 
-      courses.find(c => c.id === courseId)?.name === s.course
+      lecturerCourses.find(c => c.id === courseId)?.name === s.course
     );
     const uniqueStudents = new Set<string>();
     courseSchedules.forEach(s => s.students.forEach(st => uniqueStudents.add(st.nim)));
@@ -233,7 +229,7 @@ export function LecturerDashboard() {
           </button>
         </div>
         <div className="grid grid-cols-3 gap-4">
-          {courses.map((course, index) => {
+          {lecturerCourses.map((course, index) => {
             const students = getCourseStudents(course.id);
             const materials = course.id === 1 ? 12 : course.id === 4 ? 8 : 6;
             return (

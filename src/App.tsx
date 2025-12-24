@@ -43,7 +43,7 @@ const App = () => (
             <Route path="/admin" element={<DashboardLayout><AdminDashboard /></DashboardLayout>} />
             <Route path="/lecturer" element={<DashboardLayout><LecturerDashboard /></DashboardLayout>} />
             <Route path="/dashboard" element={<DashboardLayout><StudentDashboard /></DashboardLayout>} />
-            <Route path="/course/:courseId" element={<CourseDetailPage />} />
+            <Route path="/course/:courseId" element={<DashboardLayout><CourseDetailPage /></DashboardLayout>} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/settings" element={<Settings />} />

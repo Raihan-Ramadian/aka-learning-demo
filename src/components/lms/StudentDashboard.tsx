@@ -11,19 +11,12 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
-const courses = [
-  { id: 1, name: "Kimia Dasar", code: "KIM101", lecturer: "Dr. Ahmad Wijaya", color: "from-blue-500 to-cyan-500" },
-  { id: 2, name: "Biokimia", code: "BIO201", lecturer: "Prof. Sari Dewi", color: "from-emerald-500 to-teal-500" },
-  { id: 3, name: "Kimia Analitik", code: "KIM202", lecturer: "Dr. Rudi Hartono", color: "from-violet-500 to-purple-500" },
-  { id: 4, name: "Kimia Organik", code: "KIM301", lecturer: "Dr. Maya Putri", color: "from-orange-500 to-amber-500" },
-];
-
 const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 
 export function StudentDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getStudentSchedules, submissions, tasks } = useAcademicData();
+  const { courses, getStudentSchedules, submissions, tasks } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
   
