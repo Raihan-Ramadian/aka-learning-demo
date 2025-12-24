@@ -326,29 +326,83 @@ export function AdminDashboard() {
       return;
     }
     
-    // Simulate CSV import by adding sample data based on type
-    if (importDataType === "mahasiswa") {
-      importStudentsFromCSV([
-        { name: "Import Student 1", nim: "2024100", prodi: "D3 Analisis Kimia", email: "import1@mhs.aka.ac.id", status: "Aktif", phone: "-", address: "-", angkatan: "2024" },
-        { name: "Import Student 2", nim: "2024101", prodi: "D3 Teknik Informatika", email: "import2@mhs.aka.ac.id", status: "Aktif", phone: "-", address: "-", angkatan: "2024" },
-      ]);
-    } else if (importDataType === "dosen") {
-      importLecturersFromCSV([
-        { name: "Import Dosen 1", nip: "199001010001", prodi: "D3 Analisis Kimia", email: "importdosen@dosen.aka.ac.id", status: "Aktif", phone: "-", address: "-", jabatan: "Dosen" },
-      ]);
-    } else if (importDataType === "matkul") {
-      importCoursesFromCSV([
-        { name: "Import Matkul 1", code: "IMP101", lecturer: "Dr. Import", color: "from-pink-500 to-rose-500", prodi: "D3 Analisis Kimia", semester: 1, sks: 3, classes: 1 },
-        { name: "Import Matkul 2", code: "IMP102", lecturer: "Prof. Import", color: "from-emerald-500 to-teal-500", prodi: "D3 Teknik Informatika", semester: 2, sks: 2, classes: 1 },
-      ]);
-    }
-    
-    toast({
-      title: "Data berhasil di-import!",
-      description: `File ${importedFile.name} telah diproses dan data ditambahkan.`,
-    });
-    setImportOpen(false);
-    setImportedFile(null);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      // Skip header row
+      const dataLines = lines.slice(1);
+      
+      if (importDataType === "mahasiswa") {
+        const studentsData: Omit<ManagedStudent, 'id'>[] = dataLines.map(line => {
+          const [nim, name, prodi, email, status, phone, address, angkatan] = line.split(',').map(s => s.trim().replace(/"/g, ''));
+          return {
+            name: name || "",
+            nim: nim || "",
+            prodi: prodi || "D3 Analisis Kimia",
+            email: email || `${nim}@mhs.aka.ac.id`,
+            status: (status === "Aktif" || status === "Cuti" || status === "Alumni" ? status : "Aktif") as "Aktif" | "Cuti" | "Alumni",
+            phone: phone || "-",
+            address: address || "-",
+            angkatan: angkatan || new Date().getFullYear().toString(),
+          };
+        }).filter(s => s.nim && s.name);
+        
+        if (studentsData.length > 0) {
+          importStudentsFromCSV(studentsData);
+          toast({ title: `${studentsData.length} mahasiswa berhasil di-import!`, description: `Data dari ${importedFile.name} telah ditambahkan.` });
+        } else {
+          toast({ title: "Tidak ada data valid dalam file CSV!", variant: "destructive" });
+        }
+      } else if (importDataType === "dosen") {
+        const lecturersData: Omit<ManagedLecturer, 'id'>[] = dataLines.map(line => {
+          const [nip, name, prodi, email, status, phone, address, jabatan] = line.split(',').map(s => s.trim().replace(/"/g, ''));
+          return {
+            name: name || "",
+            nip: nip || "",
+            prodi: prodi || "D3 Analisis Kimia",
+            email: email || `${nip}@dosen.aka.ac.id`,
+            status: (status === "Aktif" || status === "Cuti" ? status : "Aktif") as "Aktif" | "Cuti",
+            phone: phone || "-",
+            address: address || "-",
+            jabatan: jabatan || "Dosen",
+          };
+        }).filter(l => l.nip && l.name);
+        
+        if (lecturersData.length > 0) {
+          importLecturersFromCSV(lecturersData);
+          toast({ title: `${lecturersData.length} dosen berhasil di-import!`, description: `Data dari ${importedFile.name} telah ditambahkan.` });
+        } else {
+          toast({ title: "Tidak ada data valid dalam file CSV!", variant: "destructive" });
+        }
+      } else if (importDataType === "matkul") {
+        const coursesData: Omit<Course, 'id'>[] = dataLines.map(line => {
+          const [code, name, lecturer, prodi, semester, sks] = line.split(',').map(s => s.trim().replace(/"/g, ''));
+          return {
+            name: name || "",
+            code: code || "",
+            lecturer: lecturer || "",
+            prodi: prodi || "D3 Analisis Kimia",
+            semester: parseInt(semester) || 1,
+            sks: parseInt(sks) || 3,
+            color: "from-blue-500 to-cyan-500",
+            classes: 1,
+          };
+        }).filter(c => c.code && c.name);
+        
+        if (coursesData.length > 0) {
+          importCoursesFromCSV(coursesData);
+          toast({ title: `${coursesData.length} mata kuliah berhasil di-import!`, description: `Data dari ${importedFile.name} telah ditambahkan.` });
+        } else {
+          toast({ title: "Tidak ada data valid dalam file CSV!", variant: "destructive" });
+        }
+      }
+      
+      setImportOpen(false);
+      setImportedFile(null);
+    };
+    reader.readAsText(importedFile);
   };
 
   // Course handlers
