@@ -7,6 +7,33 @@ export interface Student {
   nim: string;
 }
 
+export interface Course {
+  id: number;
+  name: string;
+  code: string;
+  lecturer: string;
+  color: string;
+  classes?: number;
+}
+
+export interface Material {
+  id: number;
+  weekId: number;
+  courseId: number;
+  name: string;
+  type: "pdf" | "video";
+  size?: string;
+  duration?: string;
+}
+
+export interface MaterialWeek {
+  id: number;
+  courseId: number;
+  week: string;
+  title: string;
+  materials: Material[];
+}
+
 export interface ClassSchedule {
   id: number;
   className: string;
@@ -55,6 +82,38 @@ export interface Task {
 }
 
 // Initial Data
+const initialCourses: Course[] = [
+  { id: 1, name: "Kimia Dasar", code: "KIM101", lecturer: "Dr. Ahmad Wijaya", color: "from-blue-500 to-cyan-500", classes: 2 },
+  { id: 2, name: "Biokimia", code: "BIO201", lecturer: "Prof. Sari Dewi", color: "from-emerald-500 to-teal-500", classes: 2 },
+  { id: 3, name: "Kimia Analitik", code: "KIM202", lecturer: "Dr. Rudi Hartono", color: "from-violet-500 to-purple-500", classes: 1 },
+  { id: 4, name: "Kimia Organik", code: "KIM301", lecturer: "Dr. Maya Putri", color: "from-orange-500 to-amber-500", classes: 3 },
+  { id: 5, name: "Praktikum Kimia", code: "KIM102", lecturer: "Dr. Ahmad Wijaya", color: "from-violet-500 to-purple-500", classes: 4 },
+];
+
+const initialMaterialWeeks: MaterialWeek[] = [
+  {
+    id: 1, courseId: 1, week: "Pertemuan 1", title: "Pengenalan Kimia Dasar",
+    materials: [
+      { id: 1, weekId: 1, courseId: 1, name: "Slide Pengantar Kimia.pdf", type: "pdf", size: "2.4 MB" },
+      { id: 2, weekId: 1, courseId: 1, name: "Video Penjelasan Atom.mp4", type: "video", duration: "15:30" },
+    ],
+  },
+  {
+    id: 2, courseId: 1, week: "Pertemuan 2", title: "Struktur Atom dan Tabel Periodik",
+    materials: [
+      { id: 3, weekId: 2, courseId: 1, name: "Modul Struktur Atom.pdf", type: "pdf", size: "3.1 MB" },
+      { id: 4, weekId: 2, courseId: 1, name: "Latihan Soal Bab 2.pdf", type: "pdf", size: "1.2 MB" },
+      { id: 5, weekId: 2, courseId: 1, name: "Tutorial Tabel Periodik.mp4", type: "video", duration: "22:45" },
+    ],
+  },
+  {
+    id: 3, courseId: 1, week: "Pertemuan 3", title: "Ikatan Kimia",
+    materials: [
+      { id: 6, weekId: 3, courseId: 1, name: "Slide Ikatan Kimia.pdf", type: "pdf", size: "4.0 MB" },
+    ],
+  },
+];
+
 const initialAcademicEvents: AcademicEvent[] = [
   { id: 1, title: "UAS Semester Ganjil", dateRange: "16 - 27 Des", type: "uas", description: "Ujian Akhir Semester Ganjil 2024/2025" },
   { id: 2, title: "Libur Akhir Tahun", dateRange: "28 Des - 5 Jan", type: "libur", description: "Libur Natal dan Tahun Baru" },
@@ -63,13 +122,8 @@ const initialAcademicEvents: AcademicEvent[] = [
 
 const initialSchedules: ClassSchedule[] = [
   { 
-    id: 1, 
-    className: "D3-AK-2A", 
-    course: "Kimia Dasar", 
-    lecturer: "Dr. Ahmad Wijaya", 
-    day: "Senin", 
-    time: "08:00 - 09:40", 
-    room: "Lab Kimia A", 
+    id: 1, className: "D3-AK-2A", course: "Kimia Dasar", lecturer: "Dr. Ahmad Wijaya", 
+    day: "Senin", time: "08:00 - 09:40", room: "Lab Kimia A", 
     students: [
       { id: 1, name: "Siti Rahayu", nim: "2024001" },
       { id: 2, name: "Ahmad Fadli", nim: "2024002" },
@@ -78,13 +132,8 @@ const initialSchedules: ClassSchedule[] = [
     color: "bg-primary/10 border-primary/30 text-primary"
   },
   { 
-    id: 2, 
-    className: "D3-AK-2B", 
-    course: "Kimia Dasar", 
-    lecturer: "Dr. Ahmad Wijaya", 
-    day: "Rabu", 
-    time: "08:00 - 09:40", 
-    room: "Lab Kimia A", 
+    id: 2, className: "D3-AK-2B", course: "Kimia Dasar", lecturer: "Dr. Ahmad Wijaya", 
+    day: "Rabu", time: "08:00 - 09:40", room: "Lab Kimia A", 
     students: [
       { id: 4, name: "Budi Santoso", nim: "2024010" },
       { id: 5, name: "Dewi Lestari", nim: "2024011" },
@@ -92,13 +141,8 @@ const initialSchedules: ClassSchedule[] = [
     color: "bg-success/10 border-success/30 text-success"
   },
   { 
-    id: 3, 
-    className: "D3-AK-2A", 
-    course: "Kimia Organik", 
-    lecturer: "Prof. Sari Dewi", 
-    day: "Selasa", 
-    time: "08:00 - 09:40", 
-    room: "Lab Kimia B", 
+    id: 3, className: "D3-AK-2A", course: "Kimia Organik", lecturer: "Prof. Sari Dewi", 
+    day: "Selasa", time: "08:00 - 09:40", room: "Lab Kimia B", 
     students: [
       { id: 1, name: "Siti Rahayu", nim: "2024001" },
       { id: 2, name: "Ahmad Fadli", nim: "2024002" },
@@ -107,59 +151,32 @@ const initialSchedules: ClassSchedule[] = [
     color: "bg-warning/10 border-warning/30 text-warning"
   },
   { 
-    id: 4, 
-    className: "D3-AK-3A", 
-    course: "Biokimia", 
-    lecturer: "Pak Budi Santoso", 
-    day: "Selasa", 
-    time: "13:00 - 14:40", 
-    room: "R. 302", 
-    students: [
-      { id: 6, name: "Eko Prasetyo", nim: "2023008" },
-    ],
+    id: 4, className: "D3-AK-3A", course: "Biokimia", lecturer: "Pak Budi Santoso", 
+    day: "Selasa", time: "13:00 - 14:40", room: "R. 302", 
+    students: [{ id: 6, name: "Eko Prasetyo", nim: "2023008" }],
     color: "bg-accent border-accent text-accent-foreground"
   },
   { 
-    id: 5, 
-    className: "D4-AK-4A", 
-    course: "Analisis Instrumen", 
-    lecturer: "Prof. Sari Dewi", 
-    day: "Kamis", 
-    time: "13:00 - 15:30", 
-    room: "Lab Instrumen", 
+    id: 5, className: "D4-AK-4A", course: "Analisis Instrumen", lecturer: "Prof. Sari Dewi", 
+    day: "Kamis", time: "13:00 - 15:30", room: "Lab Instrumen", 
     students: [],
     color: "bg-destructive/10 border-destructive/30 text-destructive"
   },
   { 
-    id: 6, 
-    className: "D3-TI-2A", 
-    course: "Pemrograman Dasar", 
-    lecturer: "Pak Eko Prasetyo", 
-    day: "Senin", 
-    time: "10:00 - 11:40", 
-    room: "Lab Komputer", 
+    id: 6, className: "D3-TI-2A", course: "Pemrograman Dasar", lecturer: "Pak Eko Prasetyo", 
+    day: "Senin", time: "10:00 - 11:40", room: "Lab Komputer", 
     students: [],
     color: "bg-primary/10 border-primary/30 text-primary"
   },
   { 
-    id: 7, 
-    className: "D3-TI-2A", 
-    course: "Basis Data", 
-    lecturer: "Dr. Rina Wulandari", 
-    day: "Rabu", 
-    time: "13:00 - 14:40", 
-    room: "Lab Komputer", 
+    id: 7, className: "D3-TI-2A", course: "Basis Data", lecturer: "Dr. Rina Wulandari", 
+    day: "Rabu", time: "13:00 - 14:40", room: "Lab Komputer", 
     students: [],
     color: "bg-success/10 border-success/30 text-success"
   },
   { 
-    id: 8, 
-    className: "D3-AK-2A", 
-    course: "Matematika Terapan", 
-    lecturer: "Prof. Sari Dewi", 
-    day: "Senin", 
-    time: "10:00 - 11:40", 
-    room: "R. 201", 
+    id: 8, className: "D3-AK-2A", course: "Matematika Terapan", lecturer: "Prof. Sari Dewi", 
+    day: "Senin", time: "10:00 - 11:40", room: "R. 201", 
     students: [
       { id: 1, name: "Siti Rahayu", nim: "2024001" },
       { id: 2, name: "Ahmad Fadli", nim: "2024002" },
@@ -188,6 +205,10 @@ const initialSubmissions: TaskSubmission[] = [
 ];
 
 interface AcademicDataContextType {
+  courses: Course[];
+  setCourses: React.Dispatch<React.SetStateAction<Course[]>>;
+  materialWeeks: MaterialWeek[];
+  setMaterialWeeks: React.Dispatch<React.SetStateAction<MaterialWeek[]>>;
   academicEvents: AcademicEvent[];
   setAcademicEvents: React.Dispatch<React.SetStateAction<AcademicEvent[]>>;
   schedules: ClassSchedule[];
@@ -206,11 +227,17 @@ interface AcademicDataContextType {
   updateSubmissionGrade: (submissionId: number, grade: number | null, lecturerNote: string | null) => void;
   getTasksByCourse: (courseId: number) => Task[];
   getSubmissionsByTask: (taskId: number) => TaskSubmission[];
+  getMaterialsByCourse: (courseId: number) => MaterialWeek[];
+  deleteTask: (taskId: number) => void;
+  deleteMaterial: (materialId: number) => void;
+  deleteSchedule: (scheduleId: number) => void;
 }
 
 const AcademicDataContext = createContext<AcademicDataContextType | undefined>(undefined);
 
 export function AcademicDataProvider({ children }: { children: ReactNode }) {
+  const [courses, setCourses] = useState<Course[]>(initialCourses);
+  const [materialWeeks, setMaterialWeeks] = useState<MaterialWeek[]>(initialMaterialWeeks);
   const [academicEvents, setAcademicEvents] = useState<AcademicEvent[]>(initialAcademicEvents);
   const [schedules, setSchedules] = useState<ClassSchedule[]>(initialSchedules);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -274,8 +301,32 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
     return submissions.filter(s => s.taskId === taskId);
   };
 
+  const getMaterialsByCourse = (courseId: number): MaterialWeek[] => {
+    return materialWeeks.filter(w => w.courseId === courseId);
+  };
+
+  const deleteTask = (taskId: number) => {
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+    setSubmissions(prev => prev.filter(s => s.taskId !== taskId));
+  };
+
+  const deleteMaterial = (materialId: number) => {
+    setMaterialWeeks(prev => prev.map(week => ({
+      ...week,
+      materials: week.materials.filter(m => m.id !== materialId)
+    })));
+  };
+
+  const deleteSchedule = (scheduleId: number) => {
+    setSchedules(prev => prev.filter(s => s.id !== scheduleId));
+  };
+
   return (
     <AcademicDataContext.Provider value={{
+      courses,
+      setCourses,
+      materialWeeks,
+      setMaterialWeeks,
       academicEvents,
       setAcademicEvents,
       schedules,
@@ -294,6 +345,10 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
       updateSubmissionGrade,
       getTasksByCourse,
       getSubmissionsByTask,
+      getMaterialsByCourse,
+      deleteTask,
+      deleteMaterial,
+      deleteSchedule,
     }}>
       {children}
     </AcademicDataContext.Provider>

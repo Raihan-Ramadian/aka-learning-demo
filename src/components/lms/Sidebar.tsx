@@ -31,6 +31,10 @@ export function Sidebar() {
     if (path === dashboardPath) {
       return location.pathname === "/admin" || location.pathname === "/lecturer" || location.pathname === "/dashboard";
     }
+    // Check if we're on courses or course detail page
+    if (path === "/courses") {
+      return location.pathname === "/courses" || location.pathname.startsWith("/course/");
+    }
     return location.pathname === path;
   };
 
