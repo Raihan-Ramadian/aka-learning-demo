@@ -1,22 +1,20 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { CourseDetail } from "@/components/lms/CourseDetail";
 import { getUserRole } from "@/types/roles";
-
-// Mock course data (same as in dashboards)
-const coursesData: Record<string, { id: number; name: string; code: string; lecturer: string; color: string }> = {
-  "1": { id: 1, name: "Kimia Dasar", code: "KIM101", lecturer: "Dr. Ahmad Wijaya", color: "from-blue-500 to-cyan-500" },
-  "2": { id: 2, name: "Biokimia", code: "BIO201", lecturer: "Prof. Sari Dewi", color: "from-emerald-500 to-teal-500" },
-  "3": { id: 3, name: "Kimia Analitik", code: "KIM202", lecturer: "Dr. Rudi Hartono", color: "from-violet-500 to-purple-500" },
-  "4": { id: 4, name: "Kimia Organik", code: "KIM301", lecturer: "Dr. Maya Putri", color: "from-orange-500 to-amber-500" },
-  "5": { id: 5, name: "Praktikum Kimia", code: "KIM102", lecturer: "Pak Budi", color: "from-violet-500 to-purple-500" },
-};
+import { useAcademicData } from "@/contexts/AcademicDataContext";
 
 export function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const currentRole = getUserRole();
   
-  const course = courseId ? coursesData[courseId] : null;
+  // Get courses from context for dynamic data
+  const { courses, getMaterialsByCourse } = useAcademicData();
+  
+  // Find course using string comparison to handle both number and string IDs
+  const course = courseId 
+    ? courses.find(c => String(c.id) === String(courseId))
+    : null;
   
   if (!course) {
     return (
@@ -25,7 +23,7 @@ export function CourseDetailPage() {
         <p className="mt-2 text-muted-foreground">Mata kuliah yang Anda cari tidak tersedia.</p>
         <button
           onClick={() => navigate(-1)}
-          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           Kembali
         </button>
