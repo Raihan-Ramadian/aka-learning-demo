@@ -231,6 +231,11 @@ interface AcademicDataContextType {
   deleteTask: (taskId: number) => void;
   deleteMaterial: (materialId: number) => void;
   deleteSchedule: (scheduleId: number) => void;
+  addTask: (task: Omit<Task, 'id'>) => void;
+  addMaterial: (weekId: number, courseId: number, material: Omit<Material, 'id' | 'weekId' | 'courseId'>) => void;
+  addMaterialWeek: (courseId: number, week: string, title: string) => number;
+  addSchedule: (schedule: Omit<ClassSchedule, 'id'>) => void;
+  submitAssignment: (taskId: number, courseId: number, studentNim: string, studentName: string, fileName: string) => void;
 }
 
 const AcademicDataContext = createContext<AcademicDataContextType | undefined>(undefined);
@@ -321,6 +326,74 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
     setSchedules(prev => prev.filter(s => s.id !== scheduleId));
   };
 
+  const addTask = (task: Omit<Task, 'id'>) => {
+    const newTask: Task = {
+      ...task,
+      id: Date.now(),
+    };
+    setTasks(prev => [...prev, newTask]);
+  };
+
+  const addMaterial = (weekId: number, courseId: number, material: Omit<Material, 'id' | 'weekId' | 'courseId'>) => {
+    const newMaterial: Material = {
+      ...material,
+      id: Date.now(),
+      weekId,
+      courseId,
+    };
+    setMaterialWeeks(prev => prev.map(week => 
+      week.id === weekId 
+        ? { ...week, materials: [...week.materials, newMaterial] }
+        : week
+    ));
+  };
+
+  const addMaterialWeek = (courseId: number, week: string, title: string): number => {
+    const newWeekId = Date.now();
+    const newWeek: MaterialWeek = {
+      id: newWeekId,
+      courseId,
+      week,
+      title,
+      materials: [],
+    };
+    setMaterialWeeks(prev => [...prev, newWeek]);
+    return newWeekId;
+  };
+
+  const addSchedule = (schedule: Omit<ClassSchedule, 'id'>) => {
+    const newSchedule: ClassSchedule = {
+      ...schedule,
+      id: Date.now(),
+    };
+    setSchedules(prev => [...prev, newSchedule]);
+  };
+
+  const submitAssignment = (taskId: number, courseId: number, studentNim: string, studentName: string, fileName: string) => {
+    const existingSubmission = submissions.find(s => s.taskId === taskId && s.studentNim === studentNim);
+    if (existingSubmission) {
+      setSubmissions(prev => prev.map(s => 
+        s.taskId === taskId && s.studentNim === studentNim
+          ? { ...s, status: "submitted" as const, fileName, submittedAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) }
+          : s
+      ));
+    } else {
+      const newSubmission: TaskSubmission = {
+        id: Date.now(),
+        taskId,
+        courseId,
+        studentNim,
+        studentName,
+        status: "submitted",
+        fileName,
+        grade: null,
+        lecturerNote: null,
+        submittedAt: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+      };
+      setSubmissions(prev => [...prev, newSubmission]);
+    }
+  };
+
   return (
     <AcademicDataContext.Provider value={{
       courses,
@@ -349,6 +422,11 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
       deleteTask,
       deleteMaterial,
       deleteSchedule,
+      addTask,
+      addMaterial,
+      addMaterialWeek,
+      addSchedule,
+      submitAssignment,
     }}>
       {children}
     </AcademicDataContext.Provider>

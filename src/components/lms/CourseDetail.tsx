@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowLeft, Plus, FileText, Video, Download, Upload, Users, Calendar, Clock, GripVertical, Check, X, Link, Paperclip, MessageSquare, Trash2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { ArrowLeft, Plus, FileText, Video, Download, Upload, Users, Calendar, Clock, Check, X, Link, Paperclip, MessageSquare, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAcademicData } from "@/contexts/AcademicDataContext";
 import { useToast } from "@/hooks/use-toast";
+import { downloadCSV, generateGradeReportCSV } from "@/lib/file-utils";
 
 interface CourseDetailProps {
   course: {
@@ -40,48 +41,22 @@ interface CourseDetailProps {
   onBack: () => void;
 }
 
-const materialsData = [
-  {
-    id: 1,
-    week: "Pertemuan 1",
-    title: "Pengenalan Kimia Dasar",
-    materials: [
-      { id: 1, name: "Slide Pengantar Kimia.pdf", type: "pdf", size: "2.4 MB" },
-      { id: 2, name: "Video Penjelasan Atom.mp4", type: "video", duration: "15:30" },
-    ],
-  },
-  {
-    id: 2,
-    week: "Pertemuan 2",
-    title: "Struktur Atom dan Tabel Periodik",
-    materials: [
-      { id: 3, name: "Modul Struktur Atom.pdf", type: "pdf", size: "3.1 MB" },
-      { id: 4, name: "Latihan Soal Bab 2.pdf", type: "pdf", size: "1.2 MB" },
-      { id: 5, name: "Tutorial Tabel Periodik.mp4", type: "video", duration: "22:45" },
-    ],
-  },
-  {
-    id: 3,
-    week: "Pertemuan 3",
-    title: "Ikatan Kimia",
-    materials: [
-      { id: 6, name: "Slide Ikatan Kimia.pdf", type: "pdf", size: "4.0 MB" },
-    ],
-  },
-];
-
-const membersData = [
-  { id: 1, name: "Siti Rahayu", nim: "2024001", email: "siti@mhs.aka.ac.id" },
-  { id: 2, name: "Ahmad Fadli", nim: "2024002", email: "ahmad@mhs.aka.ac.id" },
-  { id: 3, name: "Dewi Lestari", nim: "2024003", email: "dewi@mhs.aka.ac.id" },
-  { id: 4, name: "Rina Wulandari", nim: "2024005", email: "rina@mhs.aka.ac.id" },
-  { id: 5, name: "Eko Prasetyo", nim: "2023008", email: "eko@mhs.aka.ac.id" },
-  { id: 6, name: "Maya Putri", nim: "2024007", email: "maya@mhs.aka.ac.id" },
-];
-
 export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
   const { toast } = useToast();
-  const { tasks, submissions, getTasksByCourse, getSubmissionsByTask, updateSubmissionGrade, getStudentSubmission, deleteTask, deleteMaterial } = useAcademicData();
+  const { 
+    tasks, 
+    getTasksByCourse, 
+    getSubmissionsByTask, 
+    updateSubmissionGrade, 
+    getStudentSubmission, 
+    deleteTask, 
+    deleteMaterial,
+    addTask,
+    addMaterial,
+    addMaterialWeek,
+    getMaterialsByCourse,
+    submitAssignment
+  } = useAcademicData();
   
   const [addMaterialOpen, setAddMaterialOpen] = useState(false);
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false);
@@ -97,10 +72,33 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
   const [materialToDelete, setMaterialToDelete] = useState<number | null>(null);
 
+  // Form states for new material
+  const [newMaterialTitle, setNewMaterialTitle] = useState("");
+  const [newMaterialWeek, setNewMaterialWeek] = useState("Pertemuan 1");
+  const [newMaterialFile, setNewMaterialFile] = useState<File | null>(null);
+  const [newMaterialVideoUrl, setNewMaterialVideoUrl] = useState("");
+  const materialFileRef = useRef<HTMLInputElement>(null);
+
+  // Form states for new task
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskDescription, setNewTaskDescription] = useState("");
+  const [newTaskDeadline, setNewTaskDeadline] = useState("");
+  const [newTaskMaxScore, setNewTaskMaxScore] = useState("100");
+  const [newTaskFile, setNewTaskFile] = useState<File | null>(null);
+  const [newTaskLink, setNewTaskLink] = useState("");
+  const [newTaskNotes, setNewTaskNotes] = useState("");
+  const taskFileRef = useRef<HTMLInputElement>(null);
+
+  // Student submission state
+  const [studentSubmissionFile, setStudentSubmissionFile] = useState<File | null>(null);
+  const studentFileRef = useRef<HTMLInputElement>(null);
+
   const isLecturer = userRole === "lecturer";
   const studentNim = "2024001"; // Simulated student
+  const studentName = "Siti Rahayu";
   
   const courseTasks = getTasksByCourse(course.id);
+  const courseMaterials = getMaterialsByCourse(course.id);
   const assignmentsData = courseTasks.map(task => {
     const submission = getStudentSubmission(task.id, studentNim);
     return {
@@ -376,11 +374,11 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
               )}
 
               <Accordion type="multiple" className="space-y-3">
-                {materialsData.map((week, index) => (
+                {courseMaterials.map((week, index) => (
                   <AccordionItem key={week.id} value={`week-${week.id}`} className="rounded-xl border border-border bg-card overflow-hidden animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
                     <AccordionTrigger className="px-4 py-3 hover:bg-muted/50 hover:no-underline [&[data-state=open]]:bg-muted/50">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{week.id}</div>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{index + 1}</div>
                         <div className="text-left"><p className="font-semibold text-foreground">{week.week}</p><p className="text-sm text-muted-foreground">{week.title}</p></div>
                       </div>
                     </AccordionTrigger>
@@ -409,10 +407,19 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                             </div>
                           </div>
                         ))}
+                        {week.materials.length === 0 && (
+                          <p className="text-sm text-muted-foreground text-center py-4">Belum ada materi untuk pertemuan ini</p>
+                        )}
                       </div>
                     </AccordionContent>
                   </AccordionItem>
                 ))}
+                {courseMaterials.length === 0 && (
+                  <div className="rounded-xl border border-border bg-card p-8 text-center">
+                    <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <p className="mt-2 text-muted-foreground">Belum ada materi untuk mata kuliah ini</p>
+                  </div>
+                )}
               </Accordion>
             </div>
           </TabsContent>
@@ -553,14 +560,71 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                           </div>
                         )}
                         <div>
-                          <label className="text-sm font-medium text-foreground">Upload File</label>
-                          <div onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={() => setDragOver(false)} className={cn("mt-1.5 rounded-lg border-2 border-dashed p-6 text-center transition-all", dragOver ? "border-primary bg-primary/5" : "border-border bg-muted/30")}>
-                            <GripVertical className="mx-auto h-8 w-8 text-muted-foreground" />
-                            <p className="mt-2 font-medium text-foreground">Drag & drop file tugas Anda di sini</p>
-                            <p className="mt-1 text-sm text-muted-foreground">atau <span className="text-primary cursor-pointer hover:underline">browse file</span></p>
+                          <label className="text-sm font-medium text-foreground">Upload File Tugas</label>
+                          <input 
+                            ref={studentFileRef}
+                            type="file"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) setStudentSubmissionFile(file);
+                            }}
+                          />
+                          <div 
+                            onClick={() => studentFileRef.current?.click()}
+                            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} 
+                            onDragLeave={() => setDragOver(false)} 
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              setDragOver(false);
+                              const file = e.dataTransfer.files[0];
+                              if (file) setStudentSubmissionFile(file);
+                            }} 
+                            className={cn("mt-1.5 rounded-lg border-2 border-dashed p-6 text-center transition-all cursor-pointer", 
+                              dragOver ? "border-primary bg-primary/5" : 
+                              studentSubmissionFile ? "border-success bg-success/5" : "border-border bg-muted/30 hover:border-primary/50"
+                            )}
+                          >
+                            {studentSubmissionFile ? (
+                              <div className="flex items-center justify-center gap-3">
+                                <Check className="h-5 w-5 text-success" />
+                                <span className="font-medium text-success">{studentSubmissionFile.name}</span>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); setStudentSubmissionFile(null); }}
+                                  className="p-1 rounded hover:bg-destructive/10"
+                                >
+                                  <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                                <p className="mt-2 font-medium text-foreground">Drag & drop file tugas Anda di sini</p>
+                                <p className="mt-1 text-sm text-muted-foreground">atau <span className="text-primary cursor-pointer hover:underline">browse file</span></p>
+                              </>
+                            )}
                           </div>
                         </div>
-                        <button onClick={() => toast({ title: "Tugas berhasil diupload!" })} className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"><Upload className="mr-2 inline h-4 w-4" />Upload Tugas</button>
+                        <button 
+                          onClick={() => {
+                            if (studentSubmissionFile) {
+                              submitAssignment(assignment.id, course.id, studentNim, studentName, studentSubmissionFile.name);
+                              toast({ title: "Tugas berhasil diupload!", description: `File ${studentSubmissionFile.name} telah dikumpulkan.` });
+                              setStudentSubmissionFile(null);
+                            } else {
+                              toast({ title: "Pilih file terlebih dahulu", variant: "destructive" });
+                            }
+                          }} 
+                          disabled={!studentSubmissionFile}
+                          className={cn(
+                            "w-full rounded-lg py-2.5 text-sm font-medium transition-colors",
+                            studentSubmissionFile 
+                              ? "bg-primary text-primary-foreground hover:bg-primary-hover" 
+                              : "bg-muted text-muted-foreground cursor-not-allowed"
+                          )}
+                        >
+                          <Upload className="mr-2 inline h-4 w-4" />Upload Tugas
+                        </button>
                       </div>
                     )}
 
@@ -584,11 +648,18 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
               <div className="border-b border-border bg-muted/50 p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-foreground">Daftar Mahasiswa</h3>
-                  <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">{membersData.length} Mahasiswa</span>
+                  <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">6 Mahasiswa</span>
                 </div>
               </div>
               <div className="divide-y divide-border">
-                {membersData.map((member, index) => (
+                {[
+                  { id: 1, name: "Siti Rahayu", nim: "2024001", email: "siti@mhs.aka.ac.id" },
+                  { id: 2, name: "Ahmad Fadli", nim: "2024002", email: "ahmad@mhs.aka.ac.id" },
+                  { id: 3, name: "Dewi Lestari", nim: "2024003", email: "dewi@mhs.aka.ac.id" },
+                  { id: 4, name: "Rina Wulandari", nim: "2024005", email: "rina@mhs.aka.ac.id" },
+                  { id: 5, name: "Eko Prasetyo", nim: "2023008", email: "eko@mhs.aka.ac.id" },
+                  { id: 6, name: "Maya Putri", nim: "2024007", email: "maya@mhs.aka.ac.id" },
+                ].map((member, index) => (
                   <div key={member.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{member.name.charAt(0)}</div>
                     <div className="flex-1"><p className="font-medium text-foreground">{member.name}</p><p className="text-sm text-muted-foreground">{member.nim}</p></div>
