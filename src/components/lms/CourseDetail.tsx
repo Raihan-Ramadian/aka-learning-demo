@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { ArrowLeft, Plus, FileText, Video, Download, Upload, Users, Calendar, Clock, Check, X, Link, Paperclip, MessageSquare, Trash2 } from "lucide-react";
+import { FileDropZone } from "@/components/ui/file-dropzone";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
@@ -440,13 +441,30 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                       <div className="space-y-4 pt-4">
                         <div>
                           <label className="text-sm font-medium text-foreground">Pertemuan</label>
-                          <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                            <option>Pertemuan 1</option><option>Pertemuan 2</option><option>Pertemuan 3</option><option>Pertemuan 4</option>
+                          <select 
+                            value={newMaterialWeek}
+                            onChange={(e) => setNewMaterialWeek(e.target.value)}
+                            className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                          >
+                            <option value="Pertemuan 1">Pertemuan 1</option>
+                            <option value="Pertemuan 2">Pertemuan 2</option>
+                            <option value="Pertemuan 3">Pertemuan 3</option>
+                            <option value="Pertemuan 4">Pertemuan 4</option>
+                            <option value="Pertemuan 5">Pertemuan 5</option>
+                            <option value="Pertemuan 6">Pertemuan 6</option>
+                            <option value="Pertemuan 7">Pertemuan 7</option>
+                            <option value="Pertemuan 8">Pertemuan 8</option>
                           </select>
                         </div>
                         <div>
                           <label className="text-sm font-medium text-foreground">Judul Materi</label>
-                          <input type="text" placeholder="Masukkan judul materi" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                          <input 
+                            type="text" 
+                            value={newMaterialTitle}
+                            onChange={(e) => setNewMaterialTitle(e.target.value)}
+                            placeholder="Masukkan judul materi" 
+                            className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                          />
                         </div>
                         <div>
                           <label className="text-sm font-medium text-foreground">Jenis Materi</label>
@@ -458,24 +476,96 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                         {materialType === "document" ? (
                           <div className="animate-fade-in">
                             <label className="text-sm font-medium text-foreground">Upload Dokumen</label>
-                            <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-6 text-center hover:border-primary/50 transition-colors">
-                              <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                              <p className="mt-2 text-sm text-muted-foreground">Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span></p>
-                              <p className="mt-1 text-xs text-muted-foreground">PDF, PPT, PPTX, DOC, DOCX (max 50MB)</p>
-                            </div>
+                            <FileDropZone
+                              onFileSelect={(file) => setNewMaterialFile(file)}
+                              accept=".pdf,.ppt,.pptx,.doc,.docx"
+                              maxSize={50}
+                              className="mt-1.5"
+                              placeholder="Drag & drop file atau"
+                              acceptedFormats="PDF, PPT, PPTX, DOC, DOCX (max 50MB)"
+                            />
                           </div>
                         ) : (
                           <div className="animate-fade-in">
                             <label className="text-sm font-medium text-foreground">Link Video</label>
                             <div className="mt-1.5 relative">
                               <Video className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                              <input type="url" placeholder="Tempel link Youtube atau Google Drive di sini" className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
+                              <input 
+                                type="url" 
+                                value={newMaterialVideoUrl}
+                                onChange={(e) => setNewMaterialVideoUrl(e.target.value)}
+                                placeholder="Tempel link Youtube atau Google Drive di sini" 
+                                className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                              />
                             </div>
                           </div>
                         )}
                         <div className="flex justify-end gap-3 pt-2">
-                          <button onClick={() => { setAddMaterialOpen(false); setMaterialType("document"); }} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors">Batal</button>
-                          <button onClick={() => { setAddMaterialOpen(false); setMaterialType("document"); toast({ title: "Materi berhasil ditambahkan!" }); }} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">Simpan</button>
+                          <button 
+                            onClick={() => { 
+                              setAddMaterialOpen(false); 
+                              setMaterialType("document");
+                              setNewMaterialTitle("");
+                              setNewMaterialFile(null);
+                              setNewMaterialVideoUrl("");
+                              setNewMaterialWeek("Pertemuan 1");
+                            }} 
+                            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                          >
+                            Batal
+                          </button>
+                          <button 
+                            onClick={() => {
+                              // Validate inputs
+                              if (!newMaterialTitle.trim()) {
+                                toast({ title: "Judul materi wajib diisi!", variant: "destructive" });
+                                return;
+                              }
+                              if (materialType === "document" && !newMaterialFile) {
+                                toast({ title: "Pilih file untuk diupload!", variant: "destructive" });
+                                return;
+                              }
+                              if (materialType === "video" && !newMaterialVideoUrl.trim()) {
+                                toast({ title: "Link video wajib diisi!", variant: "destructive" });
+                                return;
+                              }
+
+                              // Find or create the week
+                              const existingWeek = courseMaterials.find(w => w.week === newMaterialWeek);
+                              
+                              if (existingWeek) {
+                                // Add material to existing week
+                                addMaterial(existingWeek.id, course.id, {
+                                  name: materialType === "document" ? (newMaterialFile?.name || newMaterialTitle) : newMaterialVideoUrl,
+                                  type: materialType === "document" ? "pdf" : "video",
+                                  size: materialType === "document" ? `${((newMaterialFile?.size || 0) / (1024 * 1024)).toFixed(1)} MB` : undefined,
+                                  duration: materialType === "video" ? "Video Link" : undefined,
+                                });
+                              } else {
+                                // Create new week and add material
+                                const newWeekId = addMaterialWeek(course.id, newMaterialWeek, newMaterialTitle);
+                                // Add the material to the newly created week
+                                addMaterial(newWeekId, course.id, {
+                                  name: materialType === "document" ? (newMaterialFile?.name || newMaterialTitle) : newMaterialVideoUrl,
+                                  type: materialType === "document" ? "pdf" : "video",
+                                  size: materialType === "document" ? `${((newMaterialFile?.size || 0) / (1024 * 1024)).toFixed(1)} MB` : undefined,
+                                  duration: materialType === "video" ? "Video Link" : undefined,
+                                });
+                              }
+
+                              // Reset form and close modal
+                              setAddMaterialOpen(false);
+                              setMaterialType("document");
+                              setNewMaterialTitle("");
+                              setNewMaterialFile(null);
+                              setNewMaterialVideoUrl("");
+                              setNewMaterialWeek("Pertemuan 1");
+                              toast({ title: "Materi berhasil ditambahkan!", description: `Materi telah ditambahkan ke ${newMaterialWeek}` });
+                            }} 
+                            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                          >
+                            Simpan
+                          </button>
                         </div>
                       </div>
                     </DialogContent>
