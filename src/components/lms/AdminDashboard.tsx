@@ -146,11 +146,13 @@ export function AdminDashboard() {
     return matchesProdi && matchesSearch;
   });
 
-  // Filtered courses
-  const filteredCourses = courses.filter(c => 
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filtered courses - only filter when mainTab is courses AND searchQuery is not empty
+  const filteredCourses = mainTab === "courses" && searchQuery.trim() 
+    ? courses.filter(c => 
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.code.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : courses;
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -868,50 +870,58 @@ export function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredCourses.map((course, index) => (
-                <tr
-                  key={course.id}
-                  className="hover:bg-muted/30 transition-colors animate-fade-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <td className="px-4 py-3">
-                    <span className={cn("rounded-md bg-gradient-to-r px-2 py-1 text-xs font-medium text-white", course.color)}>
-                      {course.code}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 font-medium text-foreground">{course.name}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{course.lecturer}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{course.prodi || "-"}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{course.sks || 3} SKS</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">Semester {course.semester || 1}</td>
-                  <td className="px-4 py-3 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="rounded-lg p-1.5 hover:bg-muted transition-colors">
-                          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-36 bg-popover border border-border shadow-lg">
-                        <DropdownMenuItem 
-                          className="cursor-pointer"
-                          onClick={() => handleEditCourse(course)}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="cursor-pointer text-destructive focus:text-destructive"
-                          onClick={() => handleDeleteCourse(course)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Hapus
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {filteredCourses.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                    {searchQuery.trim() ? "Tidak ada mata kuliah yang cocok dengan pencarian" : "Belum ada data mata kuliah"}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredCourses.map((course, index) => (
+                  <tr
+                    key={course.id}
+                    className="hover:bg-muted/30 transition-colors animate-fade-in"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <td className="px-4 py-3">
+                      <span className={cn("rounded-md bg-gradient-to-r px-2 py-1 text-xs font-medium text-white", course.color)}>
+                        {course.code}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 font-medium text-foreground">{course.name}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{course.lecturer}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{course.prodi || "-"}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{course.sks || 3} SKS</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">Semester {course.semester || 1}</td>
+                    <td className="px-4 py-3 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="rounded-lg p-1.5 hover:bg-muted transition-colors">
+                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-36 bg-popover border border-border shadow-lg">
+                          <DropdownMenuItem 
+                            className="cursor-pointer"
+                            onClick={() => handleEditCourse(course)}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="cursor-pointer text-destructive focus:text-destructive"
+                            onClick={() => handleDeleteCourse(course)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Hapus
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
