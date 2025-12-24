@@ -65,7 +65,7 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [selectedAssignment, setSelectedAssignment] = useState<Task | null>(null);
-  const [materialType, setMaterialType] = useState<"document" | "video">("document");
+  const [materialType, setMaterialType] = useState<"document" | "video" | "link">("document");
   const [grades, setGrades] = useState<Record<number, number | null>>({});
   const [notes, setNotes] = useState<Record<number, string>>({});
   
@@ -89,7 +89,7 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
   const [newMaterialTitle, setNewMaterialTitle] = useState("");
   const [newMaterialWeek, setNewMaterialWeek] = useState("Pertemuan 1");
   const [newMaterialFile, setNewMaterialFile] = useState<File | null>(null);
-  const [newMaterialVideoUrl, setNewMaterialVideoUrl] = useState("");
+  const [newMaterialExternalLink, setNewMaterialExternalLink] = useState("");
   const materialFileRef = useRef<HTMLInputElement>(null);
 
   // Form states for new task
@@ -468,12 +468,13 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                         </div>
                         <div>
                           <label className="text-sm font-medium text-foreground">Jenis Materi</label>
-                          <div className="mt-2 grid grid-cols-2 gap-3">
-                            <button type="button" onClick={() => setMaterialType("document")} className={cn("flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all", materialType === "document" ? "border-primary bg-primary/5 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted")}><FileText className="h-5 w-5" />Upload Dokumen</button>
-                            <button type="button" onClick={() => setMaterialType("video")} className={cn("flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all", materialType === "video" ? "border-primary bg-primary/5 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted")}><Link className="h-5 w-5" />Link Video</button>
+                          <div className="mt-2 grid grid-cols-3 gap-2">
+                            <button type="button" onClick={() => setMaterialType("document")} className={cn("flex flex-col items-center justify-center gap-1 rounded-lg border-2 p-3 text-xs font-medium transition-all", materialType === "document" ? "border-primary bg-primary/5 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted")}><FileText className="h-5 w-5" />Dokumen</button>
+                            <button type="button" onClick={() => setMaterialType("video")} className={cn("flex flex-col items-center justify-center gap-1 rounded-lg border-2 p-3 text-xs font-medium transition-all", materialType === "video" ? "border-primary bg-primary/5 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted")}><Video className="h-5 w-5" />Video</button>
+                            <button type="button" onClick={() => setMaterialType("link")} className={cn("flex flex-col items-center justify-center gap-1 rounded-lg border-2 p-3 text-xs font-medium transition-all", materialType === "link" ? "border-sky-500 bg-sky-500/5 text-sky-600" : "border-border bg-background text-muted-foreground hover:border-sky-500/50 hover:bg-muted")}><Link className="h-5 w-5" />Link Ext.</button>
                           </div>
                         </div>
-                        {materialType === "document" ? (
+                        {materialType === "document" && (
                           <div className="animate-fade-in">
                             <label className="text-sm font-medium text-foreground">Upload Dokumen</label>
                             <FileDropZone
@@ -485,18 +486,37 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                               acceptedFormats="PDF, PPT, PPTX, DOC, DOCX (max 50MB)"
                             />
                           </div>
-                        ) : (
+                        )}
+                        {materialType === "video" && (
                           <div className="animate-fade-in">
                             <label className="text-sm font-medium text-foreground">Link Video</label>
                             <div className="mt-1.5 relative">
                               <Video className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                               <input 
                                 type="url" 
-                                value={newMaterialVideoUrl}
-                                onChange={(e) => setNewMaterialVideoUrl(e.target.value)}
+                                value={newMaterialExternalLink}
+                                onChange={(e) => setNewMaterialExternalLink(e.target.value)}
                                 placeholder="Tempel link Youtube atau Google Drive di sini" 
                                 className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" 
                               />
+                            </div>
+                          </div>
+                        )}
+                        {materialType === "link" && (
+                          <div className="animate-fade-in space-y-3">
+                            <div>
+                              <label className="text-sm font-medium text-foreground">Link Eksternal</label>
+                              <div className="mt-1.5 relative">
+                                <Link className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-sky-500" />
+                                <input 
+                                  type="url" 
+                                  value={newMaterialExternalLink}
+                                  onChange={(e) => setNewMaterialExternalLink(e.target.value)}
+                                  placeholder="https://contoh-link-materi.com/..." 
+                                  className="w-full rounded-lg border border-sky-200 bg-sky-50/50 dark:bg-sky-900/10 dark:border-sky-800 pl-10 pr-3 py-2.5 text-sm placeholder:text-muted-foreground focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20" 
+                                />
+                              </div>
+                              <p className="mt-1 text-xs text-muted-foreground">Link akan ditampilkan dengan kotak biru muda agar mahasiswa tahu ini adalah tautan eksternal.</p>
                             </div>
                           </div>
                         )}
@@ -507,7 +527,7 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                               setMaterialType("document");
                               setNewMaterialTitle("");
                               setNewMaterialFile(null);
-                              setNewMaterialVideoUrl("");
+                              setNewMaterialExternalLink("");
                               setNewMaterialWeek("Pertemuan 1");
                             }} 
                             className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
@@ -525,9 +545,31 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                                 toast({ title: "Pilih file untuk diupload!", variant: "destructive" });
                                 return;
                               }
-                              if (materialType === "video" && !newMaterialVideoUrl.trim()) {
-                                toast({ title: "Link video wajib diisi!", variant: "destructive" });
+                              if ((materialType === "video" || materialType === "link") && !newMaterialExternalLink.trim()) {
+                                toast({ title: "Link wajib diisi!", variant: "destructive" });
                                 return;
+                              }
+
+                              // Determine material properties based on type
+                              let materialName = newMaterialTitle;
+                              let materialTypeValue: "pdf" | "video" | "link" = "pdf";
+                              let materialSize: string | undefined;
+                              let materialDuration: string | undefined;
+                              let materialExternalLink: string | undefined;
+
+                              if (materialType === "document") {
+                                materialName = newMaterialFile?.name || newMaterialTitle;
+                                materialTypeValue = "pdf";
+                                materialSize = `${((newMaterialFile?.size || 0) / (1024 * 1024)).toFixed(1)} MB`;
+                              } else if (materialType === "video") {
+                                materialName = newMaterialTitle;
+                                materialTypeValue = "video";
+                                materialDuration = "Video Link";
+                                materialExternalLink = newMaterialExternalLink;
+                              } else if (materialType === "link") {
+                                materialName = newMaterialTitle;
+                                materialTypeValue = "link";
+                                materialExternalLink = newMaterialExternalLink;
                               }
 
                               // Find or create the week
@@ -536,20 +578,21 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                               if (existingWeek) {
                                 // Add material to existing week
                                 addMaterial(existingWeek.id, course.id, {
-                                  name: materialType === "document" ? (newMaterialFile?.name || newMaterialTitle) : newMaterialVideoUrl,
-                                  type: materialType === "document" ? "pdf" : "video",
-                                  size: materialType === "document" ? `${((newMaterialFile?.size || 0) / (1024 * 1024)).toFixed(1)} MB` : undefined,
-                                  duration: materialType === "video" ? "Video Link" : undefined,
+                                  name: materialName,
+                                  type: materialTypeValue,
+                                  size: materialSize,
+                                  duration: materialDuration,
+                                  externalLink: materialExternalLink,
                                 });
                               } else {
                                 // Create new week and add material
                                 const newWeekId = addMaterialWeek(course.id, newMaterialWeek, newMaterialTitle);
-                                // Add the material to the newly created week
                                 addMaterial(newWeekId, course.id, {
-                                  name: materialType === "document" ? (newMaterialFile?.name || newMaterialTitle) : newMaterialVideoUrl,
-                                  type: materialType === "document" ? "pdf" : "video",
-                                  size: materialType === "document" ? `${((newMaterialFile?.size || 0) / (1024 * 1024)).toFixed(1)} MB` : undefined,
-                                  duration: materialType === "video" ? "Video Link" : undefined,
+                                  name: materialName,
+                                  type: materialTypeValue,
+                                  size: materialSize,
+                                  duration: materialDuration,
+                                  externalLink: materialExternalLink,
                                 });
                               }
 
@@ -558,7 +601,7 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                               setMaterialType("document");
                               setNewMaterialTitle("");
                               setNewMaterialFile(null);
-                              setNewMaterialVideoUrl("");
+                              setNewMaterialExternalLink("");
                               setNewMaterialWeek("Pertemuan 1");
                               toast({ title: "Materi berhasil ditambahkan!", description: `Materi telah ditambahkan ke ${newMaterialWeek}` });
                             }} 
@@ -583,56 +626,87 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="border-t border-border bg-muted/20 px-4 py-3">
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {week.materials.map((material) => (
-                          <div key={material.id} className="group flex items-center justify-between rounded-lg bg-card border border-border/50 p-3 hover:border-primary/30 transition-all">
-                            <div className="flex items-center gap-3">
-                              {material.type === "pdf" ? (
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10"><FileText className="h-5 w-5 text-destructive" /></div>
-                              ) : (
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10"><Video className="h-5 w-5 text-primary" /></div>
-                              )}
-                              <div><p className="font-medium text-foreground">{material.name}</p><p className="text-xs text-muted-foreground">{material.type === "pdf" ? material.size : material.duration}</p></div>
+                          <div key={material.id} className="group rounded-lg bg-card border border-border/50 p-3 hover:border-primary/30 transition-all">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                {material.type === "pdf" ? (
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10"><FileText className="h-5 w-5 text-destructive" /></div>
+                                ) : material.type === "link" ? (
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sky-500/10"><Link className="h-5 w-5 text-sky-500" /></div>
+                                ) : (
+                                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10"><Video className="h-5 w-5 text-primary" /></div>
+                                )}
+                                <div><p className="font-medium text-foreground">{material.name}</p><p className="text-xs text-muted-foreground">{material.type === "pdf" ? material.size : material.type === "link" ? "Link Eksternal" : material.duration}</p></div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {material.type === "video" && material.duration === "Video Link" ? (
+                                  <a 
+                                    href={material.name.startsWith("http") ? material.name : `https://${material.name}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                                  >
+                                    <Video className="h-4 w-4" />Tonton Video
+                                  </a>
+                                ) : material.type === "link" ? (
+                                  <a 
+                                    href={material.externalLink?.startsWith("http") ? material.externalLink : `https://${material.externalLink || material.name}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 rounded-lg bg-sky-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-600 transition-colors"
+                                  >
+                                    <Link className="h-4 w-4" />Buka Link
+                                  </a>
+                                ) : (
+                                  <button 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      // Simulate file download
+                                      const blob = new Blob([`Materi: ${material.name}\n\nIni adalah file dummy untuk demo.\nDalam implementasi nyata, file akan diunduh dari server.`], { type: 'application/pdf' });
+                                      const link = document.createElement('a');
+                                      link.href = URL.createObjectURL(blob);
+                                      link.download = material.name.endsWith('.pdf') ? material.name : `${material.name}.pdf`;
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                      URL.revokeObjectURL(link.href);
+                                      toast({ title: "Download berhasil!", description: `File ${material.name} berhasil diunduh.` });
+                                    }}
+                                    className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                  >
+                                    <Download className="h-4 w-4" />Download
+                                  </button>
+                                )}
+                                {isLecturer && (
+                                  <button 
+                                    onClick={(e) => handleDeleteMaterial(material.id, e)}
+                                    className="flex items-center justify-center h-8 w-8 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              {material.type === "video" && material.duration === "Video Link" ? (
+                            
+                            {/* External Link Box - Same style as task external links */}
+                            {material.externalLink && material.type !== "link" && (
+                              <div className="mt-3 p-3 rounded-lg bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800">
+                                <div className="flex items-center gap-2 text-sm font-medium text-sky-600 dark:text-sky-400 mb-1">
+                                  <Link className="h-4 w-4" />
+                                  Link Eksternal dari Dosen
+                                </div>
                                 <a 
-                                  href={material.name.startsWith("http") ? material.name : `https://${material.name}`}
+                                  href={material.externalLink.startsWith("http") ? material.externalLink : `https://${material.externalLink}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                                  className="text-sm text-sky-600 dark:text-sky-400 hover:underline break-all"
                                 >
-                                  <Video className="h-4 w-4" />Tonton Video
+                                  {material.externalLink}
                                 </a>
-                              ) : (
-                                <button 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Simulate file download
-                                    const blob = new Blob([`Materi: ${material.name}\n\nIni adalah file dummy untuk demo.\nDalam implementasi nyata, file akan diunduh dari server.`], { type: 'application/pdf' });
-                                    const link = document.createElement('a');
-                                    link.href = URL.createObjectURL(blob);
-                                    link.download = material.name.endsWith('.pdf') ? material.name : `${material.name}.pdf`;
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    document.body.removeChild(link);
-                                    URL.revokeObjectURL(link.href);
-                                    toast({ title: "Download berhasil!", description: `File ${material.name} berhasil diunduh.` });
-                                  }}
-                                  className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                                >
-                                  <Download className="h-4 w-4" />Download
-                                </button>
-                              )}
-                              {isLecturer && (
-                                <button 
-                                  onClick={(e) => handleDeleteMaterial(material.id, e)}
-                                  className="flex items-center justify-center h-8 w-8 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                         {week.materials.length === 0 && (
