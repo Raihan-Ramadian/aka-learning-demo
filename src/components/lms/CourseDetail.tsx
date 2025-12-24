@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, FileText, Video, Download, Upload, Users, Calendar, Clock, GripVertical, Check, X, Link, Paperclip, MessageSquare } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Video, Download, Upload, Users, Calendar, Clock, GripVertical, Check, X, Link, Paperclip, MessageSquare, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
@@ -14,6 +14,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { useAcademicData } from "@/contexts/AcademicDataContext";
 import { useToast } from "@/hooks/use-toast";
@@ -71,7 +81,7 @@ const membersData = [
 
 export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
   const { toast } = useToast();
-  const { tasks, submissions, getTasksByCourse, getSubmissionsByTask, updateSubmissionGrade, getStudentSubmission } = useAcademicData();
+  const { tasks, submissions, getTasksByCourse, getSubmissionsByTask, updateSubmissionGrade, getStudentSubmission, deleteTask, deleteMaterial } = useAcademicData();
   
   const [addMaterialOpen, setAddMaterialOpen] = useState(false);
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false);
@@ -80,6 +90,12 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
   const [materialType, setMaterialType] = useState<"document" | "video">("document");
   const [grades, setGrades] = useState<Record<number, number | null>>({});
   const [notes, setNotes] = useState<Record<number, string>>({});
+  
+  // Delete confirmation states
+  const [deleteTaskOpen, setDeleteTaskOpen] = useState(false);
+  const [deleteMaterialOpen, setDeleteMaterialOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
+  const [materialToDelete, setMaterialToDelete] = useState<number | null>(null);
 
   const isLecturer = userRole === "lecturer";
   const studentNim = "2024001"; // Simulated student
@@ -119,6 +135,42 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
       description: "Nilai dan catatan telah diperbarui untuk mahasiswa.",
     });
     setSelectedAssignment(null);
+  };
+
+  const handleDeleteTask = (taskId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setTaskToDelete(taskId);
+    setDeleteTaskOpen(true);
+  };
+
+  const confirmDeleteTask = () => {
+    if (taskToDelete) {
+      deleteTask(taskToDelete);
+      toast({
+        title: "Tugas berhasil dihapus!",
+        description: "Tugas dan semua pengumpulan terkait telah dihapus.",
+      });
+    }
+    setDeleteTaskOpen(false);
+    setTaskToDelete(null);
+  };
+
+  const handleDeleteMaterial = (materialId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMaterialToDelete(materialId);
+    setDeleteMaterialOpen(true);
+  };
+
+  const confirmDeleteMaterial = () => {
+    if (materialToDelete) {
+      deleteMaterial(materialToDelete);
+      toast({
+        title: "Materi berhasil dihapus!",
+        description: "Materi telah dihapus dari pertemuan.",
+      });
+    }
+    setDeleteMaterialOpen(false);
+    setMaterialToDelete(null);
   };
 
   return (
@@ -344,7 +396,17 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                               )}
                               <div><p className="font-medium text-foreground">{material.name}</p><p className="text-xs text-muted-foreground">{material.type === "pdf" ? material.size : material.duration}</p></div>
                             </div>
-                            <button className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Download className="h-4 w-4" />Download</button>
+                            <div className="flex items-center gap-2">
+                              <button className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Download className="h-4 w-4" />Download</button>
+                              {isLecturer && (
+                                <button 
+                                  onClick={(e) => handleDeleteMaterial(material.id, e)}
+                                  className="flex items-center justify-center h-8 w-8 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -467,6 +529,15 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                           </div>
                         )}
                       </div>
+                      {/* Delete button for lecturer */}
+                      {isLecturer && (
+                        <button 
+                          onClick={(e) => handleDeleteTask(assignment.id, e)}
+                          className="flex items-center justify-center h-9 w-9 rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors ml-3"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
 
                     {/* Student Upload Area */}
@@ -529,6 +600,42 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
           </TabsContent>
         </Tabs>
       )}
+
+      {/* Delete Task AlertDialog */}
+      <AlertDialog open={deleteTaskOpen} onOpenChange={setDeleteTaskOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Tugas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus tugas ini? Tindakan ini tidak dapat dibatalkan dan semua pengumpulan mahasiswa terkait akan ikut terhapus.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteTask} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Ya, Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Material AlertDialog */}
+      <AlertDialog open={deleteMaterialOpen} onOpenChange={setDeleteMaterialOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Materi</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus materi ini? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteMaterial} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Ya, Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
