@@ -25,10 +25,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { useAcademicData, ManagedStudent, ManagedLecturer } from "@/contexts/AcademicDataContext";
+import { useAcademicData, ManagedStudent, ManagedLecturer, Course } from "@/contexts/AcademicDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { FileDropZone } from "@/components/ui/file-dropzone";
 import { downloadCSV } from "@/lib/file-utils";
+
+const colorOptions = [
+  { value: "from-blue-500 to-cyan-500", label: "Biru" },
+  { value: "from-emerald-500 to-teal-500", label: "Hijau" },
+  { value: "from-violet-500 to-purple-500", label: "Ungu" },
+  { value: "from-orange-500 to-amber-500", label: "Oranye" },
+  { value: "from-pink-500 to-rose-500", label: "Pink" },
+];
 
 const prodiOptions = [
   { value: "all", label: "Semua Prodi" },
@@ -48,6 +56,7 @@ export function AdminDashboard() {
   const { 
     managedStudents, 
     managedLecturers, 
+    courses,
     addManagedStudent, 
     updateManagedStudent, 
     deleteManagedStudent,
@@ -56,20 +65,40 @@ export function AdminDashboard() {
     deleteManagedLecturer,
     importStudentsFromCSV,
     importLecturersFromCSV,
+    addCourse,
+    updateCourse,
+    deleteCourse,
+    importCoursesFromCSV,
     schedules 
   } = useAcademicData();
   
   const [selectedProdi, setSelectedProdi] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [userTab, setUserTab] = useState("mahasiswa");
+  const [mainTab, setMainTab] = useState<"users" | "courses">("users");
   
   // Modal states
   const [importOpen, setImportOpen] = useState(false);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [addUserType, setAddUserType] = useState<"mahasiswa" | "dosen">("mahasiswa");
   const [importedFile, setImportedFile] = useState<File | null>(null);
-  const [importDataType, setImportDataType] = useState<"mahasiswa" | "dosen">("mahasiswa");
+  const [importDataType, setImportDataType] = useState<"mahasiswa" | "dosen" | "matkul">("mahasiswa");
   
+  // Course modal states
+  const [addCourseOpen, setAddCourseOpen] = useState(false);
+  const [editCourseOpen, setEditCourseOpen] = useState(false);
+  const [deleteCourseOpen, setDeleteCourseOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [courseFormData, setCourseFormData] = useState({
+    name: "",
+    code: "",
+    lecturer: "",
+    prodi: "",
+    semester: "1",
+    sks: "3",
+    color: "from-blue-500 to-cyan-500",
+  });
+
   // User action modal states
   const [viewUserOpen, setViewUserOpen] = useState(false);
   const [editUserOpen, setEditUserOpen] = useState(false);
@@ -96,11 +125,13 @@ export function AdminDashboard() {
   const uniqueProdi = new Set([...managedStudents.map(s => s.prodi), ...managedLecturers.map(l => l.prodi)]);
   const totalProdi = uniqueProdi.size;
 
+  const totalMatkul = courses.length;
+
   const stats = [
     { label: "Total User", value: String(totalUsers), icon: Users, color: "text-primary", bg: "bg-primary/10", change: "+12%" },
-    { label: "Total Prodi", value: String(totalProdi), icon: Building, color: "text-success", bg: "bg-success/10", change: "0%" },
+    { label: "Total Mata Kuliah", value: String(totalMatkul), icon: GraduationCap, color: "text-success", bg: "bg-success/10", change: "+5%" },
     { label: "Total Mahasiswa", value: String(totalMahasiswa), icon: Users, color: "text-warning", bg: "bg-warning/10", change: "+8%" },
-    { label: "Total Dosen", value: String(totalDosen), icon: GraduationCap, color: "text-accent-foreground", bg: "bg-accent", change: "+3%" },
+    { label: "Total Dosen", value: String(totalDosen), icon: Building, color: "text-accent-foreground", bg: "bg-accent", change: "+3%" },
   ];
 
   const currentData = userTab === "mahasiswa" ? managedStudents : managedLecturers;
@@ -114,6 +145,12 @@ export function AdminDashboard() {
       (userTab === "mahasiswa" ? (user as ManagedStudent).nim : (user as ManagedLecturer).nip).includes(searchQuery);
     return matchesProdi && matchesSearch;
   });
+
+  // Filtered courses
+  const filteredCourses = courses.filter(c => 
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -289,24 +326,119 @@ export function AdminDashboard() {
       return;
     }
     
-    // Simulate CSV import by adding sample data
+    // Simulate CSV import by adding sample data based on type
     if (importDataType === "mahasiswa") {
       importStudentsFromCSV([
         { name: "Import Student 1", nim: "2024100", prodi: "D3 Analisis Kimia", email: "import1@mhs.aka.ac.id", status: "Aktif", phone: "-", address: "-", angkatan: "2024" },
         { name: "Import Student 2", nim: "2024101", prodi: "D3 Teknik Informatika", email: "import2@mhs.aka.ac.id", status: "Aktif", phone: "-", address: "-", angkatan: "2024" },
       ]);
-    } else {
+    } else if (importDataType === "dosen") {
       importLecturersFromCSV([
         { name: "Import Dosen 1", nip: "199001010001", prodi: "D3 Analisis Kimia", email: "importdosen@dosen.aka.ac.id", status: "Aktif", phone: "-", address: "-", jabatan: "Dosen" },
+      ]);
+    } else if (importDataType === "matkul") {
+      importCoursesFromCSV([
+        { name: "Import Matkul 1", code: "IMP101", lecturer: "Dr. Import", color: "from-pink-500 to-rose-500", prodi: "D3 Analisis Kimia", semester: 1, sks: 3, classes: 1 },
+        { name: "Import Matkul 2", code: "IMP102", lecturer: "Prof. Import", color: "from-emerald-500 to-teal-500", prodi: "D3 Teknik Informatika", semester: 2, sks: 2, classes: 1 },
       ]);
     }
     
     toast({
       title: "Data berhasil di-import!",
-      description: `File ${importedFile.name} telah diproses.`,
+      description: `File ${importedFile.name} telah diproses dan data ditambahkan.`,
     });
     setImportOpen(false);
     setImportedFile(null);
+  };
+
+  // Course handlers
+  const resetCourseForm = () => {
+    setCourseFormData({
+      name: "",
+      code: "",
+      lecturer: "",
+      prodi: "",
+      semester: "1",
+      sks: "3",
+      color: "from-blue-500 to-cyan-500",
+    });
+  };
+
+  const handleAddCourse = () => {
+    if (!courseFormData.name || !courseFormData.code || !courseFormData.lecturer) {
+      toast({ title: "Lengkapi semua data yang wajib!", variant: "destructive" });
+      return;
+    }
+    
+    addCourse({
+      name: courseFormData.name,
+      code: courseFormData.code,
+      lecturer: courseFormData.lecturer,
+      color: courseFormData.color,
+      prodi: prodiMap[courseFormData.prodi] || courseFormData.prodi,
+      semester: parseInt(courseFormData.semester),
+      sks: parseInt(courseFormData.sks),
+      classes: 1,
+    });
+    
+    toast({
+      title: "Mata Kuliah Berhasil Ditambahkan",
+      description: `${courseFormData.name} telah disimpan ke sistem.`,
+    });
+    setAddCourseOpen(false);
+    resetCourseForm();
+  };
+
+  const handleEditCourse = (course: Course) => {
+    setSelectedCourse(course);
+    setCourseFormData({
+      name: course.name,
+      code: course.code,
+      lecturer: course.lecturer,
+      prodi: course.prodi || "",
+      semester: String(course.semester || 1),
+      sks: String(course.sks || 3),
+      color: course.color,
+    });
+    setEditCourseOpen(true);
+  };
+
+  const handleSaveEditCourse = () => {
+    if (!selectedCourse) return;
+    
+    updateCourse(selectedCourse.id, {
+      name: courseFormData.name,
+      code: courseFormData.code,
+      lecturer: courseFormData.lecturer,
+      prodi: prodiMap[courseFormData.prodi] || courseFormData.prodi,
+      semester: parseInt(courseFormData.semester),
+      sks: parseInt(courseFormData.sks),
+      color: courseFormData.color,
+    });
+    
+    toast({
+      title: "Mata Kuliah Berhasil Diperbarui",
+      description: `Data ${courseFormData.name} telah diperbarui.`,
+    });
+    setEditCourseOpen(false);
+    setSelectedCourse(null);
+    resetCourseForm();
+  };
+
+  const handleDeleteCourse = (course: Course) => {
+    setSelectedCourse(course);
+    setDeleteCourseOpen(true);
+  };
+
+  const confirmDeleteCourse = () => {
+    if (!selectedCourse) return;
+    deleteCourse(selectedCourse.id);
+    toast({
+      title: "Mata Kuliah Berhasil Dihapus",
+      description: `${selectedCourse.name} telah dihapus dari sistem.`,
+    });
+    setDeleteCourseOpen(false);
+    setSelectedCourse(null);
   };
 
   return (
@@ -343,6 +475,7 @@ export function AdminDashboard() {
                   >
                     <option value="mahasiswa">Data Mahasiswa</option>
                     <option value="dosen">Data Dosen</option>
+                    <option value="matkul">Data Mata Kuliah</option>
                   </select>
                 </div>
                 <div>
