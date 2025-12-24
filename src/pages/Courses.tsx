@@ -83,7 +83,7 @@ export default function Courses() {
   const { toast } = useToast();
   
   // Get data from context for Admin
-  const { courses, addCourse, updateCourse, deleteCourse, importCoursesFromCSV } = useAcademicData();
+  const { courses, managedLecturers, addCourse, updateCourse, deleteCourse, importCoursesFromCSV } = useAcademicData();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSks, setSelectedSks] = useState("all");
@@ -151,8 +151,8 @@ export default function Courses() {
   };
 
   const handleAddCourse = () => {
-    if (!formData.code || !formData.name || !formData.lecturer) {
-      toast({ title: "Lengkapi data yang wajib!", variant: "destructive" });
+    if (!formData.code || !formData.name || !formData.sks || !formData.prodi || !formData.semester || !formData.lecturer) {
+      toast({ title: "Lengkapi semua data yang wajib!", variant: "destructive" });
       return;
     }
     addCourse({
@@ -374,9 +374,9 @@ export default function Courses() {
                   <td className="px-4 py-3">
                     <span className={cn(
                       "px-2 py-0.5 rounded text-xs font-medium",
-                      course.semester === "Ganjil" ? "bg-primary/10 text-primary" : "bg-success/10 text-success"
+                      typeof course.semester === 'number' && course.semester % 2 !== 0 ? "bg-primary/10 text-primary" : "bg-success/10 text-success"
                     )}>
-                      {course.semester}
+                      Semester {course.semester}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{course.sks}</td>
@@ -523,7 +523,7 @@ export default function Courses() {
       </Dialog>
 
       {/* Add Course Modal */}
-      <Dialog open={addCourseOpen} onOpenChange={setAddCourseOpen}>
+      <Dialog open={addCourseOpen} onOpenChange={(open) => { setAddCourseOpen(open); if (!open) resetForm(); }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Tambah Mata Kuliah Baru</DialogTitle>
@@ -532,15 +532,21 @@ export default function Courses() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-foreground">Kode Mata Kuliah <span className="text-destructive">*</span></label>
-                <input
+                <Input
                   type="text"
                   placeholder="Contoh: KIM101"
-                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  value={formData.code}
+                  onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+                  className="mt-1.5"
                 />
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">SKS <span className="text-destructive">*</span></label>
-                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <select 
+                  value={formData.sks}
+                  onChange={(e) => setFormData(prev => ({ ...prev, sks: e.target.value }))}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
                   <option value="">Pilih SKS</option>
                   <option value="2">2 SKS</option>
                   <option value="3">3 SKS</option>
@@ -550,16 +556,22 @@ export default function Courses() {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Nama Mata Kuliah <span className="text-destructive">*</span></label>
-              <input
+              <Input
                 type="text"
                 placeholder="Contoh: Kimia Dasar"
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="mt-1.5"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-foreground">Program Studi <span className="text-destructive">*</span></label>
-                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <select 
+                  value={formData.prodi}
+                  onChange={(e) => setFormData(prev => ({ ...prev, prodi: e.target.value }))}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
                   <option value="">Pilih Prodi</option>
                   {prodiOptions.slice(1).map((prodi) => (
                     <option key={prodi.value} value={prodi.value}>{prodi.label}</option>
@@ -568,34 +580,41 @@ export default function Courses() {
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Semester <span className="text-destructive">*</span></label>
-                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <select 
+                  value={formData.semester}
+                  onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
                   <option value="">Pilih Semester</option>
-                  <option value="Ganjil">Semester Ganjil</option>
-                  <option value="Genap">Semester Genap</option>
+                  <option value="1">Semester 1</option>
+                  <option value="2">Semester 2</option>
+                  <option value="3">Semester 3</option>
+                  <option value="4">Semester 4</option>
+                  <option value="5">Semester 5</option>
+                  <option value="6">Semester 6</option>
                 </select>
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Deskripsi</label>
-              <textarea
-                placeholder="Deskripsi mata kuliah..."
-                rows={3}
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-              />
+              <label className="text-sm font-medium text-foreground">Dosen Pengampu <span className="text-destructive">*</span></label>
+              <select 
+                value={formData.lecturer}
+                onChange={(e) => setFormData(prev => ({ ...prev, lecturer: e.target.value }))}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">Pilih Dosen</option>
+                {managedLecturers.filter(l => l.status === "Aktif").map((lecturer) => (
+                  <option key={lecturer.id} value={lecturer.name}>{lecturer.name}</option>
+                ))}
+              </select>
             </div>
             <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => setAddCourseOpen(false)}
-                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-              >
+              <Button variant="outline" onClick={() => setAddCourseOpen(false)}>
                 Batal
-              </button>
-              <button
-                onClick={handleAddCourse}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
-              >
+              </Button>
+              <Button onClick={handleAddCourse}>
                 Tambah Mata Kuliah
-              </button>
+              </Button>
             </div>
           </div>
         </DialogContent>
