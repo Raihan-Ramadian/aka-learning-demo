@@ -25,18 +25,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { useAcademicData, ManagedStudent, ManagedLecturer, Course } from "@/contexts/AcademicDataContext";
+import { useAcademicData, ManagedStudent, ManagedLecturer } from "@/contexts/AcademicDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { FileDropZone } from "@/components/ui/file-dropzone";
 import { downloadCSV } from "@/lib/file-utils";
-
-const colorOptions = [
-  { value: "from-blue-500 to-cyan-500", label: "Biru" },
-  { value: "from-emerald-500 to-teal-500", label: "Hijau" },
-  { value: "from-violet-500 to-purple-500", label: "Ungu" },
-  { value: "from-orange-500 to-amber-500", label: "Oranye" },
-  { value: "from-pink-500 to-rose-500", label: "Pink" },
-];
 
 const prodiOptions = [
   { value: "all", label: "Semua Prodi" },
@@ -65,39 +57,19 @@ export function AdminDashboard() {
     deleteManagedLecturer,
     importStudentsFromCSV,
     importLecturersFromCSV,
-    addCourse,
-    updateCourse,
-    deleteCourse,
-    importCoursesFromCSV,
     schedules 
   } = useAcademicData();
   
   const [selectedProdi, setSelectedProdi] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [userTab, setUserTab] = useState("mahasiswa");
-  const [mainTab, setMainTab] = useState<"users" | "courses">("users");
   
   // Modal states
   const [importOpen, setImportOpen] = useState(false);
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [addUserType, setAddUserType] = useState<"mahasiswa" | "dosen">("mahasiswa");
   const [importedFile, setImportedFile] = useState<File | null>(null);
-  const [importDataType, setImportDataType] = useState<"mahasiswa" | "dosen" | "matkul">("mahasiswa");
-  
-  // Course modal states
-  const [addCourseOpen, setAddCourseOpen] = useState(false);
-  const [editCourseOpen, setEditCourseOpen] = useState(false);
-  const [deleteCourseOpen, setDeleteCourseOpen] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [courseFormData, setCourseFormData] = useState({
-    name: "",
-    code: "",
-    lecturer: "",
-    prodi: "",
-    semester: "1",
-    sks: "3",
-    color: "from-blue-500 to-cyan-500",
-  });
+  const [importDataType, setImportDataType] = useState<"mahasiswa" | "dosen">("mahasiswa");
 
   // User action modal states
   const [viewUserOpen, setViewUserOpen] = useState(false);
@@ -145,14 +117,6 @@ export function AdminDashboard() {
       (userTab === "mahasiswa" ? (user as ManagedStudent).nim : (user as ManagedLecturer).nip).includes(searchQuery);
     return matchesProdi && matchesSearch;
   });
-
-  // Filtered courses - only filter when mainTab is courses AND searchQuery is not empty
-  const filteredCourses = mainTab === "courses" && searchQuery.trim() 
-    ? courses.filter(c => 
-        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.code.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : courses;
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -378,123 +342,12 @@ export function AdminDashboard() {
         } else {
           toast({ title: "Tidak ada data valid dalam file CSV!", variant: "destructive" });
         }
-      } else if (importDataType === "matkul") {
-        const coursesData: Omit<Course, 'id'>[] = dataLines.map(line => {
-          const [code, name, lecturer, prodi, semester, sks] = line.split(',').map(s => s.trim().replace(/"/g, ''));
-          return {
-            name: name || "",
-            code: code || "",
-            lecturer: lecturer || "",
-            prodi: prodi || "D3 Analisis Kimia",
-            semester: parseInt(semester) || 1,
-            sks: parseInt(sks) || 3,
-            color: "from-blue-500 to-cyan-500",
-            classes: 1,
-          };
-        }).filter(c => c.code && c.name);
-        
-        if (coursesData.length > 0) {
-          importCoursesFromCSV(coursesData);
-          toast({ title: `${coursesData.length} mata kuliah berhasil di-import!`, description: `Data dari ${importedFile.name} telah ditambahkan.` });
-        } else {
-          toast({ title: "Tidak ada data valid dalam file CSV!", variant: "destructive" });
-        }
       }
       
       setImportOpen(false);
       setImportedFile(null);
     };
     reader.readAsText(importedFile);
-  };
-
-  // Course handlers
-  const resetCourseForm = () => {
-    setCourseFormData({
-      name: "",
-      code: "",
-      lecturer: "",
-      prodi: "",
-      semester: "1",
-      sks: "3",
-      color: "from-blue-500 to-cyan-500",
-    });
-  };
-
-  const handleAddCourse = () => {
-    if (!courseFormData.name || !courseFormData.code || !courseFormData.lecturer) {
-      toast({ title: "Lengkapi semua data yang wajib!", variant: "destructive" });
-      return;
-    }
-    
-    addCourse({
-      name: courseFormData.name,
-      code: courseFormData.code,
-      lecturer: courseFormData.lecturer,
-      color: courseFormData.color,
-      prodi: prodiMap[courseFormData.prodi] || courseFormData.prodi,
-      semester: parseInt(courseFormData.semester),
-      sks: parseInt(courseFormData.sks),
-      classes: 1,
-    });
-    
-    toast({
-      title: "Mata Kuliah Berhasil Ditambahkan",
-      description: `${courseFormData.name} telah disimpan ke sistem.`,
-    });
-    setAddCourseOpen(false);
-    resetCourseForm();
-  };
-
-  const handleEditCourse = (course: Course) => {
-    setSelectedCourse(course);
-    setCourseFormData({
-      name: course.name,
-      code: course.code,
-      lecturer: course.lecturer,
-      prodi: course.prodi || "",
-      semester: String(course.semester || 1),
-      sks: String(course.sks || 3),
-      color: course.color,
-    });
-    setEditCourseOpen(true);
-  };
-
-  const handleSaveEditCourse = () => {
-    if (!selectedCourse) return;
-    
-    updateCourse(selectedCourse.id, {
-      name: courseFormData.name,
-      code: courseFormData.code,
-      lecturer: courseFormData.lecturer,
-      prodi: prodiMap[courseFormData.prodi] || courseFormData.prodi,
-      semester: parseInt(courseFormData.semester),
-      sks: parseInt(courseFormData.sks),
-      color: courseFormData.color,
-    });
-    
-    toast({
-      title: "Mata Kuliah Berhasil Diperbarui",
-      description: `Data ${courseFormData.name} telah diperbarui.`,
-    });
-    setEditCourseOpen(false);
-    setSelectedCourse(null);
-    resetCourseForm();
-  };
-
-  const handleDeleteCourse = (course: Course) => {
-    setSelectedCourse(course);
-    setDeleteCourseOpen(true);
-  };
-
-  const confirmDeleteCourse = () => {
-    if (!selectedCourse) return;
-    deleteCourse(selectedCourse.id);
-    toast({
-      title: "Mata Kuliah Berhasil Dihapus",
-      description: `${selectedCourse.name} telah dihapus dari sistem.`,
-    });
-    setDeleteCourseOpen(false);
-    setSelectedCourse(null);
   };
 
   return (
@@ -531,7 +384,6 @@ export function AdminDashboard() {
                   >
                     <option value="mahasiswa">Data Mahasiswa</option>
                     <option value="dosen">Data Dosen</option>
-                    <option value="matkul">Data Mata Kuliah</option>
                   </select>
                 </div>
                 <div>
@@ -642,29 +494,12 @@ export function AdminDashboard() {
         ))}
       </div>
 
-      {/* Main Tab Selector */}
-      <div className="flex items-center gap-4 mb-6">
-        <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "users" | "courses")} className="w-auto">
-          <TabsList className="bg-muted h-10">
-            <TabsTrigger value="users" className="text-sm data-[state=active]:bg-background px-6">
-              <Users className="h-4 w-4 mr-2" />
-              Kelola User
-            </TabsTrigger>
-            <TabsTrigger value="courses" className="text-sm data-[state=active]:bg-background px-6">
-              <GraduationCap className="h-4 w-4 mr-2" />
-              Master Mata Kuliah
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
-      {/* User Data Management - Only show when mainTab is "users" */}
-      {mainTab === "users" && (
+      {/* User Data Management */}
       <div className="rounded-xl bg-card border border-border/50 shadow-card overflow-hidden">
         <div className="border-b border-border p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h2 className="text-lg font-semibold text-foreground">Data User</h2>
+              <h2 className="text-lg font-semibold text-foreground">Kelola User</h2>
               <Tabs value={userTab} onValueChange={setUserTab} className="w-auto">
                 <TabsList className="bg-muted h-9">
                   <TabsTrigger value="mahasiswa" className="text-sm data-[state=active]:bg-background">
@@ -746,65 +581,73 @@ export function AdminDashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredUsers.map((user, index) => (
-                <tr
-                  key={user.id}
-                  className="hover:bg-muted/30 transition-colors animate-fade-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                        {user.name.charAt(0)}
-                      </div>
-                      <span className="font-medium text-foreground">{user.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground font-mono">
-                    {userTab === "mahasiswa" ? (user as ManagedStudent).nim : (user as ManagedLecturer).nip}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{user.prodi}</td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">{user.email}</td>
-                  <td className="px-4 py-3">
-                    <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", getStatusStyle(user.status))}>
-                      {user.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button className="rounded-lg p-1.5 hover:bg-muted transition-colors">
-                          <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-36 bg-popover border border-border shadow-lg">
-                        <DropdownMenuItem 
-                          className="cursor-pointer"
-                          onClick={() => handleViewUser(user)}
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          Lihat Detail
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="cursor-pointer"
-                          onClick={() => handleEditUser(user)}
-                        >
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="cursor-pointer text-destructive focus:text-destructive"
-                          onClick={() => handleDeleteUser(user)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Hapus
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {filteredUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                    {searchQuery.trim() ? "Tidak ada data yang cocok dengan pencarian" : "Belum ada data user"}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredUsers.map((user, index) => (
+                  <tr
+                    key={user.id}
+                    className="hover:bg-muted/30 transition-colors animate-fade-in"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                          {user.name.charAt(0)}
+                        </div>
+                        <span className="font-medium text-foreground">{user.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground font-mono">
+                      {userTab === "mahasiswa" ? (user as ManagedStudent).nim : (user as ManagedLecturer).nip}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{user.prodi}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{user.email}</td>
+                    <td className="px-4 py-3">
+                      <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", getStatusStyle(user.status))}>
+                        {user.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="rounded-lg p-1.5 hover:bg-muted transition-colors">
+                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-36 bg-popover border border-border shadow-lg">
+                          <DropdownMenuItem 
+                            className="cursor-pointer"
+                            onClick={() => handleViewUser(user)}
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            Lihat Detail
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="cursor-pointer"
+                            onClick={() => handleEditUser(user)}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="cursor-pointer text-destructive focus:text-destructive"
+                            onClick={() => handleDeleteUser(user)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Hapus
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -826,323 +669,6 @@ export function AdminDashboard() {
           </div>
         </div>
       </div>
-      )}
-
-      {/* Course Data Management - Only show when mainTab is "courses" */}
-      {mainTab === "courses" && (
-      <div className="rounded-xl bg-card border border-border/50 shadow-card overflow-hidden">
-        <div className="border-b border-border p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">Master Data Mata Kuliah</h2>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Cari kode atau nama matkul..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-9 w-64 rounded-lg border border-input bg-background pl-9 pr-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                />
-              </div>
-              <button
-                onClick={() => setAddCourseOpen(true)}
-                className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
-              >
-                <Plus className="h-4 w-4" />
-                Tambah Mata Kuliah
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-muted/50">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kode</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama Mata Kuliah</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Dosen</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Prodi</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">SKS</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Semester</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filteredCourses.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                    {searchQuery.trim() ? "Tidak ada mata kuliah yang cocok dengan pencarian" : "Belum ada data mata kuliah"}
-                  </td>
-                </tr>
-              ) : (
-                filteredCourses.map((course, index) => (
-                  <tr
-                    key={course.id}
-                    className="hover:bg-muted/30 transition-colors animate-fade-in"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <td className="px-4 py-3">
-                      <span className={cn("rounded-md bg-gradient-to-r px-2 py-1 text-xs font-medium text-white", course.color)}>
-                        {course.code}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 font-medium text-foreground">{course.name}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{course.lecturer}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{course.prodi || "-"}</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">{course.sks || 3} SKS</td>
-                    <td className="px-4 py-3 text-sm text-muted-foreground">Semester {course.semester || 1}</td>
-                    <td className="px-4 py-3 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button className="rounded-lg p-1.5 hover:bg-muted transition-colors">
-                            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-36 bg-popover border border-border shadow-lg">
-                          <DropdownMenuItem 
-                            className="cursor-pointer"
-                            onClick={() => handleEditCourse(course)}
-                          >
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            className="cursor-pointer text-destructive focus:text-destructive"
-                            onClick={() => handleDeleteCourse(course)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Hapus
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="border-t border-border p-4">
-          <p className="text-sm text-muted-foreground">
-            Total <span className="font-medium text-foreground">{courses.length}</span> mata kuliah
-          </p>
-        </div>
-      </div>
-      )}
-
-      {/* Modal Tambah Mata Kuliah */}
-      <Dialog open={addCourseOpen} onOpenChange={setAddCourseOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tambah Mata Kuliah Baru</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div>
-              <label className="text-sm font-medium text-foreground">Kode Mata Kuliah <span className="text-destructive">*</span></label>
-              <input
-                type="text"
-                value={courseFormData.code}
-                onChange={(e) => setCourseFormData(prev => ({ ...prev, code: e.target.value }))}
-                placeholder="Contoh: KIM101"
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Nama Mata Kuliah <span className="text-destructive">*</span></label>
-              <input
-                type="text"
-                value={courseFormData.name}
-                onChange={(e) => setCourseFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Contoh: Kimia Dasar"
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Dosen Pengampu <span className="text-destructive">*</span></label>
-              <input
-                type="text"
-                value={courseFormData.lecturer}
-                onChange={(e) => setCourseFormData(prev => ({ ...prev, lecturer: e.target.value }))}
-                placeholder="Contoh: Dr. Ahmad Wijaya"
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">Program Studi</label>
-                <select
-                  value={courseFormData.prodi}
-                  onChange={(e) => setCourseFormData(prev => ({ ...prev, prodi: e.target.value }))}
-                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="">Pilih Prodi</option>
-                  {prodiOptions.slice(1).map((prodi) => (
-                    <option key={prodi.value} value={prodi.value}>{prodi.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Warna Label</label>
-                <select
-                  value={courseFormData.color}
-                  onChange={(e) => setCourseFormData(prev => ({ ...prev, color: e.target.value }))}
-                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  {colorOptions.map((color) => (
-                    <option key={color.value} value={color.value}>{color.label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">SKS</label>
-                <select
-                  value={courseFormData.sks}
-                  onChange={(e) => setCourseFormData(prev => ({ ...prev, sks: e.target.value }))}
-                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="1">1 SKS</option>
-                  <option value="2">2 SKS</option>
-                  <option value="3">3 SKS</option>
-                  <option value="4">4 SKS</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Semester</label>
-                <select
-                  value={courseFormData.semester}
-                  onChange={(e) => setCourseFormData(prev => ({ ...prev, semester: e.target.value }))}
-                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
-                    <option key={sem} value={String(sem)}>Semester {sem}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => { setAddCourseOpen(false); resetCourseForm(); }}
-                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleAddCourse}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
-              >
-                Tambah Mata Kuliah
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal Edit Mata Kuliah */}
-      <Dialog open={editCourseOpen} onOpenChange={setEditCourseOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Mata Kuliah</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div>
-              <label className="text-sm font-medium text-foreground">Kode Mata Kuliah</label>
-              <input
-                type="text"
-                value={courseFormData.code}
-                onChange={(e) => setCourseFormData(prev => ({ ...prev, code: e.target.value }))}
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Nama Mata Kuliah</label>
-              <input
-                type="text"
-                value={courseFormData.name}
-                onChange={(e) => setCourseFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Dosen Pengampu</label>
-              <input
-                type="text"
-                value={courseFormData.lecturer}
-                onChange={(e) => setCourseFormData(prev => ({ ...prev, lecturer: e.target.value }))}
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">SKS</label>
-                <select
-                  value={courseFormData.sks}
-                  onChange={(e) => setCourseFormData(prev => ({ ...prev, sks: e.target.value }))}
-                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="1">1 SKS</option>
-                  <option value="2">2 SKS</option>
-                  <option value="3">3 SKS</option>
-                  <option value="4">4 SKS</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Semester</label>
-                <select
-                  value={courseFormData.semester}
-                  onChange={(e) => setCourseFormData(prev => ({ ...prev, semester: e.target.value }))}
-                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
-                    <option key={sem} value={String(sem)}>Semester {sem}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => { setEditCourseOpen(false); resetCourseForm(); }}
-                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleSaveEditCourse}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
-              >
-                Simpan Perubahan
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Alert Dialog Hapus Mata Kuliah */}
-      <AlertDialog open={deleteCourseOpen} onOpenChange={setDeleteCourseOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Mata Kuliah</AlertDialogTitle>
-            <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus mata kuliah <span className="font-semibold text-foreground">{selectedCourse?.name}</span>? 
-              Tindakan ini tidak dapat dibatalkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDeleteCourse}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Ya, Hapus
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Modal Tambah User */}
       <Dialog open={addUserOpen} onOpenChange={setAddUserOpen}>
