@@ -31,37 +31,56 @@ export function StudentDashboard() {
 
   // Get student's submissions for progress calculation
   const studentSubmissions = submissions.filter(s => s.studentNim === studentNim);
-  const completedTasks = studentSubmissions.filter(s => s.status === "submitted" || s.status === "graded").length;
-  const totalTasks = studentSubmissions.length;
-  const overallProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // Calculate per-course progress
+  // Dynamic progress calculation: Completed Tasks / Total Tasks per course
   const getCourseProgress = (courseId: number) => {
     const courseTasks = tasks.filter(t => t.courseId === courseId);
-    const courseSubmissions = studentSubmissions.filter(s => 
-      courseTasks.some(t => t.id === s.taskId)
-    );
-    const completed = courseSubmissions.filter(s => s.status === "submitted" || s.status === "graded").length;
-    return courseSubmissions.length > 0 ? Math.round((completed / courseSubmissions.length) * 100) : 0;
+    if (courseTasks.length === 0) return 0;
+    
+    const completedTasksCount = courseTasks.filter(task => {
+      const submission = studentSubmissions.find(s => s.taskId === task.id);
+      return submission && (submission.status === "submitted" || submission.status === "graded");
+    }).length;
+    
+    return Math.round((completedTasksCount / courseTasks.length) * 100);
   };
 
-  // Get upcoming tasks from context
-  const upcomingTasks = tasks.slice(0, 3).map(task => {
+  // Calculate overall progress across all courses
+  const totalTasksCount = tasks.length;
+  const totalCompletedTasks = tasks.filter(task => {
     const submission = studentSubmissions.find(s => s.taskId === task.id);
-    const course = courses.find(c => c.id === task.courseId);
-    const isUrgent = task.deadline.includes("20") || task.deadline.includes("22");
-    return {
-      id: task.id,
-      courseId: task.courseId,
-      course: course?.name || "Unknown",
-      task: task.title,
-      deadline: task.deadline,
-      urgent: isUrgent && (!submission || submission.status === "pending"),
-      status: submission?.status || "pending"
-    };
-  });
+    return submission && (submission.status === "submitted" || submission.status === "graded");
+  }).length;
+  const overallProgress = totalTasksCount > 0 ? Math.round((totalCompletedTasks / totalTasksCount) * 100) : 0;
 
-  const pendingTasksCount = upcomingTasks.filter(t => t.status === "pending").length;
+  // Get upcoming tasks from context - FILTER OUT completed tasks
+  const upcomingTasks = tasks
+    .filter(task => {
+      // Only show tasks that haven't been submitted or graded
+      const submission = studentSubmissions.find(s => s.taskId === task.id);
+      return !submission || submission.status === "pending";
+    })
+    .slice(0, 5) // Show up to 5 pending tasks
+    .map(task => {
+      const course = courses.find(c => c.id === task.courseId);
+      // Check if deadline is urgent (within 3 days)
+      const deadlineDate = new Date(task.deadline);
+      const today = new Date();
+      const daysUntilDeadline = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const isUrgent = daysUntilDeadline <= 3 && daysUntilDeadline >= 0;
+      
+      return {
+        id: task.id,
+        courseId: task.courseId,
+        course: course?.name || "Unknown",
+        task: task.title,
+        deadline: task.deadline,
+        urgent: isUrgent,
+        status: "pending" as const
+      };
+    });
+
+  const pendingTasksCount = upcomingTasks.length;
 
   const handleCourseClick = (courseId: number) => {
     navigate(`/course/${courseId}`);
@@ -295,30 +314,37 @@ export function StudentDashboard() {
             </button>
           </div>
           <div className="space-y-3">
-            {upcomingTasks.map((task, index) => (
-              <div
-                key={task.id}
-                onClick={() => handleTaskClick(task.id, task.courseId)}
-                className={cn("rounded-xl border p-4 transition-all hover:shadow-md animate-slide-in cursor-pointer", task.urgent ? "border-destructive/30 bg-destructive-light" : "border-border/50 bg-card")}
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">{task.task}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{task.course}</p>
+            {upcomingTasks.length > 0 ? (
+              upcomingTasks.map((task, index) => (
+                <div
+                  key={task.id}
+                  onClick={() => handleTaskClick(task.id, task.courseId)}
+                  className={cn("rounded-xl border p-4 transition-all hover:shadow-md animate-slide-in cursor-pointer", task.urgent ? "border-destructive/30 bg-destructive-light" : "border-border/50 bg-card")}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-medium text-foreground">{task.task}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{task.course}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      {task.urgent && <span className="rounded-full bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">Urgent</span>}
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1">
-                    {task.urgent && <span className="rounded-full bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">Urgent</span>}
-                    {task.status !== "pending" && (
-                      <span className="rounded-full bg-success/10 px-2 py-1 text-xs font-medium text-success">Selesai</span>
-                    )}
+                  <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />{task.deadline}
                   </div>
                 </div>
-                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5" />{task.deadline}
+              ))
+            ) : (
+              <div className="rounded-xl border border-success/30 bg-success/5 p-6 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-success/10 mx-auto mb-3">
+                  <FileText className="h-6 w-6 text-success" />
                 </div>
+                <p className="font-medium text-success">Semua tugas sudah selesai! 🎉</p>
+                <p className="mt-1 text-sm text-muted-foreground">Tidak ada tugas yang menunggu.</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

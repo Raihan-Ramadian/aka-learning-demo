@@ -49,9 +49,10 @@ export interface Material {
   weekId: number;
   courseId: number;
   name: string;
-  type: "pdf" | "video";
+  type: "pdf" | "video" | "link";
   size?: string;
   duration?: string;
+  externalLink?: string; // External link for material
 }
 
 export interface MaterialWeek {
