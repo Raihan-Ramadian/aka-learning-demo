@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, FileText, Video, Download, Upload, Users, Calendar, Clock, GripVertical, ChevronLeft, Check, X, Link, Paperclip } from "lucide-react";
+import { ArrowLeft, Plus, FileText, Video, Download, Upload, Users, Calendar, Clock, GripVertical, Check, X, Link, Paperclip, MessageSquare } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Accordion,
@@ -15,6 +15,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useAcademicData } from "@/contexts/AcademicDataContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface CourseDetailProps {
   course: {
@@ -58,41 +60,6 @@ const materialsData = [
   },
 ];
 
-const assignmentsData = [
-  {
-    id: 1,
-    title: "Laporan Praktikum 1",
-    description: "Buat laporan praktikum tentang reaksi kimia dasar",
-    deadline: "20 Desember 2024",
-    status: "pending",
-    maxScore: 100,
-    hasAttachment: true,
-    attachmentName: "Instruksi_Laporan_Praktikum.pdf",
-    attachmentType: "file",
-  },
-  {
-    id: 2,
-    title: "Quiz Bab 1-2",
-    description: "Quiz online tentang struktur atom dan tabel periodik",
-    deadline: "22 Desember 2024",
-    status: "submitted",
-    maxScore: 50,
-    submittedAt: "18 Desember 2024",
-    hasAttachment: false,
-  },
-  {
-    id: 3,
-    title: "Tugas Kelompok: Presentasi",
-    description: "Presentasi tentang aplikasi kimia dalam kehidupan sehari-hari",
-    deadline: "5 Januari 2025",
-    status: "pending",
-    maxScore: 100,
-    hasAttachment: true,
-    attachmentName: "Template_Presentasi.pptx",
-    attachmentType: "file",
-  },
-];
-
 const membersData = [
   { id: 1, name: "Siti Rahayu", nim: "2024001", email: "siti@mhs.aka.ac.id" },
   { id: 2, name: "Ahmad Fadli", nim: "2024002", email: "ahmad@mhs.aka.ac.id" },
@@ -102,40 +69,55 @@ const membersData = [
   { id: 6, name: "Maya Putri", nim: "2024007", email: "maya@mhs.aka.ac.id" },
 ];
 
-// Grading data for lecturer view
-const gradingData = [
-  { id: 1, name: "Siti Rahayu", nim: "2024001", status: "submitted", fileName: "laporan_siti.pdf", grade: null },
-  { id: 2, name: "Ahmad Fadli", nim: "2024002", status: "submitted", fileName: "laporan_ahmad.pdf", grade: 85 },
-  { id: 3, name: "Dewi Lestari", nim: "2024003", status: "pending", fileName: null, grade: null },
-  { id: 4, name: "Rina Wulandari", nim: "2024005", status: "submitted", fileName: "laporan_rina.pdf", grade: 92 },
-  { id: 5, name: "Eko Prasetyo", nim: "2023008", status: "pending", fileName: null, grade: null },
-  { id: 6, name: "Maya Putri", nim: "2024007", status: "submitted", fileName: "laporan_maya.pdf", grade: null },
-];
-
 export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
+  const { toast } = useToast();
+  const { tasks, submissions, getTasksByCourse, getSubmissionsByTask, updateSubmissionGrade, getStudentSubmission } = useAcademicData();
+  
   const [addMaterialOpen, setAddMaterialOpen] = useState(false);
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<typeof assignmentsData[0] | null>(null);
+  const [selectedAssignment, setSelectedAssignment] = useState<typeof courseTasks[0] | null>(null);
   const [materialType, setMaterialType] = useState<"document" | "video">("document");
-  const [grades, setGrades] = useState<Record<number, number | null>>(() => {
-    const initial: Record<number, number | null> = {};
-    gradingData.forEach(student => {
-      initial[student.id] = student.grade;
-    });
-    return initial;
-  });
+  const [grades, setGrades] = useState<Record<number, number | null>>({});
+  const [notes, setNotes] = useState<Record<number, string>>({});
 
   const isLecturer = userRole === "lecturer";
+  const studentNim = "2024001"; // Simulated student
+  
+  const courseTasks = getTasksByCourse(course.id);
+  const assignmentsData = courseTasks.map(task => {
+    const submission = getStudentSubmission(task.id, studentNim);
+    return {
+      ...task,
+      status: submission?.status || "pending",
+      submittedAt: submission?.submittedAt,
+      grade: submission?.grade,
+      lecturerNote: submission?.lecturerNote,
+    };
+  });
 
-  const handleGradeChange = (studentId: number, value: string) => {
+  const handleGradeChange = (submissionId: number, value: string) => {
     const numValue = value === "" ? null : Math.min(100, Math.max(0, parseInt(value) || 0));
-    setGrades(prev => ({ ...prev, [studentId]: numValue }));
+    setGrades(prev => ({ ...prev, [submissionId]: numValue }));
+  };
+
+  const handleNoteChange = (submissionId: number, value: string) => {
+    setNotes(prev => ({ ...prev, [submissionId]: value }));
   };
 
   const handleSaveGrades = () => {
-    // Simulate saving grades
-    alert("Nilai berhasil disimpan!");
+    const taskSubmissions = selectedAssignment ? getSubmissionsByTask(selectedAssignment.id) : [];
+    taskSubmissions.forEach(sub => {
+      const grade = grades[sub.id] ?? sub.grade;
+      const note = notes[sub.id] ?? sub.lecturerNote;
+      if (grade !== sub.grade || note !== sub.lecturerNote) {
+        updateSubmissionGrade(sub.id, grade, note || null);
+      }
+    });
+    toast({
+      title: "Nilai berhasil disimpan!",
+      description: "Nilai dan catatan telah diperbarui untuk mahasiswa.",
+    });
     setSelectedAssignment(null);
   };
 
@@ -187,76 +169,65 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Nama Mahasiswa
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      NIM
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      File
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Nilai (0-100)
-                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nama Mahasiswa</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">NIM</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">File</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nilai</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Catatan Dosen</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {gradingData.map((student, index) => (
-                    <tr
-                      key={student.id}
-                      className="hover:bg-muted/30 transition-colors animate-fade-in"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
+                  {getSubmissionsByTask(selectedAssignment.id).map((student, index) => (
+                    <tr key={student.id} className="hover:bg-muted/30 transition-colors animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                            {student.name.charAt(0)}
+                            {student.studentName.charAt(0)}
                           </div>
-                          <span className="font-medium text-foreground">{student.name}</span>
+                          <span className="font-medium text-foreground">{student.studentName}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground font-mono">
-                        {student.nim}
-                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground font-mono">{student.studentNim}</td>
                       <td className="px-4 py-3">
                         <span className={cn(
                           "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-                          student.status === "submitted" 
-                            ? "bg-success/10 text-success" 
-                            : "bg-warning/10 text-warning"
+                          student.status !== "pending" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
                         )}>
-                          {student.status === "submitted" ? (
-                            <><Check className="h-3 w-3" /> Sudah Kumpul</>
-                          ) : (
-                            <><X className="h-3 w-3" /> Belum Kumpul</>
-                          )}
+                          {student.status !== "pending" ? <><Check className="h-3 w-3" /> Sudah Kumpul</> : <><X className="h-3 w-3" /> Belum Kumpul</>}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         {student.fileName ? (
                           <button className="flex items-center gap-2 text-sm text-primary hover:underline">
-                            <Download className="h-4 w-4" />
-                            {student.fileName}
+                            <Download className="h-4 w-4" />{student.fileName}
                           </button>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">-</span>
-                        )}
+                        ) : <span className="text-sm text-muted-foreground">-</span>}
                       </td>
                       <td className="px-4 py-3">
                         <input
                           type="number"
                           min="0"
                           max="100"
-                          value={grades[student.id] ?? ""}
+                          value={grades[student.id] ?? student.grade ?? ""}
                           onChange={(e) => handleGradeChange(student.id, e.target.value)}
                           placeholder="-"
                           disabled={student.status === "pending"}
                           className={cn(
                             "w-20 rounded-lg border border-input bg-background px-3 py-1.5 text-sm text-center focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+                            student.status === "pending" && "opacity-50 cursor-not-allowed"
+                          )}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <textarea
+                          rows={2}
+                          value={notes[student.id] ?? student.lecturerNote ?? ""}
+                          onChange={(e) => handleNoteChange(student.id, e.target.value)}
+                          placeholder="Catatan untuk mahasiswa..."
+                          disabled={student.status === "pending"}
+                          className={cn(
+                            "w-48 rounded-lg border border-input bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none",
                             student.status === "pending" && "opacity-50 cursor-not-allowed"
                           )}
                         />
@@ -270,22 +241,13 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
             <div className="border-t border-border p-4">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground">
-                    {gradingData.filter(s => s.status === "submitted").length}
-                  </span> dari <span className="font-medium text-foreground">{gradingData.length}</span> mahasiswa sudah mengumpulkan
+                  <span className="font-medium text-foreground">{getSubmissionsByTask(selectedAssignment.id).filter(s => s.status !== "pending").length}</span> dari <span className="font-medium text-foreground">{getSubmissionsByTask(selectedAssignment.id).length}</span> mahasiswa sudah mengumpulkan
                 </p>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => alert("Export rekap nilai ke Excel berhasil!")}
-                    className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors"
-                  >
-                    <Download className="h-4 w-4" />
-                    Export Rekap
+                  <button onClick={() => toast({ title: "Export berhasil!", description: "Rekap nilai diekspor ke Excel." })} className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted transition-colors">
+                    <Download className="h-4 w-4" />Export Rekap
                   </button>
-                  <button
-                    onClick={handleSaveGrades}
-                    className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
-                  >
+                  <button onClick={handleSaveGrades} className="rounded-lg bg-primary px-6 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">
                     Simpan Nilai
                   </button>
                 </div>
@@ -297,18 +259,9 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
         /* Normal Tabs View */
         <Tabs defaultValue="materials" className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-3 bg-muted">
-            <TabsTrigger value="materials" className="data-[state=active]:bg-background">
-              <FileText className="mr-2 h-4 w-4" />
-              Materi
-            </TabsTrigger>
-            <TabsTrigger value="assignments" className="data-[state=active]:bg-background">
-              <Calendar className="mr-2 h-4 w-4" />
-              Tugas
-            </TabsTrigger>
-            <TabsTrigger value="members" className="data-[state=active]:bg-background">
-              <Users className="mr-2 h-4 w-4" />
-              Anggota
-            </TabsTrigger>
+            <TabsTrigger value="materials" className="data-[state=active]:bg-background"><FileText className="mr-2 h-4 w-4" />Materi</TabsTrigger>
+            <TabsTrigger value="assignments" className="data-[state=active]:bg-background"><Calendar className="mr-2 h-4 w-4" />Tugas</TabsTrigger>
+            <TabsTrigger value="members" className="data-[state=active]:bg-background"><Users className="mr-2 h-4 w-4" />Anggota</TabsTrigger>
           </TabsList>
 
           {/* Materials Tab */}
@@ -319,75 +272,35 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                   <Dialog open={addMaterialOpen} onOpenChange={setAddMaterialOpen}>
                     <DialogTrigger asChild>
                       <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">
-                        <Plus className="h-4 w-4" />
-                        Tambah Materi
+                        <Plus className="h-4 w-4" />Tambah Materi
                       </button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Tambah Materi Baru</DialogTitle>
-                      </DialogHeader>
+                      <DialogHeader><DialogTitle>Tambah Materi Baru</DialogTitle></DialogHeader>
                       <div className="space-y-4 pt-4">
                         <div>
                           <label className="text-sm font-medium text-foreground">Pertemuan</label>
                           <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                            <option>Pertemuan 1</option>
-                            <option>Pertemuan 2</option>
-                            <option>Pertemuan 3</option>
-                            <option>Pertemuan 4</option>
+                            <option>Pertemuan 1</option><option>Pertemuan 2</option><option>Pertemuan 3</option><option>Pertemuan 4</option>
                           </select>
                         </div>
                         <div>
                           <label className="text-sm font-medium text-foreground">Judul Materi</label>
-                          <input
-                            type="text"
-                            placeholder="Masukkan judul materi"
-                            className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          />
+                          <input type="text" placeholder="Masukkan judul materi" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
                         </div>
-                        
-                        {/* Material Type Selector */}
                         <div>
                           <label className="text-sm font-medium text-foreground">Jenis Materi</label>
                           <div className="mt-2 grid grid-cols-2 gap-3">
-                            <button
-                              type="button"
-                              onClick={() => setMaterialType("document")}
-                              className={cn(
-                                "flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all",
-                                materialType === "document"
-                                  ? "border-primary bg-primary/5 text-primary"
-                                  : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted"
-                              )}
-                            >
-                              <FileText className="h-5 w-5" />
-                              Upload Dokumen
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setMaterialType("video")}
-                              className={cn(
-                                "flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all",
-                                materialType === "video"
-                                  ? "border-primary bg-primary/5 text-primary"
-                                  : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted"
-                              )}
-                            >
-                              <Link className="h-5 w-5" />
-                              Link Video
-                            </button>
+                            <button type="button" onClick={() => setMaterialType("document")} className={cn("flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all", materialType === "document" ? "border-primary bg-primary/5 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted")}><FileText className="h-5 w-5" />Upload Dokumen</button>
+                            <button type="button" onClick={() => setMaterialType("video")} className={cn("flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all", materialType === "video" ? "border-primary bg-primary/5 text-primary" : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted")}><Link className="h-5 w-5" />Link Video</button>
                           </div>
                         </div>
-
-                        {/* Conditional Content Based on Material Type */}
                         {materialType === "document" ? (
                           <div className="animate-fade-in">
                             <label className="text-sm font-medium text-foreground">Upload Dokumen</label>
                             <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-6 text-center hover:border-primary/50 transition-colors">
                               <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                              <p className="mt-2 text-sm text-muted-foreground">
-                                Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span>
-                              </p>
+                              <p className="mt-2 text-sm text-muted-foreground">Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span></p>
                               <p className="mt-1 text-xs text-muted-foreground">PDF, PPT, PPTX, DOC, DOCX (max 50MB)</p>
                             </div>
                           </div>
@@ -396,37 +309,13 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                             <label className="text-sm font-medium text-foreground">Link Video</label>
                             <div className="mt-1.5 relative">
                               <Video className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                              <input
-                                type="url"
-                                placeholder="Tempel link Youtube atau Google Drive di sini"
-                                className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                              />
+                              <input type="url" placeholder="Tempel link Youtube atau Google Drive di sini" className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" />
                             </div>
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              Contoh: https://youtube.com/watch?v=... atau https://drive.google.com/...
-                            </p>
                           </div>
                         )}
-
                         <div className="flex justify-end gap-3 pt-2">
-                          <button
-                            onClick={() => {
-                              setAddMaterialOpen(false);
-                              setMaterialType("document");
-                            }}
-                            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-                          >
-                            Batal
-                          </button>
-                          <button
-                            onClick={() => {
-                              setAddMaterialOpen(false);
-                              setMaterialType("document");
-                            }}
-                            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
-                          >
-                            Simpan
-                          </button>
+                          <button onClick={() => { setAddMaterialOpen(false); setMaterialType("document"); }} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors">Batal</button>
+                          <button onClick={() => { setAddMaterialOpen(false); setMaterialType("document"); toast({ title: "Materi berhasil ditambahkan!" }); }} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">Simpan</button>
                         </div>
                       </div>
                     </DialogContent>
@@ -436,51 +325,26 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
 
               <Accordion type="multiple" className="space-y-3">
                 {materialsData.map((week, index) => (
-                  <AccordionItem
-                    key={week.id}
-                    value={`week-${week.id}`}
-                    className="rounded-xl border border-border bg-card overflow-hidden animate-fade-in"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
+                  <AccordionItem key={week.id} value={`week-${week.id}`} className="rounded-xl border border-border bg-card overflow-hidden animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
                     <AccordionTrigger className="px-4 py-3 hover:bg-muted/50 hover:no-underline [&[data-state=open]]:bg-muted/50">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
-                          {week.id}
-                        </div>
-                        <div className="text-left">
-                          <p className="font-semibold text-foreground">{week.week}</p>
-                          <p className="text-sm text-muted-foreground">{week.title}</p>
-                        </div>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">{week.id}</div>
+                        <div className="text-left"><p className="font-semibold text-foreground">{week.week}</p><p className="text-sm text-muted-foreground">{week.title}</p></div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="border-t border-border bg-muted/20 px-4 py-3">
                       <div className="space-y-2">
                         {week.materials.map((material) => (
-                          <div
-                            key={material.id}
-                            className="group flex items-center justify-between rounded-lg bg-card border border-border/50 p-3 hover:border-primary/30 transition-all"
-                          >
+                          <div key={material.id} className="group flex items-center justify-between rounded-lg bg-card border border-border/50 p-3 hover:border-primary/30 transition-all">
                             <div className="flex items-center gap-3">
                               {material.type === "pdf" ? (
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
-                                  <FileText className="h-5 w-5 text-destructive" />
-                                </div>
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10"><FileText className="h-5 w-5 text-destructive" /></div>
                               ) : (
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                                  <Video className="h-5 w-5 text-primary" />
-                                </div>
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10"><Video className="h-5 w-5 text-primary" /></div>
                               )}
-                              <div>
-                                <p className="font-medium text-foreground">{material.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {material.type === "pdf" ? material.size : material.duration}
-                                </p>
-                              </div>
+                              <div><p className="font-medium text-foreground">{material.name}</p><p className="text-xs text-muted-foreground">{material.type === "pdf" ? material.size : material.duration}</p></div>
                             </div>
-                            <button className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-                              <Download className="h-4 w-4" />
-                              Download
-                            </button>
+                            <button className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Download className="h-4 w-4" />Download</button>
                           </div>
                         ))}
                       </div>
@@ -498,92 +362,20 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                 <div className="flex justify-end">
                   <Dialog open={addAssignmentOpen} onOpenChange={setAddAssignmentOpen}>
                     <DialogTrigger asChild>
-                      <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">
-                        <Plus className="h-4 w-4" />
-                        Buat Tugas
-                      </button>
+                      <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"><Plus className="h-4 w-4" />Buat Tugas</button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Buat Tugas Baru</DialogTitle>
-                      </DialogHeader>
+                      <DialogHeader><DialogTitle>Buat Tugas Baru</DialogTitle></DialogHeader>
                       <div className="space-y-4 pt-4">
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Judul Tugas</label>
-                          <input
-                            type="text"
-                            placeholder="Masukkan judul tugas"
-                            className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Deskripsi</label>
-                          <textarea
-                            rows={3}
-                            placeholder="Masukkan deskripsi tugas"
-                            className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-                          />
-                        </div>
+                        <div><label className="text-sm font-medium text-foreground">Judul Tugas</label><input type="text" placeholder="Masukkan judul tugas" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
+                        <div><label className="text-sm font-medium text-foreground">Deskripsi</label><textarea rows={3} placeholder="Masukkan deskripsi tugas" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" /></div>
                         <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm font-medium text-foreground">Deadline</label>
-                            <input
-                              type="date"
-                              className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-foreground">Nilai Maksimal</label>
-                            <input
-                              type="number"
-                              placeholder="100"
-                              className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                          </div>
+                          <div><label className="text-sm font-medium text-foreground">Deadline</label><input type="date" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
+                          <div><label className="text-sm font-medium text-foreground">Nilai Maksimal</label><input type="number" placeholder="100" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
                         </div>
-
-                        {/* Upload Lampiran (Opsional) */}
-                        <div>
-                          <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                            <Paperclip className="h-4 w-4" />
-                            Upload Lampiran (Opsional)
-                          </label>
-                          <p className="text-xs text-muted-foreground mt-0.5 mb-2">
-                            Sertakan file instruksi atau soal untuk mahasiswa
-                          </p>
-                          <div className="rounded-lg border-2 border-dashed border-border bg-muted/30 p-4 text-center hover:border-primary/50 transition-colors">
-                            <Upload className="mx-auto h-6 w-6 text-muted-foreground" />
-                            <p className="mt-2 text-sm text-muted-foreground">
-                              Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span>
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">PDF, Word, PPT (max 25MB)</p>
-                          </div>
-                          <div className="mt-3">
-                            <label className="text-xs font-medium text-muted-foreground">Atau sertakan link:</label>
-                            <div className="relative mt-1">
-                              <Link className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                              <input
-                                type="url"
-                                placeholder="Link Google Drive / Dropbox"
-                                className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
                         <div className="flex justify-end gap-3 pt-2">
-                          <button
-                            onClick={() => setAddAssignmentOpen(false)}
-                            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-                          >
-                            Batal
-                          </button>
-                          <button
-                            onClick={() => setAddAssignmentOpen(false)}
-                            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
-                          >
-                            Buat Tugas
-                          </button>
+                          <button onClick={() => setAddAssignmentOpen(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors">Batal</button>
+                          <button onClick={() => { setAddAssignmentOpen(false); toast({ title: "Tugas berhasil dibuat!" }); }} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">Buat Tugas</button>
                         </div>
                       </div>
                     </DialogContent>
@@ -593,43 +385,34 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
 
               <div className="space-y-4">
                 {assignmentsData.map((assignment, index) => (
-                  <div
-                    key={assignment.id}
-                    className={cn(
-                      "rounded-xl border border-border bg-card p-5 shadow-card hover:shadow-lg transition-all animate-fade-in",
-                      isLecturer && "cursor-pointer hover:border-primary/50"
-                    )}
-                    style={{ animationDelay: `${index * 100}ms` }}
-                    onClick={() => isLecturer && setSelectedAssignment(assignment)}
-                  >
+                  <div key={assignment.id} className={cn("rounded-xl border border-border bg-card p-5 shadow-card hover:shadow-lg transition-all animate-fade-in", isLecturer && "cursor-pointer hover:border-primary/50")} style={{ animationDelay: `${index * 100}ms` }} onClick={() => isLecturer && setSelectedAssignment(assignment)}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3">
                           <h3 className="font-semibold text-foreground">{assignment.title}</h3>
-                          <span
-                            className={cn(
-                              "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                              assignment.status === "submitted"
-                                ? "bg-success/10 text-success"
-                                : "bg-warning/10 text-warning"
-                            )}
-                          >
-                            {assignment.status === "submitted" ? "Sudah Dikumpul" : "Belum Dikumpul"}
+                          <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", assignment.status !== "pending" ? "bg-success/10 text-success" : "bg-warning/10 text-warning")}>
+                            {assignment.status !== "pending" ? "Sudah Dikumpul" : "Belum Dikumpul"}
                           </span>
+                          {assignment.grade !== null && assignment.grade !== undefined && (
+                            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">Nilai: {assignment.grade}</span>
+                          )}
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">{assignment.description}</p>
                         <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="h-4 w-4" />
-                            Deadline: {assignment.deadline}
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <FileText className="h-4 w-4" />
-                            Nilai: {assignment.maxScore}
-                          </div>
+                          <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" />Deadline: {assignment.deadline}</div>
+                          <div className="flex items-center gap-1.5"><FileText className="h-4 w-4" />Nilai Maks: {assignment.maxScore}</div>
                         </div>
-                        {isLecturer && (
-                          <p className="mt-2 text-xs text-primary">Klik untuk melihat & menilai pengumpulan →</p>
+                        {isLecturer && <p className="mt-2 text-xs text-primary">Klik untuk melihat & menilai pengumpulan →</p>}
+                        
+                        {/* Student: Show Lecturer Note if graded */}
+                        {!isLecturer && assignment.lecturerNote && (
+                          <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                            <div className="flex items-center gap-2 text-sm font-medium text-primary mb-1">
+                              <MessageSquare className="h-4 w-4" />
+                              Catatan dari Dosen
+                            </div>
+                            <p className="text-sm text-foreground">{assignment.lecturerNote}</p>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -637,92 +420,32 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                     {/* Student Upload Area */}
                     {!isLecturer && assignment.status === "pending" && (
                       <div className="mt-4 pt-4 border-t border-border space-y-4" onClick={(e) => e.stopPropagation()}>
-                        {/* Download Instruksi/Soal dari Dosen */}
                         {assignment.hasAttachment && (
                           <div className="flex items-center justify-between rounded-lg bg-primary/5 border border-primary/20 p-3">
                             <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                                <FileText className="h-5 w-5 text-primary" />
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-foreground">Instruksi/Soal dari Dosen</p>
-                                <p className="text-xs text-muted-foreground">{assignment.attachmentName}</p>
-                              </div>
+                              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10"><FileText className="h-5 w-5 text-primary" /></div>
+                              <div><p className="text-sm font-medium text-foreground">Instruksi/Soal dari Dosen</p><p className="text-xs text-muted-foreground">{assignment.attachmentName}</p></div>
                             </div>
-                            <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">
-                              <Download className="h-4 w-4" />
-                              Download
-                            </button>
+                            <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"><Download className="h-4 w-4" />Download</button>
                           </div>
                         )}
-                        {/* Drag & Drop File Area */}
                         <div>
                           <label className="text-sm font-medium text-foreground">Upload File</label>
-                          <div
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                              setDragOver(true);
-                            }}
-                            onDragLeave={() => setDragOver(false)}
-                            onDrop={() => setDragOver(false)}
-                            className={cn(
-                              "mt-1.5 rounded-lg border-2 border-dashed p-6 text-center transition-all",
-                              dragOver
-                                ? "border-primary bg-primary/5"
-                                : "border-border bg-muted/30"
-                            )}
-                          >
+                          <div onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={() => setDragOver(false)} className={cn("mt-1.5 rounded-lg border-2 border-dashed p-6 text-center transition-all", dragOver ? "border-primary bg-primary/5" : "border-border bg-muted/30")}>
                             <GripVertical className="mx-auto h-8 w-8 text-muted-foreground" />
-                            <p className="mt-2 font-medium text-foreground">
-                              Drag & drop file tugas Anda di sini
-                            </p>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
-                            </p>
-                          </div>
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            Format didukung: PDF, Word, Excel, atau Link Eksternal
-                          </p>
-                        </div>
-
-                        {/* Input Link */}
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Link (Opsional)</label>
-                          <div className="relative mt-1.5">
-                            <Link className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <input
-                              type="url"
-                              placeholder="Link GDrive / Youtube / Project"
-                              className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
+                            <p className="mt-2 font-medium text-foreground">Drag & drop file tugas Anda di sini</p>
+                            <p className="mt-1 text-sm text-muted-foreground">atau <span className="text-primary cursor-pointer hover:underline">browse file</span></p>
                           </div>
                         </div>
-
-                        {/* Notes Text Area */}
-                        <div>
-                          <label className="text-sm font-medium text-foreground">Catatan (Opsional)</label>
-                          <textarea
-                            rows={3}
-                            placeholder="Tulis catatan untuk dosen..."
-                            className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
-                          />
-                        </div>
-
-                        <button className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">
-                          <Upload className="mr-2 inline h-4 w-4" />
-                          Upload Tugas
-                        </button>
+                        <button onClick={() => toast({ title: "Tugas berhasil diupload!" })} className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"><Upload className="mr-2 inline h-4 w-4" />Upload Tugas</button>
                       </div>
                     )}
 
-                    {!isLecturer && assignment.status === "submitted" && (
+                    {!isLecturer && assignment.status !== "pending" && (
                       <div className="mt-4 pt-4 border-t border-border">
                         <div className="flex items-center gap-3 rounded-lg bg-success/10 p-3">
                           <FileText className="h-5 w-5 text-success" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-success">Tugas telah dikumpulkan</p>
-                            <p className="text-xs text-success/80">Dikumpul pada: {assignment.submittedAt}</p>
-                          </div>
+                          <div className="flex-1"><p className="text-sm font-medium text-success">Tugas telah dikumpulkan</p><p className="text-xs text-success/80">Dikumpul pada: {assignment.submittedAt}</p></div>
                         </div>
                       </div>
                     )}
@@ -738,25 +461,14 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
               <div className="border-b border-border bg-muted/50 p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-foreground">Daftar Mahasiswa</h3>
-                  <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                    {membersData.length} Mahasiswa
-                  </span>
+                  <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">{membersData.length} Mahasiswa</span>
                 </div>
               </div>
               <div className="divide-y divide-border">
                 {membersData.map((member, index) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors animate-fade-in"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                      {member.name.charAt(0)}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">{member.name}</p>
-                      <p className="text-sm text-muted-foreground">{member.nim}</p>
-                    </div>
+                  <div key={member.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{member.name.charAt(0)}</div>
+                    <div className="flex-1"><p className="font-medium text-foreground">{member.name}</p><p className="text-sm text-muted-foreground">{member.nim}</p></div>
                     <p className="text-sm text-muted-foreground">{member.email}</p>
                   </div>
                 ))}
