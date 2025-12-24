@@ -390,7 +390,11 @@ export default function Courses() {
                       >
                         <Pencil className="h-4 w-4 text-muted-foreground hover:text-primary" />
                       </button>
-                      <button className="rounded-lg p-2 hover:bg-destructive/10 transition-colors" title="Hapus">
+                      <button 
+                        onClick={() => handleDeleteCourse(course)}
+                        className="rounded-lg p-2 hover:bg-destructive/10 transition-colors" 
+                        title="Hapus"
+                      >
                         <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                       </button>
                     </div>
@@ -505,10 +509,27 @@ export default function Courses() {
                   className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">Pilih Semester</option>
-                  <option value="Ganjil">Ganjil</option>
-                  <option value="Genap">Genap</option>
+                  <option value="1">Semester 1</option>
+                  <option value="2">Semester 2</option>
+                  <option value="3">Semester 3</option>
+                  <option value="4">Semester 4</option>
+                  <option value="5">Semester 5</option>
+                  <option value="6">Semester 6</option>
                 </select>
               </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Dosen Pengampu <span className="text-destructive">*</span></label>
+              <select 
+                value={formData.lecturer}
+                onChange={(e) => setFormData(prev => ({ ...prev, lecturer: e.target.value }))}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">Pilih Dosen</option>
+                {managedLecturers.filter(l => l.status === "Aktif").map((lecturer) => (
+                  <option key={lecturer.id} value={lecturer.name}>{lecturer.name}</option>
+                ))}
+              </select>
             </div>
             <div className="flex justify-end gap-3 pt-4">
               <Button variant="outline" onClick={() => setEditCourseOpen(false)}>
@@ -619,10 +640,26 @@ export default function Courses() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Course Confirmation */}
+      <AlertDialog open={deleteCourseOpen} onOpenChange={setDeleteCourseOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Mata Kuliah?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus <span className="font-medium">{selectedCourse?.name}</span>? Data ini akan dihapus secara permanen dan tidak dapat dikembalikan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteCourse} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Ya, Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
-
-  // Student View - My Active Classes
   const renderStudentView = () => (
     <>
       <div className="grid grid-cols-2 gap-5">

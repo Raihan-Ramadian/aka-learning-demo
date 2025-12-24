@@ -84,6 +84,7 @@ export default function Schedule() {
     time: "",
     room: "",
     lecturer: "",
+    course: "",
   });
 
   const getScheduleByDay = (day: string) => {
@@ -400,6 +401,7 @@ export default function Schedule() {
       time: schedule.time,
       room: schedule.room,
       lecturer: schedule.lecturer,
+      course: schedule.course,
     });
     setEditScheduleOpen(true);
   };
@@ -849,7 +851,7 @@ export default function Schedule() {
 
       {/* Edit Schedule Modal */}
       <Dialog open={editScheduleOpen} onOpenChange={setEditScheduleOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Jadwal Kelas</DialogTitle>
           </DialogHeader>
@@ -859,36 +861,17 @@ export default function Schedule() {
               <p className="text-xs text-muted-foreground mt-1">{selectedSchedule?.students.length} mahasiswa terdaftar</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Hari</label>
+              <label className="text-sm font-medium text-foreground">Mata Kuliah</label>
               <select 
-                value={editScheduleData.day}
-                onChange={(e) => setEditScheduleData({...editScheduleData, day: e.target.value})}
+                value={editScheduleData.course || selectedSchedule?.course || ""}
+                onChange={(e) => setEditScheduleData({...editScheduleData, course: e.target.value})}
                 className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
-                {daysOfWeek.map((day) => (
-                  <option key={day} value={day}>{day}</option>
+                <option value="">Pilih Mata Kuliah</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.name}>{course.code} - {course.name}</option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Jam</label>
-              <input
-                type="text"
-                value={editScheduleData.time}
-                onChange={(e) => setEditScheduleData({...editScheduleData, time: e.target.value})}
-                placeholder="Contoh: 08:00 - 09:40"
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Ruangan</label>
-              <input
-                type="text"
-                value={editScheduleData.room}
-                onChange={(e) => setEditScheduleData({...editScheduleData, room: e.target.value})}
-                placeholder="Contoh: Lab Kimia A"
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Dosen Pengampu</label>
@@ -901,6 +884,56 @@ export default function Schedule() {
                 {managedLecturers.map((lecturer) => (
                   <option key={lecturer.id} value={lecturer.name}>{lecturer.name}</option>
                 ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Hari</label>
+                <select 
+                  value={editScheduleData.day}
+                  onChange={(e) => setEditScheduleData({...editScheduleData, day: e.target.value})}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  {daysOfWeek.map((day) => (
+                    <option key={day} value={day}>{day}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Ruangan</label>
+                <select 
+                  value={editScheduleData.room}
+                  onChange={(e) => setEditScheduleData({...editScheduleData, room: e.target.value})}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">Pilih Ruangan</option>
+                  <option value="Lab Kimia A">Lab Kimia A</option>
+                  <option value="Lab Kimia B">Lab Kimia B</option>
+                  <option value="Lab Instrumen">Lab Instrumen</option>
+                  <option value="R. 201">R. 201</option>
+                  <option value="R. 202">R. 202</option>
+                  <option value="R. 301">R. 301</option>
+                  <option value="R. 302">R. 302</option>
+                  <option value="Aula">Aula</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Jam</label>
+              <select 
+                value={editScheduleData.time}
+                onChange={(e) => setEditScheduleData({...editScheduleData, time: e.target.value})}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">Pilih Jam</option>
+                <option value="07:00 - 08:40">07:00 - 08:40</option>
+                <option value="08:00 - 09:40">08:00 - 09:40</option>
+                <option value="09:00 - 10:40">09:00 - 10:40</option>
+                <option value="10:00 - 11:40">10:00 - 11:40</option>
+                <option value="13:00 - 14:40">13:00 - 14:40</option>
+                <option value="13:00 - 15:30">13:00 - 15:30</option>
+                <option value="14:00 - 15:40">14:00 - 15:40</option>
+                <option value="15:00 - 16:40">15:00 - 16:40</option>
               </select>
             </div>
             <div className="flex justify-end gap-3 pt-2">

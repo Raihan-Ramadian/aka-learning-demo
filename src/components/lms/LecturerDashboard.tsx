@@ -28,12 +28,25 @@ export function LecturerDashboard() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   
-  // Filter courses for lecturer (ids 1, 4, 5)
-  const lecturerCourses = courses.filter(c => [1, 4, 5].includes(c.id));
-  
   // Simulated lecturer name - in real app this would come from auth
   const lecturerName = "Sari Dewi";
   const mySchedules = getLecturerSchedules(lecturerName);
+  
+  // Get unique courses from lecturer's schedules dynamically
+  const lecturerCourseNames = [...new Set(mySchedules.map(s => s.course))];
+  const lecturerCourses = lecturerCourseNames.map(courseName => {
+    const existingCourse = courses.find(c => c.name === courseName);
+    if (existingCourse) return existingCourse;
+    // Create a fallback course object for courses not in master data
+    return {
+      id: Date.now() + Math.random(),
+      name: courseName,
+      code: "N/A",
+      lecturer: lecturerName,
+      color: "from-primary to-primary/50",
+      classes: mySchedules.filter(s => s.course === courseName).length,
+    };
+  });
 
   // Calculate dynamic stats
   const totalStudents = mySchedules.reduce((sum, s) => sum + s.students.length, 0);
