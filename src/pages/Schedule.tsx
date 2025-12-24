@@ -29,7 +29,7 @@ const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
 export default function Schedule() {
   const currentRole = getUserRole();
-  const { academicEvents, schedules, courses, managedLecturers, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule, deleteSchedule, addSchedule, addAcademicEvent, deleteAcademicEvent, importSchedulesFromCSV } = useAcademicData();
+  const { academicEvents, schedules, courses, managedLecturers, managedStudents, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule, deleteSchedule, addSchedule, addAcademicEvent, deleteAcademicEvent, importSchedulesFromCSV } = useAcademicData();
   
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [addEventOpen, setAddEventOpen] = useState(false);
@@ -56,6 +56,8 @@ export default function Schedule() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [newStudentNim, setNewStudentNim] = useState("");
   const [newStudentName, setNewStudentName] = useState("");
+  const [selectedManagedStudentId, setSelectedManagedStudentId] = useState<number | null>(null);
+  const [studentSearchQuery, setStudentSearchQuery] = useState("");
 
   // Delete Schedule Confirmation
   const [deleteScheduleOpen, setDeleteScheduleOpen] = useState(false);
@@ -286,19 +288,33 @@ export default function Schedule() {
   };
 
   const handleAddStudent = () => {
-    if (!selectedSchedule || !newStudentNim || !newStudentName) {
-      toast.error("Mohon lengkapi data mahasiswa!");
+    if (!selectedSchedule || !selectedManagedStudentId) {
+      toast.error("Mohon pilih mahasiswa dari daftar!");
       return;
     }
+    
+    const selectedManagedStudent = managedStudents.find(s => s.id === selectedManagedStudentId);
+    if (!selectedManagedStudent) {
+      toast.error("Mahasiswa tidak ditemukan!");
+      return;
+    }
+    
+    // Check for duplicate
+    const isDuplicate = currentSchedule?.students.some(s => s.nim === selectedManagedStudent.nim);
+    if (isDuplicate) {
+      toast.error("Mahasiswa sudah terdaftar di kelas ini!");
+      return;
+    }
+    
     const newStudent: Student = {
       id: Date.now(),
-      name: newStudentName,
-      nim: newStudentNim,
+      name: selectedManagedStudent.name,
+      nim: selectedManagedStudent.nim,
     };
     addStudentToClass(selectedSchedule.id, newStudent);
-    toast.success("Mahasiswa berhasil ditambahkan!");
-    setNewStudentNim("");
-    setNewStudentName("");
+    toast.success(`${selectedManagedStudent.name} berhasil ditambahkan ke kelas!`);
+    setSelectedManagedStudentId(null);
+    setStudentSearchQuery("");
     setAddStudentOpen(false);
   };
 
@@ -641,40 +657,101 @@ export default function Schedule() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Student Modal */}
-      <Dialog open={addStudentOpen} onOpenChange={setAddStudentOpen}>
+      {/* Add Student Modal - Searchable Select */}
+      <Dialog open={addStudentOpen} onOpenChange={(open) => {
+        setAddStudentOpen(open);
+        if (!open) {
+          setSelectedManagedStudentId(null);
+          setStudentSearchQuery("");
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Tambah Mahasiswa</DialogTitle>
+            <DialogTitle>Tambah Mahasiswa ke Kelas</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div>
-              <label className="text-sm font-medium text-foreground">NIM</label>
+              <label className="text-sm font-medium text-foreground">Pilih Mahasiswa <span className="text-destructive">*</span></label>
+              <p className="text-xs text-muted-foreground mt-1 mb-2">Cari dan pilih mahasiswa dari Master Data</p>
+              
+              {/* Search Input */}
               <input
                 type="text"
-                value={newStudentNim}
-                onChange={(e) => setNewStudentNim(e.target.value)}
-                placeholder="Contoh: 2024001"
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                value={studentSearchQuery}
+                onChange={(e) => setStudentSearchQuery(e.target.value)}
+                placeholder="Ketik nama atau NIM untuk mencari..."
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
+              
+              {/* Student List */}
+              <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-border bg-background">
+                {managedStudents
+                  .filter(student => {
+                    const query = studentSearchQuery.toLowerCase();
+                    const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
+                    return !isAlreadyInClass && (
+                      student.name.toLowerCase().includes(query) ||
+                      student.nim.toLowerCase().includes(query)
+                    );
+                  })
+                  .map((student) => (
+                    <button
+                      key={student.id}
+                      type="button"
+                      onClick={() => setSelectedManagedStudentId(student.id)}
+                      className={cn(
+                        "w-full flex items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50",
+                        selectedManagedStudentId === student.id && "bg-primary/10 border-l-2 border-primary"
+                      )}
+                    >
+                      <div>
+                        <p className="font-medium text-foreground">{student.name}</p>
+                        <p className="text-xs text-muted-foreground">{student.nim} • {student.prodi}</p>
+                      </div>
+                      {selectedManagedStudentId === student.id && (
+                        <div className="h-2 w-2 rounded-full bg-primary" />
+                      )}
+                    </button>
+                  ))}
+                {managedStudents.filter(student => {
+                  const query = studentSearchQuery.toLowerCase();
+                  const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
+                  return !isAlreadyInClass && (
+                    student.name.toLowerCase().includes(query) ||
+                    student.nim.toLowerCase().includes(query)
+                  );
+                }).length === 0 && (
+                  <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                    {studentSearchQuery ? "Tidak ada mahasiswa yang cocok" : "Semua mahasiswa sudah terdaftar di kelas ini"}
+                  </div>
+                )}
+              </div>
+              
+              {/* Selected Student Preview */}
+              {selectedManagedStudentId && (
+                <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <p className="text-xs text-muted-foreground">Mahasiswa terpilih:</p>
+                  <p className="font-medium text-foreground">
+                    {managedStudents.find(s => s.id === selectedManagedStudentId)?.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    NIM: {managedStudents.find(s => s.id === selectedManagedStudentId)?.nim}
+                  </p>
+                </div>
+              )}
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Nama Lengkap</label>
-              <input
-                type="text"
-                value={newStudentName}
-                onChange={(e) => setNewStudentName(e.target.value)}
-                placeholder="Contoh: Siti Rahayu"
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
+            
             <div className="flex justify-end gap-3 pt-2">
-              <Button variant="outline" onClick={() => setAddStudentOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setAddStudentOpen(false);
+                setSelectedManagedStudentId(null);
+                setStudentSearchQuery("");
+              }}>
                 Batal
               </Button>
-              <Button onClick={handleAddStudent}>
+              <Button onClick={handleAddStudent} disabled={!selectedManagedStudentId}>
                 <Plus className="mr-2 h-4 w-4" />
-                Tambah
+                Tambah ke Kelas
               </Button>
             </div>
           </div>
@@ -820,12 +897,10 @@ export default function Schedule() {
                 onChange={(e) => setEditScheduleData({...editScheduleData, lecturer: e.target.value})}
                 className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
-                <option value="Dr. Ahmad Wijaya">Dr. Ahmad Wijaya</option>
-                <option value="Prof. Sari Dewi">Prof. Sari Dewi</option>
-                <option value="Pak Budi Santoso">Pak Budi Santoso</option>
-                <option value="Dr. Maya Putri">Dr. Maya Putri</option>
-                <option value="Pak Eko Prasetyo">Pak Eko Prasetyo</option>
-                <option value="Dr. Rina Wulandari">Dr. Rina Wulandari</option>
+                <option value="">Pilih Dosen</option>
+                {managedLecturers.map((lecturer) => (
+                  <option key={lecturer.id} value={lecturer.name}>{lecturer.name}</option>
+                ))}
               </select>
             </div>
             <div className="flex justify-end gap-3 pt-2">
