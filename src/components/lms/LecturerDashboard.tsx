@@ -34,17 +34,23 @@ export function LecturerDashboard() {
   
   // Get unique courses from lecturer's schedules dynamically
   const lecturerCourseNames = [...new Set(mySchedules.map(s => s.course))];
-  const lecturerCourses = lecturerCourseNames.map(courseName => {
+  const lecturerCourses = lecturerCourseNames.map((courseName, index) => {
     const existingCourse = courses.find(c => c.name === courseName);
-    if (existingCourse) return existingCourse;
-    // Create a fallback course object for courses not in master data
+    const schedulesForCourse = mySchedules.filter(s => s.course === courseName);
+    if (existingCourse) {
+      return {
+        ...existingCourse,
+        classes: schedulesForCourse.length,
+      };
+    }
+    // Create a fallback course object for courses not in master data with stable ID
     return {
-      id: Date.now() + Math.random(),
+      id: -1 * (index + 1), // Use negative index for temp IDs to avoid conflicts
       name: courseName,
       code: "N/A",
       lecturer: lecturerName,
       color: "from-primary to-primary/50",
-      classes: mySchedules.filter(s => s.course === courseName).length,
+      classes: schedulesForCourse.length,
     };
   });
 

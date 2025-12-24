@@ -91,7 +91,7 @@ export default function Courses() {
   
   // Get unique courses from lecturer's schedules
   const lecturerCourseNames = [...new Set(mySchedules.map(s => s.course))];
-  const lecturerCourses = lecturerCourseNames.map(courseName => {
+  const lecturerCourses = lecturerCourseNames.map((courseName, index) => {
     const existingCourse = courses.find(c => c.name === courseName);
     const schedulesForCourse = mySchedules.filter(s => s.course === courseName);
     const totalStudents = schedulesForCourse.reduce((sum, s) => sum + s.students.length, 0);
@@ -103,8 +103,9 @@ export default function Courses() {
         schedulesForCourse,
       };
     }
+    // Create a fallback course object for courses not in master data with stable ID
     return {
-      id: Date.now() + Math.random(),
+      id: -1 * (index + 1), // Use negative index for temp IDs to avoid conflicts
       name: courseName,
       code: "N/A",
       lecturer: lecturerName,
