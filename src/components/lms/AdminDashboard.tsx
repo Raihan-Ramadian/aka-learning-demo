@@ -23,12 +23,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { useAcademicData } from "@/contexts/AcademicDataContext";
+import { useAcademicData, ManagedStudent, ManagedLecturer } from "@/contexts/AcademicDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { FileDropZone } from "@/components/ui/file-dropzone";
-import { downloadCSV, downloadPDF, generateSchedulePDFContent } from "@/lib/file-utils";
+import { downloadCSV } from "@/lib/file-utils";
 
 const prodiOptions = [
   { value: "all", label: "Semua Prodi" },
@@ -37,25 +37,27 @@ const prodiOptions = [
   { value: "d4-ak", label: "D4 Analisis Kimia" },
 ];
 
-const studentsData = [
-  { id: 1, name: "Siti Rahayu", nim: "2024001", prodi: "D3 Analisis Kimia", email: "siti@mhs.aka.ac.id", status: "Aktif", phone: "081234567890", address: "Jl. Merdeka No. 10, Bogor", angkatan: "2024" },
-  { id: 2, name: "Ahmad Fadli", nim: "2024002", prodi: "D3 Analisis Kimia", email: "ahmad@mhs.aka.ac.id", status: "Aktif", phone: "081234567891", address: "Jl. Sudirman No. 5, Bogor", angkatan: "2024" },
-  { id: 3, name: "Dewi Lestari", nim: "2024003", prodi: "D3 Teknik Informatika", email: "dewi@mhs.aka.ac.id", status: "Aktif", phone: "081234567892", address: "Jl. Ahmad Yani No. 15, Bogor", angkatan: "2024" },
-  { id: 4, name: "Budi Santoso", nim: "2023015", prodi: "D4 Analisis Kimia", email: "budi@mhs.aka.ac.id", status: "Cuti", phone: "081234567893", address: "Jl. Pahlawan No. 20, Bogor", angkatan: "2023" },
-  { id: 5, name: "Rina Wulandari", nim: "2024005", prodi: "D3 Analisis Kimia", email: "rina@mhs.aka.ac.id", status: "Aktif", phone: "081234567894", address: "Jl. Diponegoro No. 8, Bogor", angkatan: "2024" },
-  { id: 6, name: "Eko Prasetyo", nim: "2023008", prodi: "D3 Teknik Informatika", email: "eko@mhs.aka.ac.id", status: "Aktif", phone: "081234567895", address: "Jl. Gatot Subroto No. 12, Bogor", angkatan: "2023" },
-];
-
-const lecturersData = [
-  { id: 1, name: "Dr. Ahmad Wijaya", nip: "198501012010011001", prodi: "D3 Analisis Kimia", email: "ahmad@dosen.aka.ac.id", status: "Aktif", phone: "081234567801", address: "Jl. Profesor No. 1, Bogor", jabatan: "Lektor Kepala" },
-  { id: 2, name: "Prof. Sari Dewi", nip: "197805152005012001", prodi: "D3 Analisis Kimia", email: "sari@dosen.aka.ac.id", status: "Aktif", phone: "081234567802", address: "Jl. Akademik No. 5, Bogor", jabatan: "Guru Besar" },
-  { id: 3, name: "Pak Budi Santoso", nip: "198203202008011003", prodi: "D3 Teknik Informatika", email: "budi@dosen.aka.ac.id", status: "Aktif", phone: "081234567803", address: "Jl. Pendidikan No. 10, Bogor", jabatan: "Lektor" },
-  { id: 4, name: "Dr. Maya Putri", nip: "198906302015012001", prodi: "D4 Analisis Kimia", email: "maya@dosen.aka.ac.id", status: "Cuti", phone: "081234567804", address: "Jl. Ilmu No. 3, Bogor", jabatan: "Asisten Ahli" },
-];
+const prodiMap: Record<string, string> = {
+  "d3-ak": "D3 Analisis Kimia",
+  "d3-ti": "D3 Teknik Informatika",
+  "d4-ak": "D4 Analisis Kimia",
+};
 
 export function AdminDashboard() {
   const { toast } = useToast();
-  const { courses, schedules } = useAcademicData();
+  const { 
+    managedStudents, 
+    managedLecturers, 
+    addManagedStudent, 
+    updateManagedStudent, 
+    deleteManagedStudent,
+    addManagedLecturer,
+    updateManagedLecturer,
+    deleteManagedLecturer,
+    importStudentsFromCSV,
+    importLecturersFromCSV,
+    schedules 
+  } = useAcademicData();
   
   const [selectedProdi, setSelectedProdi] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,18 +68,32 @@ export function AdminDashboard() {
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [addUserType, setAddUserType] = useState<"mahasiswa" | "dosen">("mahasiswa");
   const [importedFile, setImportedFile] = useState<File | null>(null);
+  const [importDataType, setImportDataType] = useState<"mahasiswa" | "dosen">("mahasiswa");
   
   // User action modal states
   const [viewUserOpen, setViewUserOpen] = useState(false);
   const [editUserOpen, setEditUserOpen] = useState(false);
   const [deleteUserOpen, setDeleteUserOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<typeof studentsData[0] | typeof lecturersData[0] | null>(null);
+  const [selectedUser, setSelectedUser] = useState<ManagedStudent | ManagedLecturer | null>(null);
 
-  // Dynamic statistics
-  const totalMahasiswa = studentsData.length;
-  const totalDosen = lecturersData.length;
+  // Form states for add/edit
+  const [formData, setFormData] = useState({
+    name: "",
+    nimNip: "",
+    email: "",
+    prodi: "",
+    status: "Aktif" as "Aktif" | "Cuti" | "Alumni",
+    phone: "",
+    address: "",
+    angkatan: "",
+    jabatan: "",
+  });
+
+  // Dynamic statistics from context
+  const totalMahasiswa = managedStudents.length;
+  const totalDosen = managedLecturers.length;
   const totalUsers = totalMahasiswa + totalDosen;
-  const uniqueProdi = new Set([...studentsData.map(s => s.prodi), ...lecturersData.map(l => l.prodi)]);
+  const uniqueProdi = new Set([...managedStudents.map(s => s.prodi), ...managedLecturers.map(l => l.prodi)]);
   const totalProdi = uniqueProdi.size;
 
   const stats = [
@@ -87,7 +103,7 @@ export function AdminDashboard() {
     { label: "Total Dosen", value: String(totalDosen), icon: GraduationCap, color: "text-accent-foreground", bg: "bg-accent", change: "+3%" },
   ];
 
-  const currentData = userTab === "mahasiswa" ? studentsData : lecturersData;
+  const currentData = userTab === "mahasiswa" ? managedStudents : managedLecturers;
 
   const filteredUsers = currentData.filter((user) => {
     const matchesProdi =
@@ -95,7 +111,7 @@ export function AdminDashboard() {
       user.prodi.toLowerCase().includes(selectedProdi.replace("-", " "));
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (userTab === "mahasiswa" ? (user as typeof studentsData[0]).nim : (user as typeof lecturersData[0]).nip).includes(searchQuery);
+      (userTab === "mahasiswa" ? (user as ManagedStudent).nim : (user as ManagedLecturer).nip).includes(searchQuery);
     return matchesProdi && matchesSearch;
   });
 
@@ -112,51 +128,185 @@ export function AdminDashboard() {
     }
   };
 
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      nimNip: "",
+      email: "",
+      prodi: "",
+      status: "Aktif",
+      phone: "",
+      address: "",
+      angkatan: "",
+      jabatan: "",
+    });
+  };
+
   // User action handlers
-  const handleViewUser = (user: typeof studentsData[0] | typeof lecturersData[0]) => {
+  const handleViewUser = (user: ManagedStudent | ManagedLecturer) => {
     setSelectedUser(user);
     setViewUserOpen(true);
   };
 
-  const handleEditUser = (user: typeof studentsData[0] | typeof lecturersData[0]) => {
+  const handleEditUser = (user: ManagedStudent | ManagedLecturer) => {
     setSelectedUser(user);
+    if (userTab === "mahasiswa") {
+      const student = user as ManagedStudent;
+      setFormData({
+        name: student.name,
+        nimNip: student.nim,
+        email: student.email,
+        prodi: student.prodi,
+        status: student.status,
+        phone: student.phone,
+        address: student.address,
+        angkatan: student.angkatan,
+        jabatan: "",
+      });
+    } else {
+      const lecturer = user as ManagedLecturer;
+      setFormData({
+        name: lecturer.name,
+        nimNip: lecturer.nip,
+        email: lecturer.email,
+        prodi: lecturer.prodi,
+        status: lecturer.status as "Aktif" | "Cuti" | "Alumni",
+        phone: lecturer.phone,
+        address: lecturer.address,
+        angkatan: "",
+        jabatan: lecturer.jabatan,
+      });
+    }
     setEditUserOpen(true);
   };
 
-  const handleDeleteUser = (user: typeof studentsData[0] | typeof lecturersData[0]) => {
+  const handleDeleteUser = (user: ManagedStudent | ManagedLecturer) => {
     setSelectedUser(user);
     setDeleteUserOpen(true);
   };
 
   const confirmDeleteUser = () => {
+    if (!selectedUser) return;
+    
+    if (userTab === "mahasiswa") {
+      deleteManagedStudent(selectedUser.id);
+    } else {
+      deleteManagedLecturer(selectedUser.id);
+    }
+    
     toast({
       title: "User Berhasil Dihapus",
-      description: `Data ${selectedUser?.name} telah dihapus dari sistem.`,
+      description: `Data ${selectedUser.name} telah dihapus dari sistem.`,
     });
     setDeleteUserOpen(false);
     setSelectedUser(null);
   };
 
   const handleSaveEditUser = () => {
+    if (!selectedUser) return;
+    
+    if (userTab === "mahasiswa") {
+      updateManagedStudent(selectedUser.id, {
+        name: formData.name,
+        nim: formData.nimNip,
+        email: formData.email,
+        prodi: formData.prodi,
+        status: formData.status as "Aktif" | "Cuti" | "Alumni",
+        phone: formData.phone,
+        address: formData.address,
+        angkatan: formData.angkatan,
+      });
+    } else {
+      updateManagedLecturer(selectedUser.id, {
+        name: formData.name,
+        nip: formData.nimNip,
+        email: formData.email,
+        prodi: formData.prodi,
+        status: formData.status as "Aktif" | "Cuti",
+        phone: formData.phone,
+        address: formData.address,
+        jabatan: formData.jabatan,
+      });
+    }
+    
     toast({
       title: "Data Berhasil Diperbarui",
-      description: `Data ${selectedUser?.name} telah diperbarui.`,
+      description: `Data ${formData.name} telah diperbarui.`,
     });
     setEditUserOpen(false);
     setSelectedUser(null);
+    resetForm();
   };
 
   const handleAddUser = () => {
+    if (!formData.name || !formData.nimNip || !formData.email || !formData.prodi) {
+      toast({ title: "Lengkapi semua data yang wajib!", variant: "destructive" });
+      return;
+    }
+    
+    if (addUserType === "mahasiswa") {
+      addManagedStudent({
+        name: formData.name,
+        nim: formData.nimNip,
+        email: formData.email,
+        prodi: prodiMap[formData.prodi] || formData.prodi,
+        status: formData.status as "Aktif" | "Cuti" | "Alumni",
+        phone: formData.phone || "-",
+        address: formData.address || "-",
+        angkatan: formData.angkatan || new Date().getFullYear().toString(),
+      });
+    } else {
+      addManagedLecturer({
+        name: formData.name,
+        nip: formData.nimNip,
+        email: formData.email,
+        prodi: prodiMap[formData.prodi] || formData.prodi,
+        status: formData.status as "Aktif" | "Cuti",
+        phone: formData.phone || "-",
+        address: formData.address || "-",
+        jabatan: formData.jabatan || "Dosen",
+      });
+    }
+    
     toast({
       title: `${addUserType === "mahasiswa" ? "Mahasiswa" : "Dosen"} Berhasil Ditambahkan`,
-      description: `Data ${addUserType === "mahasiswa" ? "mahasiswa" : "dosen"} baru telah disimpan.`,
+      description: `Data ${formData.name} telah disimpan.`,
     });
     setAddUserOpen(false);
+    resetForm();
   };
 
   const openAddUserModal = (type: "mahasiswa" | "dosen") => {
     setAddUserType(type);
+    resetForm();
     setAddUserOpen(true);
+  };
+
+  const handleImportCSV = () => {
+    if (!importedFile) {
+      toast({ title: "Pilih file terlebih dahulu!", variant: "destructive" });
+      return;
+    }
+    
+    // Simulate CSV import by adding sample data
+    if (importDataType === "mahasiswa") {
+      importStudentsFromCSV([
+        { name: "Import Student 1", nim: "2024100", prodi: "D3 Analisis Kimia", email: "import1@mhs.aka.ac.id", status: "Aktif", phone: "-", address: "-", angkatan: "2024" },
+        { name: "Import Student 2", nim: "2024101", prodi: "D3 Teknik Informatika", email: "import2@mhs.aka.ac.id", status: "Aktif", phone: "-", address: "-", angkatan: "2024" },
+      ]);
+    } else {
+      importLecturersFromCSV([
+        { name: "Import Dosen 1", nip: "199001010001", prodi: "D3 Analisis Kimia", email: "importdosen@dosen.aka.ac.id", status: "Aktif", phone: "-", address: "-", jabatan: "Dosen" },
+      ]);
+    }
+    
+    toast({
+      title: "Data berhasil di-import!",
+      description: `File ${importedFile.name} telah diproses.`,
+    });
+    setImportOpen(false);
+    setImportedFile(null);
   };
 
   return (
@@ -186,7 +336,11 @@ export function AdminDashboard() {
               <div className="space-y-4 pt-4">
                 <div>
                   <label className="text-sm font-medium text-foreground">Tipe Data</label>
-                  <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <select 
+                    value={importDataType}
+                    onChange={(e) => setImportDataType(e.target.value as "mahasiswa" | "dosen")}
+                    className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
                     <option value="mahasiswa">Data Mahasiswa</option>
                     <option value="dosen">Data Dosen</option>
                   </select>
@@ -213,18 +367,7 @@ export function AdminDashboard() {
                     Batal
                   </button>
                   <button
-                    onClick={() => {
-                      if (importedFile) {
-                        toast({
-                          title: "Data berhasil di-import!",
-                          description: `File ${importedFile.name} telah diproses.`,
-                        });
-                        setImportOpen(false);
-                        setImportedFile(null);
-                      } else {
-                        toast({ title: "Pilih file terlebih dahulu!", variant: "destructive" });
-                      }
-                    }}
+                    onClick={handleImportCSV}
                     className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
                   >
                     Import
@@ -245,7 +388,7 @@ export function AdminDashboard() {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem 
                 onClick={() => {
-                  const data = studentsData.map(s => ({
+                  const data = managedStudents.map(s => ({
                     NIM: s.nim,
                     Nama: s.name,
                     Prodi: s.prodi,
@@ -262,7 +405,7 @@ export function AdminDashboard() {
               </DropdownMenuItem>
               <DropdownMenuItem 
                 onClick={() => {
-                  const data = lecturersData.map(l => ({
+                  const data = managedLecturers.map(l => ({
                     NIP: l.nip,
                     Nama: l.name,
                     Prodi: l.prodi,
@@ -319,10 +462,10 @@ export function AdminDashboard() {
               <Tabs value={userTab} onValueChange={setUserTab} className="w-auto">
                 <TabsList className="bg-muted h-9">
                   <TabsTrigger value="mahasiswa" className="text-sm data-[state=active]:bg-background">
-                    Mahasiswa
+                    Mahasiswa ({managedStudents.length})
                   </TabsTrigger>
                   <TabsTrigger value="dosen" className="text-sm data-[state=active]:bg-background">
-                    Dosen
+                    Dosen ({managedLecturers.length})
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -412,7 +555,7 @@ export function AdminDashboard() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground font-mono">
-                    {userTab === "mahasiswa" ? (user as typeof studentsData[0]).nim : (user as typeof lecturersData[0]).nip}
+                    {userTab === "mahasiswa" ? (user as ManagedStudent).nim : (user as ManagedLecturer).nip}
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{user.prodi}</td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">{user.email}</td>
@@ -478,7 +621,7 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      {/* Modal Tambah User - Simplified */}
+      {/* Modal Tambah User */}
       <Dialog open={addUserOpen} onOpenChange={setAddUserOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -489,6 +632,8 @@ export function AdminDashboard() {
               <label className="text-sm font-medium text-foreground">Nama Lengkap <span className="text-destructive">*</span></label>
               <input
                 type="text"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Masukkan nama lengkap"
                 className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
@@ -497,6 +642,8 @@ export function AdminDashboard() {
               <label className="text-sm font-medium text-foreground">{addUserType === "mahasiswa" ? "NIM" : "NIP"} <span className="text-destructive">*</span></label>
               <input
                 type="text"
+                value={formData.nimNip}
+                onChange={(e) => setFormData(prev => ({ ...prev, nimNip: e.target.value }))}
                 placeholder={addUserType === "mahasiswa" ? "Masukkan NIM" : "Masukkan NIP"}
                 className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
@@ -505,22 +652,40 @@ export function AdminDashboard() {
               <label className="text-sm font-medium text-foreground">Email <span className="text-destructive">*</span></label>
               <input
                 type="email"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="Masukkan email"
                 className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Program Studi <span className="text-destructive">*</span></label>
-              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+              <select 
+                value={formData.prodi}
+                onChange={(e) => setFormData(prev => ({ ...prev, prodi: e.target.value }))}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
                 <option value="">Pilih Program Studi</option>
                 {prodiOptions.slice(1).map((prodi) => (
                   <option key={prodi.value} value={prodi.value}>{prodi.label}</option>
                 ))}
               </select>
             </div>
+            {addUserType === "dosen" && (
+              <div>
+                <label className="text-sm font-medium text-foreground">Jabatan</label>
+                <input
+                  type="text"
+                  value={formData.jabatan}
+                  onChange={(e) => setFormData(prev => ({ ...prev, jabatan: e.target.value }))}
+                  placeholder="Masukkan jabatan"
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            )}
             <div className="flex justify-end gap-3 pt-2">
               <button
-                onClick={() => setAddUserOpen(false)}
+                onClick={() => { setAddUserOpen(false); resetForm(); }}
                 className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
               >
                 Batal
@@ -552,7 +717,7 @@ export function AdminDashboard() {
                 <div>
                   <h3 className="text-lg font-semibold text-foreground">{selectedUser.name}</h3>
                   <p className="text-sm text-muted-foreground font-mono">
-                    {userTab === "mahasiswa" ? (selectedUser as typeof studentsData[0]).nim : (selectedUser as typeof lecturersData[0]).nip}
+                    {userTab === "mahasiswa" ? (selectedUser as ManagedStudent).nim : (selectedUser as ManagedLecturer).nip}
                   </p>
                 </div>
               </div>
@@ -585,14 +750,14 @@ export function AdminDashboard() {
                   <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
                     <p className="text-xs text-muted-foreground">Telepon</p>
-                    <p className="text-sm font-medium text-foreground">{(selectedUser as any).phone}</p>
+                    <p className="text-sm font-medium text-foreground">{selectedUser.phone}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
                     <p className="text-xs text-muted-foreground">Alamat</p>
-                    <p className="text-sm font-medium text-foreground">{(selectedUser as any).address}</p>
+                    <p className="text-sm font-medium text-foreground">{selectedUser.address}</p>
                   </div>
                 </div>
                 {userTab === "mahasiswa" && (
@@ -600,7 +765,7 @@ export function AdminDashboard() {
                     <GraduationCap className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
                       <p className="text-xs text-muted-foreground">Angkatan</p>
-                      <p className="text-sm font-medium text-foreground">{(selectedUser as typeof studentsData[0]).angkatan}</p>
+                      <p className="text-sm font-medium text-foreground">{(selectedUser as ManagedStudent).angkatan}</p>
                     </div>
                   </div>
                 )}
@@ -609,7 +774,7 @@ export function AdminDashboard() {
                     <GraduationCap className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
                       <p className="text-xs text-muted-foreground">Jabatan Fungsional</p>
-                      <p className="text-sm font-medium text-foreground">{(selectedUser as typeof lecturersData[0]).jabatan}</p>
+                      <p className="text-sm font-medium text-foreground">{(selectedUser as ManagedLecturer).jabatan}</p>
                     </div>
                   </div>
                 )}
@@ -640,7 +805,8 @@ export function AdminDashboard() {
                 <label className="text-sm font-medium text-foreground">Nama Lengkap</label>
                 <input
                   type="text"
-                  defaultValue={selectedUser.name}
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
@@ -650,14 +816,16 @@ export function AdminDashboard() {
                 </label>
                 <input
                   type="text"
-                  defaultValue={userTab === "mahasiswa" ? (selectedUser as typeof studentsData[0]).nim : (selectedUser as typeof lecturersData[0]).nip}
+                  value={formData.nimNip}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nimNip: e.target.value }))}
                   className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Program Studi</label>
                 <select 
-                  defaultValue={selectedUser.prodi === "D3 Analisis Kimia" ? "d3-ak" : selectedUser.prodi === "D3 Teknik Informatika" ? "d3-ti" : "d4-ak"}
+                  value={formData.prodi === "D3 Analisis Kimia" ? "d3-ak" : formData.prodi === "D3 Teknik Informatika" ? "d3-ti" : "d4-ak"}
+                  onChange={(e) => setFormData(prev => ({ ...prev, prodi: prodiMap[e.target.value] || e.target.value }))}
                   className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   {prodiOptions.slice(1).map((prodi) => (
@@ -668,17 +836,29 @@ export function AdminDashboard() {
               <div>
                 <label className="text-sm font-medium text-foreground">Status</label>
                 <select 
-                  defaultValue={selectedUser.status}
+                  value={formData.status}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as "Aktif" | "Cuti" | "Alumni" }))}
                   className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="Aktif">Aktif</option>
                   <option value="Cuti">Cuti</option>
-                  <option value="Alumni">Alumni</option>
+                  {userTab === "mahasiswa" && <option value="Alumni">Alumni</option>}
                 </select>
               </div>
+              {userTab === "dosen" && (
+                <div>
+                  <label className="text-sm font-medium text-foreground">Jabatan</label>
+                  <input
+                    type="text"
+                    value={formData.jabatan}
+                    onChange={(e) => setFormData(prev => ({ ...prev, jabatan: e.target.value }))}
+                    className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              )}
               <div className="flex justify-end gap-3 pt-2">
                 <button
-                  onClick={() => setEditUserOpen(false)}
+                  onClick={() => { setEditUserOpen(false); resetForm(); }}
                   className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
                 >
                   Batal

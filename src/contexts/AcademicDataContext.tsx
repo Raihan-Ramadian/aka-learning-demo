@@ -7,6 +7,31 @@ export interface Student {
   nim: string;
 }
 
+// User types for Admin management
+export interface ManagedStudent {
+  id: number;
+  name: string;
+  nim: string;
+  prodi: string;
+  email: string;
+  status: "Aktif" | "Cuti" | "Alumni";
+  phone: string;
+  address: string;
+  angkatan: string;
+}
+
+export interface ManagedLecturer {
+  id: number;
+  name: string;
+  nip: string;
+  prodi: string;
+  email: string;
+  status: "Aktif" | "Cuti";
+  phone: string;
+  address: string;
+  jabatan: string;
+}
+
 export interface Course {
   id: number;
   name: string;
@@ -81,7 +106,23 @@ export interface Task {
   additionalNotes?: string;
 }
 
-// Initial Data
+// Initial Data - Managed Users
+const initialManagedStudents: ManagedStudent[] = [
+  { id: 1, name: "Siti Rahayu", nim: "2024001", prodi: "D3 Analisis Kimia", email: "siti@mhs.aka.ac.id", status: "Aktif", phone: "081234567890", address: "Jl. Merdeka No. 10, Bogor", angkatan: "2024" },
+  { id: 2, name: "Ahmad Fadli", nim: "2024002", prodi: "D3 Analisis Kimia", email: "ahmad@mhs.aka.ac.id", status: "Aktif", phone: "081234567891", address: "Jl. Sudirman No. 5, Bogor", angkatan: "2024" },
+  { id: 3, name: "Dewi Lestari", nim: "2024003", prodi: "D3 Teknik Informatika", email: "dewi@mhs.aka.ac.id", status: "Aktif", phone: "081234567892", address: "Jl. Ahmad Yani No. 15, Bogor", angkatan: "2024" },
+  { id: 4, name: "Budi Santoso", nim: "2023015", prodi: "D4 Analisis Kimia", email: "budi@mhs.aka.ac.id", status: "Cuti", phone: "081234567893", address: "Jl. Pahlawan No. 20, Bogor", angkatan: "2023" },
+  { id: 5, name: "Rina Wulandari", nim: "2024005", prodi: "D3 Analisis Kimia", email: "rina@mhs.aka.ac.id", status: "Aktif", phone: "081234567894", address: "Jl. Diponegoro No. 8, Bogor", angkatan: "2024" },
+  { id: 6, name: "Eko Prasetyo", nim: "2023008", prodi: "D3 Teknik Informatika", email: "eko@mhs.aka.ac.id", status: "Aktif", phone: "081234567895", address: "Jl. Gatot Subroto No. 12, Bogor", angkatan: "2023" },
+];
+
+const initialManagedLecturers: ManagedLecturer[] = [
+  { id: 1, name: "Dr. Ahmad Wijaya", nip: "198501012010011001", prodi: "D3 Analisis Kimia", email: "ahmad@dosen.aka.ac.id", status: "Aktif", phone: "081234567801", address: "Jl. Profesor No. 1, Bogor", jabatan: "Lektor Kepala" },
+  { id: 2, name: "Prof. Sari Dewi", nip: "197805152005012001", prodi: "D3 Analisis Kimia", email: "sari@dosen.aka.ac.id", status: "Aktif", phone: "081234567802", address: "Jl. Akademik No. 5, Bogor", jabatan: "Guru Besar" },
+  { id: 3, name: "Pak Budi Santoso", nip: "198203202008011003", prodi: "D3 Teknik Informatika", email: "budi@dosen.aka.ac.id", status: "Aktif", phone: "081234567803", address: "Jl. Pendidikan No. 10, Bogor", jabatan: "Lektor" },
+  { id: 4, name: "Dr. Maya Putri", nip: "198906302015012001", prodi: "D4 Analisis Kimia", email: "maya@dosen.aka.ac.id", status: "Cuti", phone: "081234567804", address: "Jl. Ilmu No. 3, Bogor", jabatan: "Asisten Ahli" },
+];
+
 const initialCourses: Course[] = [
   { id: 1, name: "Kimia Dasar", code: "KIM101", lecturer: "Dr. Ahmad Wijaya", color: "from-blue-500 to-cyan-500", classes: 2 },
   { id: 2, name: "Biokimia", code: "BIO201", lecturer: "Prof. Sari Dewi", color: "from-emerald-500 to-teal-500", classes: 2 },
@@ -205,6 +246,19 @@ const initialSubmissions: TaskSubmission[] = [
 ];
 
 interface AcademicDataContextType {
+  // User management
+  managedStudents: ManagedStudent[];
+  managedLecturers: ManagedLecturer[];
+  addManagedStudent: (student: Omit<ManagedStudent, 'id'>) => void;
+  updateManagedStudent: (id: number, updates: Partial<ManagedStudent>) => void;
+  deleteManagedStudent: (id: number) => void;
+  addManagedLecturer: (lecturer: Omit<ManagedLecturer, 'id'>) => void;
+  updateManagedLecturer: (id: number, updates: Partial<ManagedLecturer>) => void;
+  deleteManagedLecturer: (id: number) => void;
+  importStudentsFromCSV: (students: Omit<ManagedStudent, 'id'>[]) => void;
+  importLecturersFromCSV: (lecturers: Omit<ManagedLecturer, 'id'>[]) => void;
+  
+  // Existing
   courses: Course[];
   setCourses: React.Dispatch<React.SetStateAction<Course[]>>;
   materialWeeks: MaterialWeek[];
@@ -241,12 +295,53 @@ interface AcademicDataContextType {
 const AcademicDataContext = createContext<AcademicDataContextType | undefined>(undefined);
 
 export function AcademicDataProvider({ children }: { children: ReactNode }) {
+  // User management state
+  const [managedStudents, setManagedStudents] = useState<ManagedStudent[]>(initialManagedStudents);
+  const [managedLecturers, setManagedLecturers] = useState<ManagedLecturer[]>(initialManagedLecturers);
+  
   const [courses, setCourses] = useState<Course[]>(initialCourses);
   const [materialWeeks, setMaterialWeeks] = useState<MaterialWeek[]>(initialMaterialWeeks);
   const [academicEvents, setAcademicEvents] = useState<AcademicEvent[]>(initialAcademicEvents);
   const [schedules, setSchedules] = useState<ClassSchedule[]>(initialSchedules);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [submissions, setSubmissions] = useState<TaskSubmission[]>(initialSubmissions);
+
+  // User management functions
+  const addManagedStudent = (student: Omit<ManagedStudent, 'id'>) => {
+    const newStudent: ManagedStudent = { ...student, id: Date.now() };
+    setManagedStudents(prev => [...prev, newStudent]);
+  };
+
+  const updateManagedStudent = (id: number, updates: Partial<ManagedStudent>) => {
+    setManagedStudents(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+  };
+
+  const deleteManagedStudent = (id: number) => {
+    setManagedStudents(prev => prev.filter(s => s.id !== id));
+  };
+
+  const addManagedLecturer = (lecturer: Omit<ManagedLecturer, 'id'>) => {
+    const newLecturer: ManagedLecturer = { ...lecturer, id: Date.now() };
+    setManagedLecturers(prev => [...prev, newLecturer]);
+  };
+
+  const updateManagedLecturer = (id: number, updates: Partial<ManagedLecturer>) => {
+    setManagedLecturers(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+  };
+
+  const deleteManagedLecturer = (id: number) => {
+    setManagedLecturers(prev => prev.filter(l => l.id !== id));
+  };
+
+  const importStudentsFromCSV = (students: Omit<ManagedStudent, 'id'>[]) => {
+    const newStudents = students.map((s, i) => ({ ...s, id: Date.now() + i }));
+    setManagedStudents(prev => [...prev, ...newStudents]);
+  };
+
+  const importLecturersFromCSV = (lecturers: Omit<ManagedLecturer, 'id'>[]) => {
+    const newLecturers = lecturers.map((l, i) => ({ ...l, id: Date.now() + i }));
+    setManagedLecturers(prev => [...prev, ...newLecturers]);
+  };
 
   const addStudentToClass = (scheduleId: number, student: Student) => {
     setSchedules(prev => prev.map(s => 
@@ -396,6 +491,19 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
 
   return (
     <AcademicDataContext.Provider value={{
+      // User management
+      managedStudents,
+      managedLecturers,
+      addManagedStudent,
+      updateManagedStudent,
+      deleteManagedStudent,
+      addManagedLecturer,
+      updateManagedLecturer,
+      deleteManagedLecturer,
+      importStudentsFromCSV,
+      importLecturersFromCSV,
+      
+      // Existing
       courses,
       setCourses,
       materialWeeks,
