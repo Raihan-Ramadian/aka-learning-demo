@@ -1,33 +1,95 @@
-import { AlertTriangle, Upload, BookOpen, Clock, FileText, ChevronRight, Calendar, MapPin } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangle, Upload, BookOpen, Clock, FileText, ChevronRight, Calendar, MapPin, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAcademicData } from "@/contexts/AcademicDataContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const courses = [
-  { id: 1, name: "Kimia Dasar", code: "KIM101", lecturer: "Dr. Ahmad Wijaya", progress: 65, color: "from-blue-500 to-cyan-500" },
-  { id: 2, name: "Biokimia", code: "BIO201", lecturer: "Prof. Sari Dewi", progress: 40, color: "from-emerald-500 to-teal-500" },
-  { id: 3, name: "Kimia Analitik", code: "KIM202", lecturer: "Dr. Rudi Hartono", progress: 80, color: "from-violet-500 to-purple-500" },
-  { id: 4, name: "Kimia Organik", code: "KIM301", lecturer: "Dr. Maya Putri", progress: 25, color: "from-orange-500 to-amber-500" },
-];
-
-const upcomingTasks = [
-  { id: 1, courseId: 1, course: "Kimia Dasar", task: "Laporan Praktikum 3", deadline: "2 hari lagi", urgent: true },
-  { id: 2, courseId: 2, course: "Biokimia", task: "Quiz Bab 5", deadline: "3 hari lagi", urgent: true },
-  { id: 3, courseId: 3, course: "Kimia Analitik", task: "Tugas Kelompok", deadline: "1 minggu lagi", urgent: false },
+  { id: 1, name: "Kimia Dasar", code: "KIM101", lecturer: "Dr. Ahmad Wijaya", color: "from-blue-500 to-cyan-500" },
+  { id: 2, name: "Biokimia", code: "BIO201", lecturer: "Prof. Sari Dewi", color: "from-emerald-500 to-teal-500" },
+  { id: 3, name: "Kimia Analitik", code: "KIM202", lecturer: "Dr. Rudi Hartono", color: "from-violet-500 to-purple-500" },
+  { id: 4, name: "Kimia Organik", code: "KIM301", lecturer: "Dr. Maya Putri", color: "from-orange-500 to-amber-500" },
 ];
 
 const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 
 export function StudentDashboard() {
   const navigate = useNavigate();
-  const { academicEvents, getStudentSchedules } = useAcademicData();
+  const { toast } = useToast();
+  const { academicEvents, getStudentSchedules, submissions, tasks } = useAcademicData();
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
   
   // Simulated student NIM - in real app this would come from auth
   const studentNim = "2024001";
   const mySchedules = getStudentSchedules(studentNim);
 
+  // Get student's submissions for progress calculation
+  const studentSubmissions = submissions.filter(s => s.studentNim === studentNim);
+  const completedTasks = studentSubmissions.filter(s => s.status === "submitted" || s.status === "graded").length;
+  const totalTasks = studentSubmissions.length;
+  const overallProgress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  // Calculate per-course progress
+  const getCourseProgress = (courseId: number) => {
+    const courseTasks = tasks.filter(t => t.courseId === courseId);
+    const courseSubmissions = studentSubmissions.filter(s => 
+      courseTasks.some(t => t.id === s.taskId)
+    );
+    const completed = courseSubmissions.filter(s => s.status === "submitted" || s.status === "graded").length;
+    return courseSubmissions.length > 0 ? Math.round((completed / courseSubmissions.length) * 100) : 0;
+  };
+
+  // Get upcoming tasks from context
+  const upcomingTasks = tasks.slice(0, 3).map(task => {
+    const submission = studentSubmissions.find(s => s.taskId === task.id);
+    const course = courses.find(c => c.id === task.courseId);
+    const isUrgent = task.deadline.includes("20") || task.deadline.includes("22");
+    return {
+      id: task.id,
+      courseId: task.courseId,
+      course: course?.name || "Unknown",
+      task: task.title,
+      deadline: task.deadline,
+      urgent: isUrgent && (!submission || submission.status === "pending"),
+      status: submission?.status || "pending"
+    };
+  });
+
+  const pendingTasksCount = upcomingTasks.filter(t => t.status === "pending").length;
+
   const handleCourseClick = (courseId: number) => {
     navigate(`/course/${courseId}`);
+  };
+
+  const handleUploadClick = (e: React.MouseEvent, course: typeof courses[0]) => {
+    e.stopPropagation();
+    setSelectedCourseForUpload(course);
+    setUploadModalOpen(true);
+  };
+
+  const handleUploadSubmit = () => {
+    toast({
+      title: "Tugas berhasil diupload!",
+      description: `Tugas untuk ${selectedCourseForUpload?.name} telah dikirim.`,
+    });
+    setUploadModalOpen(false);
+    setSelectedCourseForUpload(null);
+  };
+
+  const handleViewAllCourses = () => {
+    navigate("/courses");
+  };
+
+  const handleTaskClick = (taskId: number, courseId: number) => {
+    navigate(`/course/${courseId}?tab=assignments&task=${taskId}`);
   };
 
   const getEventStyle = (type: string) => {
@@ -103,25 +165,27 @@ export function StudentDashboard() {
       </div>
 
       {/* Alert Widget */}
-      <div className="rounded-xl border border-destructive/30 bg-destructive-light p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-destructive">⚠️ 2 Tugas Deadline Dekat</h3>
-            <p className="text-sm text-destructive/80">Segera selesaikan tugas Anda sebelum tenggat waktu!</p>
+      {pendingTasksCount > 0 && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive-light p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-destructive/10">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-destructive">⚠️ {pendingTasksCount} Tugas Deadline Dekat</h3>
+              <p className="text-sm text-destructive/80">Segera selesaikan tugas Anda sebelum tenggat waktu!</p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Stats Overview */}
+      {/* Stats Overview - Dynamic */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Mata Kuliah", value: "4", icon: BookOpen, color: "text-primary" },
-          { label: "Tugas Pending", value: "3", icon: FileText, color: "text-warning" },
-          { label: "Jam Belajar", value: "24h", icon: Clock, color: "text-success" },
-          { label: "Progress", value: "52%", icon: ChevronRight, color: "text-accent-foreground" },
+          { label: "Mata Kuliah", value: String(courses.length), icon: BookOpen, color: "text-primary" },
+          { label: "Tugas Pending", value: String(pendingTasksCount), icon: FileText, color: "text-warning" },
+          { label: "Jam Belajar", value: `${mySchedules.length * 2}h`, icon: Clock, color: "text-success" },
+          { label: "Progress", value: `${overallProgress}%`, icon: ChevronRight, color: "text-accent-foreground" },
         ].map((stat) => (
           <div key={stat.label} className="rounded-xl bg-card p-4 shadow-card border border-border/50">
             <div className="flex items-center gap-3">
@@ -143,51 +207,70 @@ export function StudentDashboard() {
         <div className="col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-foreground">Mata Kuliah Saya</h2>
-            <button className="text-sm font-medium text-primary hover:underline">Lihat Semua</button>
+            <button 
+              onClick={handleViewAllCourses}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Lihat Semua
+            </button>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {courses.map((course, index) => (
-              <div
-                key={course.id}
-                onClick={() => handleCourseClick(course.id)}
-                className="group rounded-xl bg-card border border-border/50 overflow-hidden shadow-card hover:shadow-lg transition-all duration-300 animate-fade-in cursor-pointer"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className={cn("h-24 bg-gradient-to-br p-4 relative", course.color)}>
-                  <div className="absolute inset-0 bg-black/10" />
-                  <div className="relative">
-                    <span className="rounded-md bg-white/20 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">{course.code}</span>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{course.name}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{course.lecturer}</p>
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-medium text-foreground">{course.progress}%</span>
-                    </div>
-                    <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
-                      <div className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-500", course.color)} style={{ width: `${course.progress}%` }} />
+            {courses.map((course, index) => {
+              const progress = getCourseProgress(course.id);
+              return (
+                <div
+                  key={course.id}
+                  onClick={() => handleCourseClick(course.id)}
+                  className="group rounded-xl bg-card border border-border/50 overflow-hidden shadow-card hover:shadow-lg transition-all duration-300 animate-fade-in cursor-pointer"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className={cn("h-24 bg-gradient-to-br p-4 relative", course.color)}>
+                    <div className="absolute inset-0 bg-black/10" />
+                    <div className="relative">
+                      <span className="rounded-md bg-white/20 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">{course.code}</span>
                     </div>
                   </div>
-                  <button onClick={(e) => e.stopPropagation()} className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary/10 py-2.5 text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-all">
-                    <Upload className="h-4 w-4" />Upload Tugas
-                  </button>
+                  <div className="p-4">
+                    <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{course.name}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{course.lecturer}</p>
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="font-medium text-foreground">{progress}%</span>
+                      </div>
+                      <div className="mt-1 h-2 overflow-hidden rounded-full bg-muted">
+                        <div className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-500", course.color)} style={{ width: `${progress}%` }} />
+                      </div>
+                    </div>
+                    <button 
+                      onClick={(e) => handleUploadClick(e, course)} 
+                      className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary/10 py-2.5 text-sm font-medium text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+                    >
+                      <Upload className="h-4 w-4" />Upload Tugas
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
         {/* Upcoming Tasks */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-foreground">Tugas Mendatang</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">Tugas Mendatang</h2>
+            <button 
+              onClick={() => navigate("/courses?tab=tasks")}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Lihat Semua
+            </button>
+          </div>
           <div className="space-y-3">
             {upcomingTasks.map((task, index) => (
               <div
                 key={task.id}
-                onClick={() => handleCourseClick(task.courseId)}
+                onClick={() => handleTaskClick(task.id, task.courseId)}
                 className={cn("rounded-xl border p-4 transition-all hover:shadow-md animate-slide-in cursor-pointer", task.urgent ? "border-destructive/30 bg-destructive-light" : "border-border/50 bg-card")}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
@@ -196,7 +279,12 @@ export function StudentDashboard() {
                     <p className="font-medium text-foreground">{task.task}</p>
                     <p className="mt-1 text-sm text-muted-foreground">{task.course}</p>
                   </div>
-                  {task.urgent && <span className="rounded-full bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">Urgent</span>}
+                  <div className="flex flex-col items-end gap-1">
+                    {task.urgent && <span className="rounded-full bg-destructive/10 px-2 py-1 text-xs font-medium text-destructive">Urgent</span>}
+                    {task.status !== "pending" && (
+                      <span className="rounded-full bg-success/10 px-2 py-1 text-xs font-medium text-success">Selesai</span>
+                    )}
+                  </div>
                 </div>
                 <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" />{task.deadline}
@@ -206,6 +294,57 @@ export function StudentDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Upload Task Modal */}
+      <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload Tugas - {selectedCourseForUpload?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">Pilih Tugas</label>
+              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option>Laporan Praktikum 1</option>
+                <option>Quiz Bab 1-2</option>
+                <option>Tugas Kelompok: Presentasi</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Upload File</label>
+              <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-6 text-center hover:border-primary/50 transition-colors">
+                <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span>
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">PDF, DOC, DOCX (max 25MB)</p>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Catatan (Opsional)</label>
+              <textarea
+                rows={3}
+                placeholder="Tulis catatan untuk dosen..."
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setUploadModalOpen(false)}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleUploadSubmit}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+              >
+                Upload Tugas
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

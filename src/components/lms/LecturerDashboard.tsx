@@ -1,31 +1,74 @@
-import { Plus, Users, Clock, BookOpen, FileText, Calendar, MapPin } from "lucide-react";
+import { useState } from "react";
+import { Plus, Users, Clock, BookOpen, FileText, Calendar, MapPin, Upload, Link, Video } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAcademicData } from "@/contexts/AcademicDataContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 
 const courses = [
-  { id: 1, name: "Kimia Dasar", code: "KIM101", classes: 2, students: 64, materials: 12, color: "from-blue-500 to-cyan-500" },
-  { id: 2, name: "Kimia Organik", code: "KIM301", classes: 3, students: 84, materials: 8, color: "from-emerald-500 to-teal-500" },
-  { id: 3, name: "Praktikum Kimia", code: "KIM102", classes: 4, students: 64, materials: 6, color: "from-violet-500 to-purple-500" },
-];
-
-const pendingTasks = [
-  { id: 1, type: "Koreksi", count: 24, course: "Kimia Dasar", courseId: 1 },
-  { id: 2, type: "Tugas Baru", count: 12, course: "Kimia Organik", courseId: 4 },
+  { id: 1, name: "Kimia Dasar", code: "KIM101", classes: 2, color: "from-blue-500 to-cyan-500" },
+  { id: 4, name: "Kimia Organik", code: "KIM301", classes: 3, color: "from-emerald-500 to-teal-500" },
+  { id: 5, name: "Praktikum Kimia", code: "KIM102", classes: 4, color: "from-violet-500 to-purple-500" },
 ];
 
 const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 
 export function LecturerDashboard() {
   const navigate = useNavigate();
-  const { academicEvents, getLecturerSchedules } = useAcademicData();
+  const { toast } = useToast();
+  const { academicEvents, getLecturerSchedules, submissions, tasks } = useAcademicData();
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
+  const [materialType, setMaterialType] = useState<"document" | "video">("document");
   
   // Simulated lecturer name - in real app this would come from auth
   const lecturerName = "Sari Dewi";
   const mySchedules = getLecturerSchedules(lecturerName);
 
+  // Calculate dynamic stats
+  const totalStudents = mySchedules.reduce((sum, s) => sum + s.students.length, 0);
+  const pendingSubmissions = submissions.filter(s => s.status === "submitted").length;
+  const gradedSubmissions = submissions.filter(s => s.status === "graded").length;
+  const totalMaterials = courses.reduce((sum, c) => sum + (c.id === 1 ? 12 : c.id === 4 ? 8 : 6), 0);
+
+  // Pending tasks for lecturer
+  const pendingTasks = [
+    { id: 1, type: "Koreksi", count: pendingSubmissions, course: "Kimia Dasar", courseId: 1 },
+    { id: 2, type: "Tugas Baru", count: tasks.filter(t => t.courseId === 4).length, course: "Kimia Organik", courseId: 4 },
+  ];
+
   const handleCourseClick = (courseId: number) => {
     navigate(`/course/${courseId}`);
+  };
+
+  const handleUploadClick = (e: React.MouseEvent, course: typeof courses[0]) => {
+    e.stopPropagation();
+    setSelectedCourseForUpload(course);
+    setUploadModalOpen(true);
+  };
+
+  const handleUploadSubmit = () => {
+    toast({
+      title: "Materi berhasil diupload!",
+      description: `Materi untuk ${selectedCourseForUpload?.name} telah ditambahkan.`,
+    });
+    setUploadModalOpen(false);
+    setSelectedCourseForUpload(null);
+    setMaterialType("document");
+  };
+
+  const handlePendingTaskClick = (courseId: number) => {
+    navigate(`/course/${courseId}?tab=assignments`);
+  };
+
+  const handleViewAllCourses = () => {
+    navigate("/courses");
   };
 
   const getEventStyle = (type: string) => {
@@ -41,6 +84,16 @@ export function LecturerDashboard() {
 
   // Get today's schedule
   const todaySchedule = mySchedules.filter(s => s.day === "Selasa"); // Simulated as Tuesday
+
+  // Calculate students per course from schedules
+  const getCourseStudents = (courseId: number) => {
+    const courseSchedules = mySchedules.filter(s => 
+      courses.find(c => c.id === courseId)?.name === s.course
+    );
+    const uniqueStudents = new Set<string>();
+    courseSchedules.forEach(s => s.students.forEach(st => uniqueStudents.add(st.nim)));
+    return uniqueStudents.size;
+  };
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -99,13 +152,13 @@ export function LecturerDashboard() {
         </div>
       </div>
 
-      {/* Stats Overview */}
+      {/* Stats Overview - Dynamic */}
       <div className="grid grid-cols-4 gap-4">
         {[
           { label: "Total Kelas", value: String(mySchedules.length), icon: BookOpen, color: "text-primary", bg: "bg-primary/10" },
-          { label: "Total Mahasiswa", value: "212", icon: Users, color: "text-success", bg: "bg-success/10" },
-          { label: "Materi Uploaded", value: "26", icon: FileText, color: "text-warning", bg: "bg-warning/10" },
-          { label: "Tugas Pending", value: "36", icon: Clock, color: "text-destructive", bg: "bg-destructive/10" },
+          { label: "Total Mahasiswa", value: String(totalStudents), icon: Users, color: "text-success", bg: "bg-success/10" },
+          { label: "Materi Uploaded", value: String(totalMaterials), icon: FileText, color: "text-warning", bg: "bg-warning/10" },
+          { label: "Perlu Dinilai", value: String(pendingSubmissions), icon: Clock, color: "text-destructive", bg: "bg-destructive/10" },
         ].map((stat, index) => (
           <div key={stat.label} className="rounded-xl bg-card p-4 shadow-card border border-border/50 animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
             <div className="flex items-center gap-3">
@@ -163,10 +216,23 @@ export function LecturerDashboard() {
 
         {/* Sidebar - Pending Tasks */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-foreground">Perlu Ditindak</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-foreground">Perlu Ditindak</h2>
+            <button 
+              onClick={() => navigate("/courses?tab=grading")}
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Lihat Semua
+            </button>
+          </div>
           <div className="space-y-3">
             {pendingTasks.map((task, index) => (
-              <div key={task.id} className="rounded-xl bg-warning-light border border-warning/20 p-4 animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+              <div 
+                key={task.id} 
+                onClick={() => handlePendingTaskClick(task.courseId)}
+                className="rounded-xl bg-warning-light border border-warning/20 p-4 animate-fade-in cursor-pointer hover:shadow-md transition-all" 
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-warning-foreground">{task.count} {task.type}</p>
@@ -184,32 +250,157 @@ export function LecturerDashboard() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Mata Kuliah yang Diampu</h2>
-          <button className="text-sm font-medium text-primary hover:underline">Lihat Semua</button>
+          <button 
+            onClick={handleViewAllCourses}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Lihat Semua
+          </button>
         </div>
         <div className="grid grid-cols-3 gap-4">
-          {courses.map((course, index) => (
-            <div key={course.id} onClick={() => handleCourseClick(course.id)} className="group rounded-xl bg-card border border-border/50 overflow-hidden shadow-card hover:shadow-lg transition-all animate-scale-in cursor-pointer" style={{ animationDelay: `${index * 100}ms` }}>
-              <div className={cn("h-20 bg-gradient-to-br p-4 relative", course.color)}>
-                <div className="absolute inset-0 bg-black/10" />
-                <div className="relative flex items-center justify-between">
-                  <span className="rounded-md bg-white/20 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">{course.code}</span>
-                  <span className="rounded-md bg-white/20 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">{course.classes} Kelas</span>
+          {courses.map((course, index) => {
+            const students = getCourseStudents(course.id);
+            const materials = course.id === 1 ? 12 : course.id === 4 ? 8 : 6;
+            return (
+              <div 
+                key={course.id} 
+                onClick={() => handleCourseClick(course.id)} 
+                className="group rounded-xl bg-card border border-border/50 overflow-hidden shadow-card hover:shadow-lg transition-all animate-scale-in cursor-pointer" 
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className={cn("h-20 bg-gradient-to-br p-4 relative", course.color)}>
+                  <div className="absolute inset-0 bg-black/10" />
+                  <div className="relative flex items-center justify-between">
+                    <span className="rounded-md bg-white/20 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">{course.code}</span>
+                    <span className="rounded-md bg-white/20 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm">{course.classes} Kelas</span>
+                  </div>
+                </div>
+                <div className="p-4">
+                  <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{course.name}</h3>
+                  <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1"><Users className="h-4 w-4" />{students}</div>
+                    <div className="flex items-center gap-1"><FileText className="h-4 w-4" />{materials} Materi</div>
+                  </div>
+                  <button 
+                    onClick={(e) => handleUploadClick(e, course)} 
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />Upload Materi
+                  </button>
                 </div>
               </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{course.name}</h3>
-                <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1"><Users className="h-4 w-4" />{course.students}</div>
-                  <div className="flex items-center gap-1"><FileText className="h-4 w-4" />{course.materials} Materi</div>
-                </div>
-                <button onClick={(e) => { e.stopPropagation(); handleCourseClick(course.id); }} className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">
-                  <Plus className="h-4 w-4" />Upload Materi
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Upload Material Modal */}
+      <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Upload Materi - {selectedCourseForUpload?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">Pertemuan</label>
+              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option>Pertemuan 1</option>
+                <option>Pertemuan 2</option>
+                <option>Pertemuan 3</option>
+                <option>Pertemuan 4</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Judul Materi</label>
+              <input
+                type="text"
+                placeholder="Masukkan judul materi"
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            
+            {/* Material Type Selector */}
+            <div>
+              <label className="text-sm font-medium text-foreground">Jenis Materi</label>
+              <div className="mt-2 grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMaterialType("document")}
+                  className={cn(
+                    "flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all",
+                    materialType === "document"
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted"
+                  )}
+                >
+                  <FileText className="h-5 w-5" />
+                  Upload Dokumen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMaterialType("video")}
+                  className={cn(
+                    "flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all",
+                    materialType === "video"
+                      ? "border-primary bg-primary/5 text-primary"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:bg-muted"
+                  )}
+                >
+                  <Link className="h-5 w-5" />
+                  Link Video
                 </button>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+
+            {/* Conditional Content Based on Material Type */}
+            {materialType === "document" ? (
+              <div className="animate-fade-in">
+                <label className="text-sm font-medium text-foreground">Upload Dokumen</label>
+                <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-6 text-center hover:border-primary/50 transition-colors">
+                  <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span>
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">PDF, PPT, PPTX, DOC, DOCX (max 50MB)</p>
+                </div>
+              </div>
+            ) : (
+              <div className="animate-fade-in">
+                <label className="text-sm font-medium text-foreground">Link Video</label>
+                <div className="mt-1.5 relative">
+                  <Video className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="url"
+                    placeholder="Tempel link Youtube atau Google Drive di sini"
+                    className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Contoh: https://youtube.com/watch?v=... atau https://drive.google.com/...
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setUploadModalOpen(false);
+                  setMaterialType("document");
+                }}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleUploadSubmit}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+              >
+                Simpan
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
