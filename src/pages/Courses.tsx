@@ -82,8 +82,50 @@ export default function Courses() {
   const currentRole = getUserRole();
   const { toast } = useToast();
   
-  // Get data from context for Admin and Lecturer
-  const { courses, managedLecturers, addCourse, updateCourse, deleteCourse, importCoursesFromCSV, getLecturerSchedules, materialWeeks, addMaterial, addMaterialWeek } = useAcademicData();
+  // Get data from context for Admin, Lecturer, and Student
+  const { courses, managedLecturers, addCourse, updateCourse, deleteCourse, importCoursesFromCSV, getLecturerSchedules, getStudentSchedules, materialWeeks, addMaterial, addMaterialWeek, tasks, submissions } = useAcademicData();
+  
+  // For Student view - get schedules from context
+  const studentNim = "2024001"; // In real app from auth
+  const studentSchedules = getStudentSchedules(studentNim);
+  const studentSubmissions = submissions.filter(s => s.studentNim === studentNim);
+  
+  // Calculate student's active courses from schedules
+  const studentCourseNames = [...new Set(studentSchedules.map(s => s.course))];
+  const studentCourses = studentCourseNames.map((courseName) => {
+    const existingCourse = courses.find(c => c.name === courseName);
+    const schedule = studentSchedules.find(s => s.course === courseName);
+    
+    // Calculate progress for this course
+    const courseTasks = tasks.filter(t => existingCourse && t.courseId === existingCourse.id);
+    const courseSubmissions = studentSubmissions.filter(s => 
+      courseTasks.some(t => t.id === s.taskId) && (s.status === "submitted" || s.status === "graded")
+    );
+    const progress = courseTasks.length > 0 ? Math.round((courseSubmissions.length / courseTasks.length) * 100) : 0;
+    
+    if (existingCourse) {
+      return {
+        ...existingCourse,
+        className: schedule?.className || "N/A",
+        schedule: schedule ? `${schedule.day}, ${schedule.time}` : "-",
+        room: schedule?.room || "-",
+        progress,
+      };
+    }
+    // Fallback for courses not in master data
+    return {
+      id: -1 * (studentCourseNames.indexOf(courseName) + 100),
+      name: courseName,
+      code: "N/A",
+      lecturer: schedule?.lecturer || "-",
+      color: "from-primary to-primary/50",
+      className: schedule?.className || "N/A",
+      schedule: schedule ? `${schedule.day}, ${schedule.time}` : "-",
+      room: schedule?.room || "-",
+      sks: 3,
+      progress,
+    };
+  });
   
   // For Lecturer view - get schedules and derive courses
   const lecturerName = "Sari Dewi"; // In real app from auth
@@ -748,63 +790,71 @@ export default function Courses() {
   );
   const renderStudentView = () => (
     <>
-      <div className="grid grid-cols-2 gap-5">
-        {myActiveClasses.student.map((classItem, index) => (
-          <div
-            key={classItem.id}
-            onClick={() => handleCourseClick(classItem.id)}
-            className="group rounded-xl bg-card border border-border/50 shadow-card overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in cursor-pointer"
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <div className={cn("h-20 bg-gradient-to-br relative", classItem.color)}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <BookOpen className="h-10 w-10 text-foreground/20" />
+      {studentCourses.length === 0 ? (
+        <div className="rounded-xl bg-card border border-border/50 p-12 text-center">
+          <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+          <p className="mt-4 text-lg font-medium text-foreground">Belum ada mata kuliah</p>
+          <p className="mt-1 text-muted-foreground">Anda belum terdaftar di kelas manapun.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-5">
+          {studentCourses.map((classItem, index) => (
+            <div
+              key={classItem.id}
+              onClick={() => handleCourseClick(classItem.id)}
+              className="group rounded-xl bg-card border border-border/50 shadow-card overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in cursor-pointer"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <div className={cn("h-20 bg-gradient-to-br relative", classItem.color)}>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <BookOpen className="h-10 w-10 text-foreground/20" />
+                </div>
+                <div className="absolute top-3 right-3">
+                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-background/90 text-foreground">
+                    {classItem.code}
+                  </span>
+                </div>
+                <div className="absolute top-3 left-3">
+                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary text-primary-foreground">
+                    {classItem.className}
+                  </span>
+                </div>
               </div>
-              <div className="absolute top-3 right-3">
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-background/90 text-foreground">
-                  {classItem.code}
-                </span>
-              </div>
-              <div className="absolute top-3 left-3">
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary text-primary-foreground">
-                  {classItem.className}
-                </span>
+              <div className="p-5">
+                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                  {classItem.name}
+                </h3>
+                <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4" />
+                    <span>{classItem.lecturer}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>{classItem.schedule}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>{classItem.sks} SKS • {classItem.room}</span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
+                    <span>Progress</span>
+                    <span className="font-medium text-foreground">{classItem.progress}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className={cn("h-full rounded-full transition-all duration-500 bg-gradient-to-r", classItem.color)}
+                      style={{ width: `${classItem.progress}%` }}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="p-5">
-              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                {classItem.name}
-              </h3>
-              <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <GraduationCap className="h-4 w-4" />
-                  <span>{classItem.lecturer}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  <span>{classItem.schedule}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>{classItem.sks} SKS • {classItem.room}</span>
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1.5">
-                  <span>Progress</span>
-                  <span className="font-medium text-foreground">{classItem.progress}%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-primary rounded-full transition-all duration-500"
-                    style={{ width: `${classItem.progress}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </>
   );
 

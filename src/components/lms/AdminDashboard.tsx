@@ -462,6 +462,25 @@ export function AdminDashboard() {
                 <GraduationCap className="mr-2 h-4 w-4" />
                 Export Data Dosen (.CSV)
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => {
+                  const data = courses.map(c => ({
+                    Kode: c.code,
+                    'Nama Mata Kuliah': c.name,
+                    Prodi: c.prodi || "-",
+                    Semester: c.semester || "-",
+                    SKS: c.sks || "-",
+                    Dosen: c.lecturer,
+                  }));
+                  downloadCSV(data, "data_mata_kuliah");
+                  toast({ title: "Export berhasil!", description: "Data Mata Kuliah berhasil di-export." });
+                }}
+                className="cursor-pointer"
+              >
+                <GraduationCap className="mr-2 h-4 w-4" />
+                Export Data Mata Kuliah (.CSV)
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

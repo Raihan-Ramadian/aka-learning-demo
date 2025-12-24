@@ -605,7 +605,24 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                                   <Video className="h-4 w-4" />Tonton Video
                                 </a>
                               ) : (
-                                <button className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Download className="h-4 w-4" />Download</button>
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Simulate file download
+                                    const blob = new Blob([`Materi: ${material.name}\n\nIni adalah file dummy untuk demo.\nDalam implementasi nyata, file akan diunduh dari server.`], { type: 'application/pdf' });
+                                    const link = document.createElement('a');
+                                    link.href = URL.createObjectURL(blob);
+                                    link.download = material.name.endsWith('.pdf') ? material.name : `${material.name}.pdf`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    URL.revokeObjectURL(link.href);
+                                    toast({ title: "Download berhasil!", description: `File ${material.name} berhasil diunduh.` });
+                                  }}
+                                  className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                                >
+                                  <Download className="h-4 w-4" />Download
+                                </button>
                               )}
                               {isLecturer && (
                                 <button 
@@ -947,7 +964,25 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10"><FileText className="h-5 w-5 text-primary" /></div>
                               <div><p className="text-sm font-medium text-foreground">Instruksi/Soal dari Dosen</p><p className="text-xs text-muted-foreground">{assignment.attachmentName}</p></div>
                             </div>
-                            <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"><Download className="h-4 w-4" />Download</button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Simulate file download for instructions
+                                const content = `Instruksi Tugas: ${assignment.title}\n\nDeskripsi: ${assignment.description}\nDeadline: ${assignment.deadline}\nNilai Maksimal: ${assignment.maxScore}\n\n${assignment.additionalNotes ? `Catatan Tambahan:\n${assignment.additionalNotes}` : ''}\n\nIni adalah file instruksi dummy untuk demo.`;
+                                const blob = new Blob([content], { type: 'application/pdf' });
+                                const link = document.createElement('a');
+                                link.href = URL.createObjectURL(blob);
+                                link.download = assignment.attachmentName || `instruksi_${assignment.title}.pdf`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                URL.revokeObjectURL(link.href);
+                                toast({ title: "Download berhasil!", description: `File instruksi berhasil diunduh.` });
+                              }}
+                              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                            >
+                              <Download className="h-4 w-4" />Download
+                            </button>
                           </div>
                         )}
                         <div>
