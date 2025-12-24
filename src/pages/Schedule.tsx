@@ -29,7 +29,7 @@ const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
 export default function Schedule() {
   const currentRole = getUserRole();
-  const { academicEvents, schedules, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule, deleteSchedule, addSchedule, addAcademicEvent, deleteAcademicEvent, importSchedulesFromCSV } = useAcademicData();
+  const { academicEvents, schedules, courses, managedLecturers, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule, deleteSchedule, addSchedule, addAcademicEvent, deleteAcademicEvent, importSchedulesFromCSV } = useAcademicData();
   
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [addEventOpen, setAddEventOpen] = useState(false);
@@ -241,19 +241,25 @@ export default function Schedule() {
     setScheduleToDelete(null);
   };
 
+  // Add schedule form states for time
+  const [scheduleStartTime, setScheduleStartTime] = useState("");
+  const [scheduleEndTime, setScheduleEndTime] = useState("");
+
   // Add schedule handler
   const handleAddSchedule = () => {
-    if (!newScheduleData.className || !newScheduleData.course || !newScheduleData.time || !newScheduleData.room) {
+    if (!newScheduleData.className || !newScheduleData.course || !newScheduleData.lecturer || !newScheduleData.day || !scheduleStartTime || !scheduleEndTime || !newScheduleData.room) {
       toast.error("Lengkapi semua data jadwal!");
       return;
     }
+    
+    const timeRange = `${scheduleStartTime} - ${scheduleEndTime}`;
     
     addSchedule({
       className: newScheduleData.className,
       course: newScheduleData.course,
       lecturer: newScheduleData.lecturer,
       day: newScheduleData.day,
-      time: newScheduleData.time,
+      time: timeRange,
       room: newScheduleData.room,
       students: [],
       color: "bg-primary/10 border-primary/30 text-primary",
@@ -269,6 +275,8 @@ export default function Schedule() {
       time: "",
       room: "",
     });
+    setScheduleStartTime("");
+    setScheduleEndTime("");
   };
 
   // Student Management Handlers
@@ -1128,7 +1136,11 @@ export default function Schedule() {
           <div className="space-y-4 pt-4">
             <div>
               <label className="text-sm font-medium text-foreground">Kelas <span className="text-destructive">*</span></label>
-              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+              <select 
+                value={newScheduleData.className}
+                onChange={(e) => setNewScheduleData({...newScheduleData, className: e.target.value})}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
                 <option value="">Pilih Kelas</option>
                 <option value="D3-AK-2A">D3-AK-2A</option>
                 <option value="D3-AK-2B">D3-AK-2B</option>
@@ -1138,36 +1150,50 @@ export default function Schedule() {
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Mata Kuliah <span className="text-destructive">*</span></label>
-              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+              <select 
+                value={newScheduleData.course}
+                onChange={(e) => setNewScheduleData({...newScheduleData, course: e.target.value})}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
                 <option value="">Pilih Mata Kuliah</option>
-                <option value="KIM101">Kimia Dasar</option>
-                <option value="KIM201">Kimia Organik</option>
-                <option value="BIO201">Biokimia</option>
-                <option value="MAT101">Matematika Terapan</option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.name}>{course.code} - {course.name}</option>
+                ))}
               </select>
             </div>
             <div>
               <label className="text-sm font-medium text-foreground">Dosen <span className="text-destructive">*</span></label>
-              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+              <select 
+                value={newScheduleData.lecturer}
+                onChange={(e) => setNewScheduleData({...newScheduleData, lecturer: e.target.value})}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
                 <option value="">Pilih Dosen</option>
-                <option value="Dr. Ahmad Wijaya">Dr. Ahmad Wijaya</option>
-                <option value="Prof. Sari Dewi">Prof. Sari Dewi</option>
-                <option value="Pak Budi Santoso">Pak Budi Santoso</option>
+                {managedLecturers.map((lecturer) => (
+                  <option key={lecturer.id} value={lecturer.name}>{lecturer.name}</option>
+                ))}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-foreground">Hari</label>
-                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                  <option value="">Pilih Hari</option>
+                <label className="text-sm font-medium text-foreground">Hari <span className="text-destructive">*</span></label>
+                <select 
+                  value={newScheduleData.day}
+                  onChange={(e) => setNewScheduleData({...newScheduleData, day: e.target.value})}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
                   {daysOfWeek.map((day) => (
                     <option key={day} value={day}>{day}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Ruangan</label>
-                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <label className="text-sm font-medium text-foreground">Ruangan <span className="text-destructive">*</span></label>
+                <select 
+                  value={newScheduleData.room}
+                  onChange={(e) => setNewScheduleData({...newScheduleData, room: e.target.value})}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
                   <option value="">Pilih Ruangan</option>
                   <option value="Lab Kimia A">Lab Kimia A</option>
                   <option value="Lab Kimia B">Lab Kimia B</option>
@@ -1179,36 +1205,31 @@ export default function Schedule() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-foreground">Jam Mulai</label>
+                <label className="text-sm font-medium text-foreground">Jam Mulai <span className="text-destructive">*</span></label>
                 <input
                   type="time"
+                  value={scheduleStartTime}
+                  onChange={(e) => setScheduleStartTime(e.target.value)}
                   className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Jam Selesai</label>
+                <label className="text-sm font-medium text-foreground">Jam Selesai <span className="text-destructive">*</span></label>
                 <input
                   type="time"
+                  value={scheduleEndTime}
+                  onChange={(e) => setScheduleEndTime(e.target.value)}
                   className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </div>
             <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => setAddScheduleOpen(false)}
-                className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors"
-              >
+              <Button variant="outline" onClick={() => setAddScheduleOpen(false)}>
                 Batal
-              </button>
-              <button
-                onClick={() => {
-                  toast.success("Jadwal berhasil ditambahkan!");
-                  setAddScheduleOpen(false);
-                }}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
-              >
+              </Button>
+              <Button onClick={handleAddSchedule}>
                 Simpan
-              </button>
+              </Button>
             </div>
           </div>
         </DialogContent>
