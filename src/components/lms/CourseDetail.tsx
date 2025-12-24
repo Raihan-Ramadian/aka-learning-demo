@@ -364,7 +364,7 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                     <DialogTrigger asChild>
                       <button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"><Plus className="h-4 w-4" />Buat Tugas</button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
+                    <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
                       <DialogHeader><DialogTitle>Buat Tugas Baru</DialogTitle></DialogHeader>
                       <div className="space-y-4 pt-4">
                         <div><label className="text-sm font-medium text-foreground">Judul Tugas</label><input type="text" placeholder="Masukkan judul tugas" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
@@ -373,6 +373,46 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                           <div><label className="text-sm font-medium text-foreground">Deadline</label><input type="date" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
                           <div><label className="text-sm font-medium text-foreground">Nilai Maksimal</label><input type="number" placeholder="100" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
                         </div>
+                        
+                        {/* File Upload Area */}
+                        <div>
+                          <label className="text-sm font-medium text-foreground">Upload Soal/Lampiran (Opsional)</label>
+                          <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                            <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span>
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">PDF, DOC, DOCX, XLS, XLSX (max 25MB)</p>
+                          </div>
+                        </div>
+
+                        {/* External Link Input */}
+                        <div>
+                          <label className="text-sm font-medium text-foreground">Link Eksternal (Opsional)</label>
+                          <div className="mt-1.5 relative">
+                            <Link className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <input 
+                              type="url" 
+                              placeholder="Tempel link YouTube, Google Drive, atau link lainnya" 
+                              className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                            />
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Contoh: https://youtube.com/watch?v=... atau https://drive.google.com/...
+                          </p>
+                        </div>
+
+                        {/* Catatan Tambahan */}
+                        <div>
+                          <label className="text-sm font-medium text-foreground">Catatan Tambahan (Opsional)</label>
+                          <textarea 
+                            rows={3} 
+                            placeholder="Tulis instruksi khusus atau catatan penting untuk mahasiswa..." 
+                            className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" 
+                          />
+                          <p className="mt-1 text-xs text-muted-foreground">Catatan ini akan ditampilkan kepada mahasiswa saat membuka detail tugas.</p>
+                        </div>
+
                         <div className="flex justify-end gap-3 pt-2">
                           <button onClick={() => setAddAssignmentOpen(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors">Batal</button>
                           <button onClick={() => { setAddAssignmentOpen(false); toast({ title: "Tugas berhasil dibuat!" }); }} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">Buat Tugas</button>
@@ -398,18 +438,30 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                           )}
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">{assignment.description}</p>
+                        
+                        {/* Student: Show Catatan Tambahan from Task Creation */}
+                        {!isLecturer && assignment.additionalNotes && (
+                          <div className="mt-3 p-3 rounded-lg bg-warning/5 border border-warning/20">
+                            <div className="flex items-center gap-2 text-sm font-medium text-warning mb-1">
+                              <Paperclip className="h-4 w-4" />
+                              Catatan Tambahan dari Dosen
+                            </div>
+                            <p className="text-sm text-foreground">{assignment.additionalNotes}</p>
+                          </div>
+                        )}
+
                         <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" />Deadline: {assignment.deadline}</div>
                           <div className="flex items-center gap-1.5"><FileText className="h-4 w-4" />Nilai Maks: {assignment.maxScore}</div>
                         </div>
                         {isLecturer && <p className="mt-2 text-xs text-primary">Klik untuk melihat & menilai pengumpulan →</p>}
                         
-                        {/* Student: Show Lecturer Note if graded */}
+                        {/* Student: Show Lecturer Note if graded (Feedback after grading) */}
                         {!isLecturer && assignment.lecturerNote && (
                           <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20">
                             <div className="flex items-center gap-2 text-sm font-medium text-primary mb-1">
                               <MessageSquare className="h-4 w-4" />
-                              Catatan dari Dosen
+                              Catatan Penilaian dari Dosen
                             </div>
                             <p className="text-sm text-foreground">{assignment.lecturerNote}</p>
                           </div>

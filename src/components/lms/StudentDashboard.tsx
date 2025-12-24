@@ -23,7 +23,7 @@ const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 export function StudentDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { academicEvents, getStudentSchedules, submissions, tasks } = useAcademicData();
+  const { getStudentSchedules, submissions, tasks } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
   
@@ -92,15 +92,6 @@ export function StudentDashboard() {
     navigate(`/course/${courseId}?tab=assignments&task=${taskId}`);
   };
 
-  const getEventStyle = (type: string) => {
-    switch (type) {
-      case "uas": return "bg-destructive/10 border-destructive/20 text-destructive";
-      case "libur": return "bg-warning/10 border-warning/20 text-warning";
-      case "semester": return "bg-success/10 border-success/20 text-success";
-      default: return "bg-muted border-border text-muted-foreground";
-    }
-  };
-
   const getScheduleByDay = (day: string) => mySchedules.filter(s => s.day === day);
 
   return (
@@ -114,22 +105,6 @@ export function StudentDashboard() {
         <div className="text-right">
           <p className="text-sm text-muted-foreground">Rabu, 18 Desember 2024</p>
           <p className="text-xs text-muted-foreground">Semester Ganjil 2024/2025</p>
-        </div>
-      </div>
-
-      {/* Academic Calendar Summary */}
-      <div className="rounded-xl bg-card border border-border/50 shadow-card p-4">
-        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-          <Calendar className="h-4 w-4 text-primary" />
-          Kalender Akademik
-        </h2>
-        <div className="grid grid-cols-3 gap-3 text-sm">
-          {academicEvents.map((event) => (
-            <div key={event.id} className={cn("p-2.5 rounded-lg border", getEventStyle(event.type))}>
-              <p className="font-medium text-xs">{event.dateRange}</p>
-              <p className="text-muted-foreground text-xs mt-0.5">{event.title}</p>
-            </div>
-          ))}
         </div>
       </div>
 
