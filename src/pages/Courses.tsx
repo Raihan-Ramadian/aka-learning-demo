@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/lms/Sidebar";
 import { Header } from "@/components/lms/Header";
 import { getUserRole } from "@/types/roles";
@@ -71,8 +72,13 @@ const prodiOptions = [
 ];
 
 export default function Courses() {
+  const navigate = useNavigate();
   const currentRole = getUserRole();
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleCourseClick = (courseId: number) => {
+    navigate(`/course/${courseId}`);
+  };
   const [selectedSks, setSelectedSks] = useState("all");
   const [selectedSemester, setSelectedSemester] = useState("all");
   const [selectedProdi, setSelectedProdi] = useState("all");
@@ -542,6 +548,7 @@ export default function Courses() {
         {myActiveClasses.student.map((classItem, index) => (
           <div
             key={classItem.id}
+            onClick={() => handleCourseClick(classItem.id)}
             className="group rounded-xl bg-card border border-border/50 shadow-card overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in cursor-pointer"
             style={{ animationDelay: `${index * 50}ms` }}
           >
@@ -604,6 +611,7 @@ export default function Courses() {
         {myActiveClasses.lecturer.map((classItem, index) => (
           <div
             key={classItem.id}
+            onClick={() => handleCourseClick(classItem.id)}
             className="group rounded-xl bg-card border border-border/50 shadow-card overflow-hidden hover:shadow-lg transition-all duration-300 animate-fade-in cursor-pointer"
             style={{ animationDelay: `${index * 50}ms` }}
           >
