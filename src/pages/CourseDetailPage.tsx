@@ -1,6 +1,4 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { Sidebar } from "@/components/lms/Sidebar";
-import { Header } from "@/components/lms/Header";
 import { CourseDetail } from "@/components/lms/CourseDetail";
 import { getUserRole } from "@/types/roles";
 
@@ -22,23 +20,15 @@ export function CourseDetailPage() {
   
   if (!course) {
     return (
-      <div className="min-h-screen bg-background">
-        <Sidebar />
-        <div className="ml-64">
-          <Header />
-          <main className="p-6">
-            <div className="text-center py-12">
-              <h1 className="text-2xl font-bold text-foreground">Mata Kuliah Tidak Ditemukan</h1>
-              <p className="mt-2 text-muted-foreground">Mata kuliah yang Anda cari tidak tersedia.</p>
-              <button
-                onClick={() => navigate(-1)}
-                className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
-              >
-                Kembali
-              </button>
-            </div>
-          </main>
-        </div>
+      <div className="text-center py-12">
+        <h1 className="text-2xl font-bold text-foreground">Mata Kuliah Tidak Ditemukan</h1>
+        <p className="mt-2 text-muted-foreground">Mata kuliah yang Anda cari tidak tersedia.</p>
+        <button
+          onClick={() => navigate(-1)}
+          className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+        >
+          Kembali
+        </button>
       </div>
     );
   }
@@ -55,18 +45,10 @@ export function CourseDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar />
-      <div className="ml-64">
-        <Header />
-        <main className="p-6">
-          <CourseDetail
-            course={course}
-            userRole={currentRole === "lecturer" ? "lecturer" : "student"}
-            onBack={handleBack}
-          />
-        </main>
-      </div>
-    </div>
+    <CourseDetail
+      course={course}
+      userRole={currentRole === "lecturer" ? "lecturer" : "student"}
+      onBack={handleBack}
+    />
   );
 }

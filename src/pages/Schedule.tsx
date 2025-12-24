@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { Sidebar } from "@/components/lms/Sidebar";
-import { Header } from "@/components/lms/Header";
 import { getUserRole } from "@/types/roles";
 import { useAcademicData, Student, ClassSchedule } from "@/contexts/AcademicDataContext";
 import { Calendar, Download, Upload, Clock, MapPin, User, ChevronLeft, ChevronRight, FileImage, Users, Plus, Pencil, Trash2, FileSpreadsheet, X } from "lucide-react";
@@ -695,152 +693,146 @@ export default function Schedule() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar />
-      <div className="ml-64">
-        <Header />
-        <main className="p-6">
-          <div className="animate-fade-in space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">{getPageTitle()}</h1>
-                <p className="mt-1 text-muted-foreground">{getPageDescription()}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                {/* View Toggle for non-admin */}
-                {currentRole !== "admin" && (
-                  <div className="flex rounded-lg border border-border bg-muted p-1">
-                    <button
-                      onClick={() => setViewMode("list")}
-                      className={cn(
-                        "px-4 py-1.5 text-sm font-medium rounded-md transition-colors",
-                        viewMode === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
-                      )}
-                    >
-                      List View
-                    </button>
-                    <button
-                      onClick={() => setViewMode("calendar")}
-                      className={cn(
-                        "px-4 py-1.5 text-sm font-medium rounded-md transition-colors",
-                        viewMode === "calendar" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
-                      )}
-                    >
-                      Calendar View
-                    </button>
-                  </div>
+    <div className="animate-fade-in space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">{getPageTitle()}</h1>
+          <p className="mt-1 text-muted-foreground">{getPageDescription()}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* View Toggle for non-admin */}
+          {currentRole !== "admin" && (
+            <div className="flex rounded-lg border border-border bg-muted p-1">
+              <button
+                onClick={() => setViewMode("list")}
+                className={cn(
+                  "px-4 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  viewMode === "list" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
                 )}
-
-                {/* Admin: Upload Academic Calendar */}
-                {currentRole === "admin" && (
-                  <Dialog open={uploadAcademicOpen} onOpenChange={setUploadAcademicOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" className="gap-2">
-                        <Upload className="h-4 w-4" />
-                        Upload Kalender Akademik
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Upload Kalender Akademik</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 pt-4">
-                        <div className="rounded-lg border-2 border-dashed border-border bg-muted/50 p-8 text-center">
-                          <FileImage className="mx-auto h-12 w-12 text-muted-foreground" />
-                          <p className="mt-3 font-medium text-foreground">
-                            Drag & drop file di sini
-                          </p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
-                          </p>
-                          <p className="mt-3 text-xs text-muted-foreground">Format: JPG, PNG, PDF, XLS, XLSX, CSV (max 10MB)</p>
-                        </div>
-                        <div className="flex justify-end gap-3">
-                          <Button variant="outline" onClick={() => setUploadAcademicOpen(false)}>
-                            Batal
-                          </Button>
-                          <Button onClick={handleUploadAcademic}>
-                            Upload
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+              >
+                List View
+              </button>
+              <button
+                onClick={() => setViewMode("calendar")}
+                className={cn(
+                  "px-4 py-1.5 text-sm font-medium rounded-md transition-colors",
+                  viewMode === "calendar" ? "bg-background shadow-sm text-foreground" : "text-muted-foreground"
                 )}
+              >
+                Calendar View
+              </button>
+            </div>
+          )}
 
-                <Button onClick={handleDownloadPDF} className="gap-2">
-                  <Download className="h-4 w-4" />
-                  Download Jadwal (PDF)
+          {/* Admin: Upload Academic Calendar */}
+          {currentRole === "admin" && (
+            <Dialog open={uploadAcademicOpen} onOpenChange={setUploadAcademicOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Upload className="h-4 w-4" />
+                  Upload Kalender Akademik
                 </Button>
-              </div>
-            </div>
-
-            {/* Academic Calendar Preview */}
-            <div className="rounded-xl bg-card border border-border/50 shadow-card p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Kalender Akademik
-                </h2>
-                <div className="flex items-center gap-2">
-                  <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                    <ChevronLeft className="h-5 w-5 text-muted-foreground" />
-                  </button>
-                  <span className="text-sm font-medium text-foreground px-3">Desember 2024</span>
-                  <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </button>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                {academicEvents.map((event) => (
-                  <div key={event.id} className={cn("p-3 rounded-lg border", getEventStyle(event.type))}>
-                    <p className="font-medium">{event.dateRange}</p>
-                    <p className="text-muted-foreground text-xs mt-1">{event.title}</p>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Upload Kalender Akademik</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div className="rounded-lg border-2 border-dashed border-border bg-muted/50 p-8 text-center">
+                    <FileImage className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <p className="mt-3 font-medium text-foreground">
+                      Drag & drop file di sini
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
+                    </p>
+                    <p className="mt-3 text-xs text-muted-foreground">Format: JPG, PNG, PDF, XLS, XLSX, CSV (max 10MB)</p>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="flex justify-end gap-3">
+                    <Button variant="outline" onClick={() => setUploadAcademicOpen(false)}>
+                      Batal
+                    </Button>
+                    <Button onClick={handleUploadAcademic}>
+                      Upload
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
 
-            {/* Role-based Content */}
-            {currentRole === "admin" ? renderAdminView() : renderPersonalScheduleView()}
-          </div>
-        </main>
+          <Button onClick={handleDownloadPDF} className="gap-2">
+            <Download className="h-4 w-4" />
+            Download Jadwal (PDF)
+          </Button>
+        </div>
       </div>
+
+      {/* Academic Calendar Preview */}
+      <div className="rounded-xl bg-card border border-border/50 shadow-card p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-primary" />
+            Kalender Akademik
+          </h2>
+          <div className="flex items-center gap-2">
+            <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+              <ChevronLeft className="h-5 w-5 text-muted-foreground" />
+            </button>
+            <span className="text-sm font-medium text-foreground px-3">Desember 2024</span>
+            <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3 text-sm">
+          {academicEvents.map((event) => (
+            <div key={event.id} className={cn("p-3 rounded-lg border", getEventStyle(event.type))}>
+              <p className="font-medium">{event.dateRange}</p>
+              <p className="text-muted-foreground text-xs mt-1">{event.title}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Role-based Content */}
+      {currentRole === "admin" ? renderAdminView() : renderPersonalScheduleView()}
 
       {/* Add Schedule Modal (Admin) */}
       <Dialog open={addScheduleOpen} onOpenChange={setAddScheduleOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Tambah Jadwal Baru</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-foreground">Kelas</label>
-                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                  <option value="">Pilih Kelas</option>
-                  <option value="d3-ak-2a">D3-AK-2A</option>
-                  <option value="d3-ak-2b">D3-AK-2B</option>
-                  <option value="d3-ti-2a">D3-TI-2A</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-foreground">Mata Kuliah</label>
-                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
-                  <option value="">Pilih Matkul</option>
-                  <option value="kim101">Kimia Dasar</option>
-                  <option value="kim201">Kimia Organik</option>
-                </select>
-              </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Kelas <span className="text-destructive">*</span></label>
+              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">Pilih Kelas</option>
+                <option value="D3-AK-2A">D3-AK-2A</option>
+                <option value="D3-AK-2B">D3-AK-2B</option>
+                <option value="D3-TI-2A">D3-TI-2A</option>
+                <option value="D4-AK-4A">D4-AK-4A</option>
+              </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Dosen Pengampu</label>
+              <label className="text-sm font-medium text-foreground">Mata Kuliah <span className="text-destructive">*</span></label>
+              <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                <option value="">Pilih Mata Kuliah</option>
+                <option value="KIM101">Kimia Dasar</option>
+                <option value="KIM201">Kimia Organik</option>
+                <option value="BIO201">Biokimia</option>
+                <option value="MAT101">Matematika Terapan</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Dosen <span className="text-destructive">*</span></label>
               <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
                 <option value="">Pilih Dosen</option>
-                <option value="ahmad">Dr. Ahmad Wijaya</option>
-                <option value="sari">Prof. Sari Dewi</option>
+                <option value="Dr. Ahmad Wijaya">Dr. Ahmad Wijaya</option>
+                <option value="Prof. Sari Dewi">Prof. Sari Dewi</option>
+                <option value="Pak Budi Santoso">Pak Budi Santoso</option>
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -855,11 +847,14 @@ export default function Schedule() {
               </div>
               <div>
                 <label className="text-sm font-medium text-foreground">Ruangan</label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Lab Kimia A"
-                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
+                <select className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <option value="">Pilih Ruangan</option>
+                  <option value="Lab Kimia A">Lab Kimia A</option>
+                  <option value="Lab Kimia B">Lab Kimia B</option>
+                  <option value="Lab Komputer">Lab Komputer</option>
+                  <option value="R. 201">R. 201</option>
+                  <option value="R. 302">R. 302</option>
+                </select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">

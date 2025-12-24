@@ -1,7 +1,5 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sidebar } from "@/components/lms/Sidebar";
-import { Header } from "@/components/lms/Header";
 import { getUserRole } from "@/types/roles";
 import { BookOpen, Search, Filter, ChevronDown, Clock, Users, GraduationCap, Plus, Pencil, Trash2, Calendar, Upload, FileSpreadsheet } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -668,25 +666,17 @@ export default function Courses() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <Sidebar />
-      <div className="ml-64">
-        <Header />
-        <main className="p-6">
-          <div className="animate-fade-in space-y-6">
-            {/* Header */}
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">{getPageTitle()}</h1>
-              <p className="mt-1 text-muted-foreground">{getPageDescription()}</p>
-            </div>
-
-            {/* Content based on role */}
-            {currentRole === "admin" && renderAdminView()}
-            {currentRole === "student" && renderStudentView()}
-            {currentRole === "lecturer" && renderLecturerView()}
-          </div>
-        </main>
+    <div className="animate-fade-in space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">{getPageTitle()}</h1>
+        <p className="mt-1 text-muted-foreground">{getPageDescription()}</p>
       </div>
+
+      {/* Content based on role */}
+      {currentRole === "admin" && renderAdminView()}
+      {currentRole === "student" && renderStudentView()}
+      {currentRole === "lecturer" && renderLecturerView()}
     </div>
   );
 }
