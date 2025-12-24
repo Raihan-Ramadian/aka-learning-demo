@@ -74,9 +74,10 @@ export interface ClassSchedule {
 export interface AcademicEvent {
   id: number;
   title: string;
-  dateRange: string;
-  type: "uas" | "libur" | "semester";
-  description: string;
+  startDate: string;
+  endDate: string;
+  category: "urgent" | "warning" | "success";
+  description?: string;
 }
 
 export interface TaskSubmission {
@@ -170,9 +171,9 @@ const initialMaterialWeeks: MaterialWeek[] = [
 ];
 
 const initialAcademicEvents: AcademicEvent[] = [
-  { id: 1, title: "UAS Semester Ganjil", dateRange: "16 - 27 Des", type: "uas", description: "Ujian Akhir Semester Ganjil 2024/2025" },
-  { id: 2, title: "Libur Akhir Tahun", dateRange: "28 Des - 5 Jan", type: "libur", description: "Libur Natal dan Tahun Baru" },
-  { id: 3, title: "Mulai Semester Genap", dateRange: "6 Jan 2025", type: "semester", description: "Awal perkuliahan Semester Genap" },
+  { id: 1, title: "UAS Semester Ganjil", startDate: "2024-12-16", endDate: "2024-12-27", category: "urgent", description: "Ujian Akhir Semester Ganjil 2024/2025" },
+  { id: 2, title: "Libur Akhir Tahun", startDate: "2024-12-28", endDate: "2025-01-05", category: "warning", description: "Libur Natal dan Tahun Baru" },
+  { id: 3, title: "Mulai Semester Genap", startDate: "2025-01-06", endDate: "2025-01-06", category: "success", description: "Awal perkuliahan Semester Genap" },
 ];
 
 const initialSchedules: ClassSchedule[] = [
@@ -316,8 +317,8 @@ interface AcademicDataContextType {
   addSchedule: (schedule: Omit<ClassSchedule, 'id'>) => void;
   submitAssignment: (taskId: number, courseId: number, studentNim: string, studentName: string, fileName: string) => void;
   addAcademicEvent: (event: Omit<AcademicEvent, 'id'>) => void;
+  updateAcademicEvent: (id: number, updates: Partial<AcademicEvent>) => void;
   deleteAcademicEvent: (id: number) => void;
-  importAcademicEventsFromCSV: (events: Omit<AcademicEvent, 'id'>[]) => void;
 }
 
 const AcademicDataContext = createContext<AcademicDataContextType | undefined>(undefined);
@@ -556,13 +557,12 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
     setAcademicEvents(prev => [...prev, newEvent]);
   };
 
-  const deleteAcademicEvent = (id: number) => {
-    setAcademicEvents(prev => prev.filter(e => e.id !== id));
+  const updateAcademicEvent = (id: number, updates: Partial<AcademicEvent>) => {
+    setAcademicEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
   };
 
-  const importAcademicEventsFromCSV = (events: Omit<AcademicEvent, 'id'>[]) => {
-    const newEvents = events.map((e, i) => ({ ...e, id: Date.now() + i }));
-    setAcademicEvents(prev => [...prev, ...newEvents]);
+  const deleteAcademicEvent = (id: number) => {
+    setAcademicEvents(prev => prev.filter(e => e.id !== id));
   };
 
   return (
@@ -616,8 +616,8 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
       addSchedule,
       submitAssignment,
       addAcademicEvent,
+      updateAcademicEvent,
       deleteAcademicEvent,
-      importAcademicEventsFromCSV,
     }}>
       {children}
     </AcademicDataContext.Provider>
