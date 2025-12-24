@@ -546,22 +546,136 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                     <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
                       <DialogHeader><DialogTitle>Buat Tugas Baru</DialogTitle></DialogHeader>
                       <div className="space-y-4 pt-4">
-                        <div><label className="text-sm font-medium text-foreground">Judul Tugas</label><input type="text" placeholder="Masukkan judul tugas" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
-                        <div><label className="text-sm font-medium text-foreground">Deskripsi</label><textarea rows={3} placeholder="Masukkan deskripsi tugas" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" /></div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div><label className="text-sm font-medium text-foreground">Deadline</label><input type="date" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
-                          <div><label className="text-sm font-medium text-foreground">Nilai Maksimal</label><input type="number" placeholder="100" className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" /></div>
+                        <div>
+                          <label className="text-sm font-medium text-foreground">Judul Tugas <span className="text-destructive">*</span></label>
+                          <input 
+                            type="text" 
+                            value={newTaskTitle}
+                            onChange={(e) => setNewTaskTitle(e.target.value)}
+                            placeholder="Masukkan judul tugas" 
+                            className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-foreground">Deskripsi</label>
+                          <textarea 
+                            rows={3} 
+                            value={newTaskDescription}
+                            onChange={(e) => setNewTaskDescription(e.target.value)}
+                            placeholder="Masukkan deskripsi tugas" 
+                            className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" 
+                          />
                         </div>
                         
-                        {/* File Upload Area */}
+                        {/* Task Type Selector */}
+                        <div>
+                          <label className="text-sm font-medium text-foreground">Tipe Tugas</label>
+                          <div className="mt-2 grid grid-cols-2 gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setNewTaskType("regular")}
+                              className={cn(
+                                "flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all",
+                                newTaskType === "regular"
+                                  ? "border-primary bg-primary/5 text-primary"
+                                  : "border-border bg-background text-muted-foreground hover:border-primary/50"
+                              )}
+                            >
+                              <FileText className="h-5 w-5" />
+                              Reguler
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNewTaskType("praktikum")}
+                              className={cn(
+                                "flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all",
+                                newTaskType === "praktikum"
+                                  ? "border-violet-500 bg-violet-500/5 text-violet-600"
+                                  : "border-border bg-background text-muted-foreground hover:border-violet-500/50"
+                              )}
+                            >
+                              <Users className="h-5 w-5" />
+                              Praktikum
+                            </button>
+                          </div>
+                          {newTaskType === "praktikum" && (
+                            <p className="mt-2 text-xs text-violet-600 bg-violet-500/10 rounded-lg p-2">
+                              Tugas praktikum akan dinilai dengan 6 kriteria: Laporan Awal, APD, K3, Skill, Kuis, Laporan Akhir
+                            </p>
+                          )}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-foreground">Deadline <span className="text-destructive">*</span></label>
+                            <input 
+                              type="date" 
+                              value={newTaskDeadline}
+                              onChange={(e) => setNewTaskDeadline(e.target.value)}
+                              className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-foreground">Nilai Maksimal</label>
+                            <input 
+                              type="number" 
+                              value={newTaskMaxScore}
+                              onChange={(e) => setNewTaskMaxScore(e.target.value)}
+                              placeholder="100" 
+                              className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" 
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* File Upload Area with Drag & Drop */}
                         <div>
                           <label className="text-sm font-medium text-foreground">Upload Soal/Lampiran (Opsional)</label>
-                          <div className="mt-1.5 rounded-lg border-2 border-dashed border-border bg-muted/50 p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                            <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                            <p className="mt-2 text-sm text-muted-foreground">
-                              Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span>
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">PDF, DOC, DOCX, XLS, XLSX (max 25MB)</p>
+                          <input 
+                            ref={taskFileRef}
+                            type="file"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) setNewTaskFile(file);
+                            }}
+                          />
+                          <div 
+                            onClick={() => taskFileRef.current?.click()}
+                            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} 
+                            onDragLeave={() => setDragOver(false)} 
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              setDragOver(false);
+                              const file = e.dataTransfer.files[0];
+                              if (file) setNewTaskFile(file);
+                            }} 
+                            className={cn(
+                              "mt-1.5 rounded-lg border-2 border-dashed p-6 text-center transition-all cursor-pointer",
+                              dragOver ? "border-primary bg-primary/5" : 
+                              newTaskFile ? "border-success bg-success/5" : "border-border bg-muted/50 hover:border-primary/50"
+                            )}
+                          >
+                            {newTaskFile ? (
+                              <div className="flex items-center justify-center gap-3">
+                                <Check className="h-5 w-5 text-success" />
+                                <span className="font-medium text-success">{newTaskFile.name}</span>
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); setNewTaskFile(null); }}
+                                  className="p-1 rounded hover:bg-destructive/10"
+                                >
+                                  <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                  Drag & drop file atau <span className="text-primary cursor-pointer hover:underline">browse</span>
+                                </p>
+                                <p className="mt-1 text-xs text-muted-foreground">PDF, DOC, DOCX, XLS, XLSX (max 25MB)</p>
+                              </>
+                            )}
                           </div>
                         </div>
 
@@ -572,6 +686,8 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                             <Link className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <input 
                               type="url" 
+                              value={newTaskLink}
+                              onChange={(e) => setNewTaskLink(e.target.value)}
                               placeholder="Tempel link YouTube, Google Drive, atau link lainnya" 
                               className="w-full rounded-lg border border-input bg-background pl-10 pr-3 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" 
                             />
@@ -586,6 +702,8 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                           <label className="text-sm font-medium text-foreground">Catatan Tambahan (Opsional)</label>
                           <textarea 
                             rows={3} 
+                            value={newTaskNotes}
+                            onChange={(e) => setNewTaskNotes(e.target.value)}
                             placeholder="Tulis instruksi khusus atau catatan penting untuk mahasiswa..." 
                             className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none" 
                           />
@@ -593,8 +711,51 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                         </div>
 
                         <div className="flex justify-end gap-3 pt-2">
-                          <button onClick={() => setAddAssignmentOpen(false)} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors">Batal</button>
-                          <button onClick={() => { setAddAssignmentOpen(false); toast({ title: "Tugas berhasil dibuat!" }); }} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">Buat Tugas</button>
+                          <button onClick={() => {
+                            setAddAssignmentOpen(false);
+                            setNewTaskTitle("");
+                            setNewTaskDescription("");
+                            setNewTaskDeadline("");
+                            setNewTaskMaxScore("100");
+                            setNewTaskFile(null);
+                            setNewTaskLink("");
+                            setNewTaskNotes("");
+                            setNewTaskType("regular");
+                          }} className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors">Batal</button>
+                          <button onClick={() => { 
+                            if (!newTaskTitle || !newTaskDeadline) {
+                              toast({ title: "Lengkapi data tugas!", variant: "destructive" });
+                              return;
+                            }
+                            
+                            const deadlineDate = new Date(newTaskDeadline);
+                            const formattedDeadline = deadlineDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                            
+                            addTask({
+                              courseId: course.id,
+                              title: newTaskTitle,
+                              description: newTaskDescription || "Tidak ada deskripsi",
+                              deadline: formattedDeadline,
+                              maxScore: parseInt(newTaskMaxScore) || 100,
+                              hasAttachment: !!newTaskFile,
+                              attachmentName: newTaskFile?.name,
+                              attachmentType: "file",
+                              externalLink: newTaskLink || undefined,
+                              additionalNotes: newTaskNotes || undefined,
+                              taskType: newTaskType,
+                            });
+                            
+                            toast({ title: "Tugas berhasil dibuat!", description: `${newTaskTitle} telah ditambahkan.` });
+                            setAddAssignmentOpen(false);
+                            setNewTaskTitle("");
+                            setNewTaskDescription("");
+                            setNewTaskDeadline("");
+                            setNewTaskMaxScore("100");
+                            setNewTaskFile(null);
+                            setNewTaskLink("");
+                            setNewTaskNotes("");
+                            setNewTaskType("regular");
+                          }} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors">Buat Tugas</button>
                         </div>
                       </div>
                     </DialogContent>

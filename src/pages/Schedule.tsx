@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getUserRole } from "@/types/roles";
-import { useAcademicData, Student, ClassSchedule } from "@/contexts/AcademicDataContext";
+import { useAcademicData, Student, ClassSchedule, AcademicEvent } from "@/contexts/AcademicDataContext";
 import { Calendar, Download, Upload, Clock, MapPin, User, ChevronLeft, ChevronRight, FileImage, Users, Plus, Pencil, Trash2, FileSpreadsheet, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,12 +29,22 @@ const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
 export default function Schedule() {
   const currentRole = getUserRole();
-  const { academicEvents, schedules, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule, deleteSchedule, addSchedule } = useAcademicData();
+  const { academicEvents, schedules, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule, deleteSchedule, addSchedule, addAcademicEvent, deleteAcademicEvent } = useAcademicData();
   
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
-  const [uploadAcademicOpen, setUploadAcademicOpen] = useState(false);
+  const [addEventOpen, setAddEventOpen] = useState(false);
   const [addScheduleOpen, setAddScheduleOpen] = useState(false);
   const [importScheduleOpen, setImportScheduleOpen] = useState(false);
+  
+  // Academic Event form states
+  const [newEventTitle, setNewEventTitle] = useState("");
+  const [newEventStartDate, setNewEventStartDate] = useState("");
+  const [newEventEndDate, setNewEventEndDate] = useState("");
+  const [newEventCategory, setNewEventCategory] = useState<"urgent" | "warning" | "success">("warning");
+  
+  // Delete Event Confirmation
+  const [deleteEventOpen, setDeleteEventOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<AcademicEvent | null>(null);
 
   // Student Management Modal
   const [studentModalOpen, setStudentModalOpen] = useState(false);
@@ -84,9 +94,73 @@ export default function Schedule() {
     toast.success("Download Jadwal (PDF) berhasil!");
   };
 
-  const handleUploadAcademic = () => {
-    toast.success("Kalender Akademik berhasil diupload!");
-    setUploadAcademicOpen(false);
+  // Add Academic Event Handler
+  const handleAddEvent = () => {
+    if (!newEventTitle || !newEventStartDate || !newEventEndDate) {
+      toast.error("Lengkapi semua data event!");
+      return;
+    }
+    
+    addAcademicEvent({
+      title: newEventTitle,
+      startDate: newEventStartDate,
+      endDate: newEventEndDate,
+      category: newEventCategory,
+    });
+    
+    toast.success("Event akademik berhasil ditambahkan!");
+    setAddEventOpen(false);
+    setNewEventTitle("");
+    setNewEventStartDate("");
+    setNewEventEndDate("");
+    setNewEventCategory("warning");
+  };
+  
+  // Delete Event Handler
+  const handleDeleteEvent = (event: AcademicEvent) => {
+    setEventToDelete(event);
+    setDeleteEventOpen(true);
+  };
+  
+  const confirmDeleteEvent = () => {
+    if (eventToDelete) {
+      deleteAcademicEvent(eventToDelete.id);
+      toast.success("Event akademik berhasil dihapus!");
+    }
+    setDeleteEventOpen(false);
+    setEventToDelete(null);
+  };
+  
+  // Format date for display
+  const formatDateRange = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const startDay = start.getDate();
+    const endDay = end.getDate();
+    const startMonth = start.toLocaleDateString('id-ID', { month: 'short' });
+    const endMonth = end.toLocaleDateString('id-ID', { month: 'short' });
+    
+    if (startDate === endDate) {
+      return `${startDay} ${startMonth}`;
+    }
+    if (startMonth === endMonth) {
+      return `${startDay} - ${endDay} ${startMonth}`;
+    }
+    return `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
+  };
+  
+  // Get event style based on category
+  const getEventCategoryStyle = (category: "urgent" | "warning" | "success") => {
+    switch (category) {
+      case "urgent":
+        return "bg-destructive/10 border-destructive/20 text-destructive";
+      case "warning":
+        return "bg-warning/10 border-warning/20 text-warning";
+      case "success":
+        return "bg-success/10 border-success/20 text-success";
+      default:
+        return "bg-muted border-border text-muted-foreground";
+    }
   };
 
   const getPageTitle = () => {
@@ -770,17 +844,8 @@ export default function Schedule() {
     </>
   );
 
-  const getEventStyle = (type: string) => {
-    switch (type) {
-      case "uas":
-        return "bg-destructive/10 border-destructive/20 text-destructive";
-      case "libur":
-        return "bg-warning/10 border-warning/20 text-warning";
-      case "semester":
-        return "bg-success/10 border-success/20 text-success";
-      default:
-        return "bg-muted border-border text-muted-foreground";
-    }
+  const getEventStyle = (category: "urgent" | "warning" | "success") => {
+    return getEventCategoryStyle(category);
   };
 
   return (
@@ -816,41 +881,12 @@ export default function Schedule() {
             </div>
           )}
 
-          {/* Admin: Upload Academic Calendar */}
+          {/* Admin: Add Academic Event */}
           {currentRole === "admin" && (
-            <Dialog open={uploadAcademicOpen} onOpenChange={setUploadAcademicOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Upload className="h-4 w-4" />
-                  Upload Kalender Akademik
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Upload Kalender Akademik</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div className="rounded-lg border-2 border-dashed border-border bg-muted/50 p-8 text-center">
-                    <FileImage className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <p className="mt-3 font-medium text-foreground">
-                      Drag & drop file di sini
-                    </p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      atau <span className="text-primary cursor-pointer hover:underline">browse file</span>
-                    </p>
-                    <p className="mt-3 text-xs text-muted-foreground">Format: JPG, PNG, PDF, XLS, XLSX, CSV (max 10MB)</p>
-                  </div>
-                  <div className="flex justify-end gap-3">
-                    <Button variant="outline" onClick={() => setUploadAcademicOpen(false)}>
-                      Batal
-                    </Button>
-                    <Button onClick={handleUploadAcademic}>
-                      Upload
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button variant="outline" className="gap-2" onClick={() => setAddEventOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Tambah Event Akademik
+            </Button>
           )}
 
           <Button onClick={handleDownloadPDF} className="gap-2">
@@ -879,13 +915,132 @@ export default function Schedule() {
         </div>
         <div className="grid grid-cols-3 gap-3 text-sm">
           {academicEvents.map((event) => (
-            <div key={event.id} className={cn("p-3 rounded-lg border", getEventStyle(event.type))}>
-              <p className="font-medium">{event.dateRange}</p>
+            <div key={event.id} className={cn("p-3 rounded-lg border relative group", getEventStyle(event.category))}>
+              <p className="font-medium">{formatDateRange(event.startDate, event.endDate)}</p>
               <p className="text-muted-foreground text-xs mt-1">{event.title}</p>
+              {currentRole === "admin" && (
+                <button 
+                  onClick={() => handleDeleteEvent(event)}
+                  className="absolute top-2 right-2 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/20 transition-all"
+                >
+                  <X className="h-3.5 w-3.5 text-destructive" />
+                </button>
+              )}
             </div>
           ))}
         </div>
       </div>
+
+      {/* Add Academic Event Modal */}
+      <Dialog open={addEventOpen} onOpenChange={setAddEventOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tambah Event Akademik</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-medium text-foreground">Judul Event <span className="text-destructive">*</span></label>
+              <input
+                type="text"
+                value={newEventTitle}
+                onChange={(e) => setNewEventTitle(e.target.value)}
+                placeholder="Contoh: UAS Semester Ganjil"
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground">Tanggal Mulai <span className="text-destructive">*</span></label>
+                <input
+                  type="date"
+                  value={newEventStartDate}
+                  onChange={(e) => setNewEventStartDate(e.target.value)}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground">Tanggal Selesai <span className="text-destructive">*</span></label>
+                <input
+                  type="date"
+                  value={newEventEndDate}
+                  onChange={(e) => setNewEventEndDate(e.target.value)}
+                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-foreground">Kategori/Warna</label>
+              <div className="mt-2 grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setNewEventCategory("urgent")}
+                  className={cn(
+                    "flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all",
+                    newEventCategory === "urgent"
+                      ? "border-destructive bg-destructive/10 text-destructive"
+                      : "border-border bg-background text-muted-foreground hover:border-destructive/50"
+                  )}
+                >
+                  <div className="h-3 w-3 rounded-full bg-destructive" />
+                  Urgent
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewEventCategory("warning")}
+                  className={cn(
+                    "flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all",
+                    newEventCategory === "warning"
+                      ? "border-warning bg-warning/10 text-warning"
+                      : "border-border bg-background text-muted-foreground hover:border-warning/50"
+                  )}
+                >
+                  <div className="h-3 w-3 rounded-full bg-warning" />
+                  Warning
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewEventCategory("success")}
+                  className={cn(
+                    "flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-all",
+                    newEventCategory === "success"
+                      ? "border-success bg-success/10 text-success"
+                      : "border-border bg-background text-muted-foreground hover:border-success/50"
+                  )}
+                >
+                  <div className="h-3 w-3 rounded-full bg-success" />
+                  Success
+                </button>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setAddEventOpen(false)}>
+                Batal
+              </Button>
+              <Button onClick={handleAddEvent}>
+                Simpan
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Event Confirmation */}
+      <AlertDialog open={deleteEventOpen} onOpenChange={setDeleteEventOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Event Akademik</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus event <span className="font-semibold">{eventToDelete?.title}</span>? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteEvent} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Ya, Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Role-based Content */}
       {currentRole === "admin" ? renderAdminView() : renderPersonalScheduleView()}
