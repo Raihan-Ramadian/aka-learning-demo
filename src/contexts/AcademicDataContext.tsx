@@ -39,6 +39,9 @@ export interface Course {
   lecturer: string;
   color: string;
   classes?: number;
+  prodi?: string;
+  semester?: number;
+  sks?: number;
 }
 
 export interface Material {
@@ -139,11 +142,11 @@ const initialManagedLecturers: ManagedLecturer[] = [
 ];
 
 const initialCourses: Course[] = [
-  { id: 1, name: "Kimia Dasar", code: "KIM101", lecturer: "Dr. Ahmad Wijaya", color: "from-blue-500 to-cyan-500", classes: 2 },
-  { id: 2, name: "Biokimia", code: "BIO201", lecturer: "Prof. Sari Dewi", color: "from-emerald-500 to-teal-500", classes: 2 },
-  { id: 3, name: "Kimia Analitik", code: "KIM202", lecturer: "Dr. Rudi Hartono", color: "from-violet-500 to-purple-500", classes: 1 },
-  { id: 4, name: "Kimia Organik", code: "KIM301", lecturer: "Dr. Maya Putri", color: "from-orange-500 to-amber-500", classes: 3 },
-  { id: 5, name: "Praktikum Kimia", code: "KIM102", lecturer: "Dr. Ahmad Wijaya", color: "from-violet-500 to-purple-500", classes: 4 },
+  { id: 1, name: "Kimia Dasar", code: "KIM101", lecturer: "Dr. Ahmad Wijaya", color: "from-blue-500 to-cyan-500", classes: 2, prodi: "D3 Analisis Kimia", semester: 1, sks: 3 },
+  { id: 2, name: "Biokimia", code: "BIO201", lecturer: "Prof. Sari Dewi", color: "from-emerald-500 to-teal-500", classes: 2, prodi: "D3 Analisis Kimia", semester: 2, sks: 3 },
+  { id: 3, name: "Kimia Analitik", code: "KIM202", lecturer: "Dr. Rudi Hartono", color: "from-violet-500 to-purple-500", classes: 1, prodi: "D3 Analisis Kimia", semester: 3, sks: 4 },
+  { id: 4, name: "Kimia Organik", code: "KIM301", lecturer: "Dr. Maya Putri", color: "from-orange-500 to-amber-500", classes: 3, prodi: "D4 Analisis Kimia", semester: 3, sks: 3 },
+  { id: 5, name: "Praktikum Kimia", code: "KIM102", lecturer: "Dr. Ahmad Wijaya", color: "from-violet-500 to-purple-500", classes: 4, prodi: "D3 Analisis Kimia", semester: 1, sks: 2 },
 ];
 
 const initialMaterialWeeks: MaterialWeek[] = [
@@ -280,9 +283,15 @@ interface AcademicDataContextType {
   importStudentsFromCSV: (students: Omit<ManagedStudent, 'id'>[]) => void;
   importLecturersFromCSV: (lecturers: Omit<ManagedLecturer, 'id'>[]) => void;
   
-  // Existing
+  // Course management
   courses: Course[];
   setCourses: React.Dispatch<React.SetStateAction<Course[]>>;
+  addCourse: (course: Omit<Course, 'id'>) => void;
+  updateCourse: (id: number, updates: Partial<Course>) => void;
+  deleteCourse: (id: number) => void;
+  importCoursesFromCSV: (courses: Omit<Course, 'id'>[]) => void;
+  
+  // Materials
   materialWeeks: MaterialWeek[];
   setMaterialWeeks: React.Dispatch<React.SetStateAction<MaterialWeek[]>>;
   academicEvents: AcademicEvent[];
@@ -371,6 +380,28 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
   const importLecturersFromCSV = (lecturers: Omit<ManagedLecturer, 'id'>[]) => {
     const newLecturers = lecturers.map((l, i) => ({ ...l, id: Date.now() + i }));
     setManagedLecturers(prev => [...prev, ...newLecturers]);
+  };
+
+  // Course management functions
+  const addCourse = (course: Omit<Course, 'id'>) => {
+    const newCourse: Course = { ...course, id: Date.now() };
+    setCourses(prev => [...prev, newCourse]);
+  };
+
+  const updateCourse = (id: number, updates: Partial<Course>) => {
+    setCourses(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+  };
+
+  const deleteCourse = (id: number) => {
+    setCourses(prev => prev.filter(c => c.id !== id));
+    // Also delete related tasks and materials
+    setTasks(prev => prev.filter(t => t.courseId !== id));
+    setMaterialWeeks(prev => prev.filter(w => w.courseId !== id));
+  };
+
+  const importCoursesFromCSV = (coursesToImport: Omit<Course, 'id'>[]) => {
+    const newCourses = coursesToImport.map((c, i) => ({ ...c, id: Date.now() + i }));
+    setCourses(prev => [...prev, ...newCourses]);
   };
 
   const addStudentToClass = (scheduleId: number, student: Student) => {
@@ -579,9 +610,15 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
       importStudentsFromCSV,
       importLecturersFromCSV,
       
-      // Existing
+      // Course management
       courses,
       setCourses,
+      addCourse,
+      updateCourse,
+      deleteCourse,
+      importCoursesFromCSV,
+      
+      // Materials
       materialWeeks,
       setMaterialWeeks,
       academicEvents,

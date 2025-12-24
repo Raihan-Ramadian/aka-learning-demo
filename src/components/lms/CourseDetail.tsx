@@ -505,7 +505,18 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                               <div><p className="font-medium text-foreground">{material.name}</p><p className="text-xs text-muted-foreground">{material.type === "pdf" ? material.size : material.duration}</p></div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <button className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Download className="h-4 w-4" />Download</button>
+                              {material.type === "video" && material.duration === "Video Link" ? (
+                                <a 
+                                  href={material.name.startsWith("http") ? material.name : `https://${material.name}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover transition-colors"
+                                >
+                                  <Video className="h-4 w-4" />Tonton Video
+                                </a>
+                              ) : (
+                                <button className="flex items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"><Download className="h-4 w-4" />Download</button>
+                              )}
                               {isLecturer && (
                                 <button 
                                   onClick={(e) => handleDeleteMaterial(material.id, e)}
@@ -817,6 +828,25 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
                         </button>
                       )}
                     </div>
+
+                    {/* Student: Show External Link */}
+                    {!isLecturer && assignment.externalLink && (
+                      <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+                        <div className="flex items-center gap-2 text-sm font-medium text-primary mb-1">
+                          <Link className="h-4 w-4" />
+                          Link Eksternal dari Dosen
+                        </div>
+                        <a 
+                          href={assignment.externalLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline break-all"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {assignment.externalLink}
+                        </a>
+                      </div>
+                    )}
 
                     {/* Student Upload Area */}
                     {!isLecturer && assignment.status === "pending" && (
