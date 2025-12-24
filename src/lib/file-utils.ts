@@ -127,3 +127,32 @@ export function generateGradeReportCSV(submissions: Array<{
     'Tanggal Pengumpulan': s.submittedAt ?? '-'
   }));
 }
+
+// Generate practicum grade report with 6 criteria
+export function generatePracticumGradeReportCSV(submissions: Array<{
+  studentName: string;
+  studentNim: string;
+  status: string;
+  laporanAwal: number | null;
+  apd: number | null;
+  k3: number | null;
+  skill: number | null;
+  kuis: number | null;
+  laporanAkhir: number | null;
+  average: number | null;
+  submittedAt: string | null;
+}>) {
+  return submissions.map(s => ({
+    NIM: s.studentNim,
+    Nama: s.studentName,
+    Status: s.average !== null ? 'Sudah Dinilai' : s.status === 'submitted' ? 'Sudah Dikumpul' : 'Belum Dikumpul',
+    'Laporan Awal': s.laporanAwal ?? '-',
+    'APD': s.apd ?? '-',
+    'K3': s.k3 ?? '-',
+    'Skill': s.skill ?? '-',
+    'Kuis': s.kuis ?? '-',
+    'Laporan Akhir': s.laporanAkhir ?? '-',
+    'Rata-rata': s.average ?? '-',
+    'Tanggal Pengumpulan': s.submittedAt ?? '-'
+  }));
+}
