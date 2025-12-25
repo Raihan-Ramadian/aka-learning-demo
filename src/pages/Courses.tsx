@@ -49,9 +49,11 @@ const myActiveClasses = {
 
 const sksOptions = [
   { value: "all", label: "Semua SKS" },
+  { value: "1", label: "1 SKS" },
   { value: "2", label: "2 SKS" },
   { value: "3", label: "3 SKS" },
   { value: "4", label: "4 SKS" },
+  { value: "5", label: "5 SKS" },
 ];
 
 const semesterOptions = [
@@ -60,13 +62,18 @@ const semesterOptions = [
   { value: "2", label: "Semester 2" },
   { value: "3", label: "Semester 3" },
   { value: "4", label: "Semester 4" },
+  { value: "5", label: "Semester 5" },
+  { value: "6", label: "Semester 6" },
+  { value: "7", label: "Semester 7" },
+  { value: "8", label: "Semester 8" },
 ];
 
 const prodiOptions = [
   { value: "all", label: "Semua Prodi" },
   { value: "D3 Analisis Kimia", label: "D3 Analisis Kimia" },
-  { value: "D3 Teknik Informatika", label: "D3 Teknik Informatika" },
-  { value: "D4 Analisis Kimia", label: "D4 Analisis Kimia" },
+  { value: "D3 Penjaminan Mutu Industri Pangan", label: "D3 Penjaminan Mutu Industri Pangan" },
+  { value: "D3 Pengolahan Limbah Industri", label: "D3 Pengolahan Limbah Industri" },
+  { value: "D4 Nanoteknologi Pangan", label: "D4 Nanoteknologi Pangan" },
 ];
 
 const colorOptions = [
@@ -599,9 +606,11 @@ export default function Courses() {
                   className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">Pilih SKS</option>
+                  <option value="1">1 SKS</option>
                   <option value="2">2 SKS</option>
                   <option value="3">3 SKS</option>
                   <option value="4">4 SKS</option>
+                  <option value="5">5 SKS</option>
                 </select>
               </div>
             </div>
@@ -637,12 +646,9 @@ export default function Courses() {
                   className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">Pilih Semester</option>
-                  <option value="1">Semester 1</option>
-                  <option value="2">Semester 2</option>
-                  <option value="3">Semester 3</option>
-                  <option value="4">Semester 4</option>
-                  <option value="5">Semester 5</option>
-                  <option value="6">Semester 6</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                    <option key={sem} value={String(sem)}>Semester {sem}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -697,9 +703,11 @@ export default function Courses() {
                   className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">Pilih SKS</option>
+                  <option value="1">1 SKS</option>
                   <option value="2">2 SKS</option>
                   <option value="3">3 SKS</option>
                   <option value="4">4 SKS</option>
+                  <option value="5">5 SKS</option>
                 </select>
               </div>
             </div>
@@ -735,12 +743,9 @@ export default function Courses() {
                   className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   <option value="">Pilih Semester</option>
-                  <option value="1">Semester 1</option>
-                  <option value="2">Semester 2</option>
-                  <option value="3">Semester 3</option>
-                  <option value="4">Semester 4</option>
-                  <option value="5">Semester 5</option>
-                  <option value="6">Semester 6</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                    <option key={sem} value={String(sem)}>Semester {sem}</option>
+                  ))}
                 </select>
               </div>
             </div>

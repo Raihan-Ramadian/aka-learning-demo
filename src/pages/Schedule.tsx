@@ -1008,22 +1008,14 @@ export default function Schedule() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-foreground">Jam</label>
-              <select 
+              <label className="text-sm font-medium text-foreground">Jam (format bebas)</label>
+              <input 
+                type="text"
                 value={editScheduleData.time}
                 onChange={(e) => setEditScheduleData({...editScheduleData, time: e.target.value})}
+                placeholder="Contoh: 08:00 - 09:40"
                 className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="">Pilih Jam</option>
-                <option value="07:00 - 08:40">07:00 - 08:40</option>
-                <option value="08:00 - 09:40">08:00 - 09:40</option>
-                <option value="09:00 - 10:40">09:00 - 10:40</option>
-                <option value="10:00 - 11:40">10:00 - 11:40</option>
-                <option value="13:00 - 14:40">13:00 - 14:40</option>
-                <option value="13:00 - 15:30">13:00 - 15:30</option>
-                <option value="14:00 - 15:40">14:00 - 15:40</option>
-                <option value="15:00 - 16:40">15:00 - 16:40</option>
-              </select>
+              />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={() => setEditScheduleOpen(false)}>
@@ -1368,8 +1360,7 @@ export default function Schedule() {
                 className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 <option value="">Pilih Mata Kuliah</option>
-                {/* Show unique course names */}
-                {[...new Map(courses.map(c => [c.name, c])).values()].map((course) => (
+                {courses.map((course) => (
                   <option key={course.id} value={course.name}>{course.code} - {course.name}</option>
                 ))}
               </select>
