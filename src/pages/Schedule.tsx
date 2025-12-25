@@ -680,16 +680,23 @@ export default function Schedule() {
             <DialogTitle>Tambah Mahasiswa ke Kelas</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            {/* Course Info */}
+            {/* Course Info - Dynamic from Master Data */}
             {selectedSchedule && (() => {
               const selectedCourse = courses.find(c => c.name === selectedSchedule.course);
+              const courseCode = selectedCourse?.code;
               const courseSemester = selectedCourse?.semester;
               const courseProdi = selectedCourse?.prodi;
-              const courseAngkatan = courseSemester ? (new Date().getFullYear() - Math.floor((courseSemester - 1) / 2)).toString() : null;
-              return (courseSemester || courseProdi) ? (
+              const courseSks = selectedCourse?.sks;
+              return (
                 <div className="p-3 rounded-lg bg-muted/50 border border-border">
                   <p className="text-xs text-muted-foreground mb-2">Informasi Mata Kuliah:</p>
-                  <div className="flex flex-wrap gap-2">
+                  <p className="font-medium text-foreground">{selectedCourse?.name || selectedSchedule.course}</p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {courseCode && (
+                      <span className="px-2.5 py-1 rounded-full bg-accent/50 text-accent-foreground text-xs font-medium">
+                        {courseCode}
+                      </span>
+                    )}
                     {courseSemester && (
                       <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
                         Semester {courseSemester}
@@ -700,10 +707,15 @@ export default function Schedule() {
                         {courseProdi}
                       </span>
                     )}
+                    {courseSks && (
+                      <span className="px-2.5 py-1 rounded-full bg-warning/10 text-warning text-xs font-medium">
+                        {courseSks} SKS
+                      </span>
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">{selectedCourse?.name}</p>
+                  <p className="text-xs text-muted-foreground mt-2">Kelas: {selectedSchedule.className}</p>
                 </div>
-              ) : null;
+              );
             })()}
             
             {/* Dropdown Filters - Granular */}
