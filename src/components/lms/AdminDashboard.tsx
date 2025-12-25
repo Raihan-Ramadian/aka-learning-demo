@@ -766,6 +766,34 @@ export function AdminDashboard() {
                 ))}
               </select>
             </div>
+            {addUserType === "mahasiswa" && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Angkatan <span className="text-destructive">*</span></label>
+                    <input
+                      type="text"
+                      value={formData.angkatan}
+                      onChange={(e) => setFormData(prev => ({ ...prev, angkatan: e.target.value }))}
+                      placeholder="Contoh: 2024"
+                      className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Semester <span className="text-destructive">*</span></label>
+                    <select
+                      value={formData.semester}
+                      onChange={(e) => setFormData(prev => ({ ...prev, semester: parseInt(e.target.value) }))}
+                      className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                        <option key={sem} value={sem}>Semester {sem}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
             {addUserType === "dosen" && (
               <div>
                 <label className="text-sm font-medium text-foreground">Jabatan</label>
@@ -940,6 +968,32 @@ export function AdminDashboard() {
                   {userTab === "mahasiswa" && <option value="Alumni">Alumni</option>}
                 </select>
               </div>
+              {userTab === "mahasiswa" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Angkatan</label>
+                    <input
+                      type="text"
+                      value={formData.angkatan}
+                      onChange={(e) => setFormData(prev => ({ ...prev, angkatan: e.target.value }))}
+                      placeholder="Contoh: 2024"
+                      className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-foreground">Semester</label>
+                    <select
+                      value={formData.semester}
+                      onChange={(e) => setFormData(prev => ({ ...prev, semester: parseInt(e.target.value) }))}
+                      className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                        <option key={sem} value={sem}>Semester {sem}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
               {userTab === "dosen" && (
                 <div>
                   <label className="text-sm font-medium text-foreground">Jabatan</label>
