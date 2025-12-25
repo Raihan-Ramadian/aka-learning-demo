@@ -792,10 +792,6 @@ export function AdminDashboard() {
                         <option key={sem} value={sem}>Semester {sem}</option>
                       ))}
                     </select>
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
-                        <option key={sem} value={sem}>Semester {sem}</option>
-                      ))}
-                    </select>
                   </div>
                 </div>
               </>
