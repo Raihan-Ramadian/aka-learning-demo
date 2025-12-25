@@ -36,7 +36,14 @@ export function StudentDashboard() {
   const enrolledCourseNames = [...new Set(mySchedules.map(s => s.course))];
   
   // Filter courses only to those the student is enrolled in via schedules
-  const myCourses = courses.filter(c => enrolledCourseNames.includes(c.name));
+  // Use Set to ensure unique courses by ID - prevent duplicates
+  const seenCourseIds = new Set<number>();
+  const myCourses = courses.filter(c => {
+    if (!enrolledCourseNames.includes(c.name)) return false;
+    if (seenCourseIds.has(c.id)) return false;
+    seenCourseIds.add(c.id);
+    return true;
+  });
   
   // Get tasks only for enrolled courses
   const myCourseTasks = tasks.filter(task => 

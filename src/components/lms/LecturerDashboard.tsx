@@ -37,11 +37,16 @@ export function LecturerDashboard() {
   const mySchedules = getLecturerSchedules(lecturerName);
   
   // Get unique courses from lecturer's schedules dynamically
+  // Use Set to prevent duplicates
   const lecturerCourseNames = [...new Set(mySchedules.map(s => s.course))];
+  const seenCourseIds = new Set<number>();
   const lecturerCourses = lecturerCourseNames.map((courseName, index) => {
     const existingCourse = courses.find(c => c.name === courseName);
     const schedulesForCourse = mySchedules.filter(s => s.course === courseName);
     if (existingCourse) {
+      // Skip if we've already seen this course ID (prevent duplicates)
+      if (seenCourseIds.has(existingCourse.id)) return null;
+      seenCourseIds.add(existingCourse.id);
       return {
         ...existingCourse,
         classes: schedulesForCourse.length,
@@ -56,7 +61,7 @@ export function LecturerDashboard() {
       color: "from-primary to-primary/50",
       classes: schedulesForCourse.length,
     };
-  });
+  }).filter(Boolean) as (typeof courses[0] & { classes: number })[];
 
   // Get unique course IDs from lecturer's schedules
   const lecturerCourseIds = lecturerCourses.map(c => c.id).filter(id => id > 0);
