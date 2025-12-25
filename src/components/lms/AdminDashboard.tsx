@@ -33,14 +33,16 @@ import { downloadCSV } from "@/lib/file-utils";
 const prodiOptions = [
   { value: "all", label: "Semua Prodi" },
   { value: "d3-ak", label: "D3 Analisis Kimia" },
-  { value: "d3-ti", label: "D3 Teknik Informatika" },
-  { value: "d4-ak", label: "D4 Analisis Kimia" },
+  { value: "d3-pmip", label: "D3 Penjaminan Mutu Industri Pangan" },
+  { value: "d3-pli", label: "D3 Pengolahan Limbah Industri" },
+  { value: "d4-np", label: "D4 Nanoteknologi Pangan" },
 ];
 
 const prodiMap: Record<string, string> = {
   "d3-ak": "D3 Analisis Kimia",
-  "d3-ti": "D3 Teknik Informatika",
-  "d4-ak": "D4 Analisis Kimia",
+  "d3-pmip": "D3 Penjaminan Mutu Industri Pangan",
+  "d3-pli": "D3 Pengolahan Limbah Industri",
+  "d4-np": "D4 Nanoteknologi Pangan",
 };
 
 export function AdminDashboard() {
@@ -786,6 +788,10 @@ export function AdminDashboard() {
                       onChange={(e) => setFormData(prev => ({ ...prev, semester: parseInt(e.target.value) }))}
                       className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     >
+                      {Array.from({ length: 15 }, (_, i) => i + 1).map((sem) => (
+                        <option key={sem} value={sem}>Semester {sem}</option>
+                      ))}
+                    </select>
                       {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
                         <option key={sem} value={sem}>Semester {sem}</option>
                       ))}
@@ -987,7 +993,7 @@ export function AdminDashboard() {
                       onChange={(e) => setFormData(prev => ({ ...prev, semester: parseInt(e.target.value) }))}
                       className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     >
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                      {Array.from({ length: 15 }, (_, i) => i + 1).map((sem) => (
                         <option key={sem} value={sem}>Semester {sem}</option>
                       ))}
                     </select>
