@@ -17,7 +17,8 @@ export default function Profile() {
   // Get current student from AcademicDataContext - simulated by NIM
   // In a real app, this would come from authentication
   const studentNim = "2024001";
-  const lecturerNip = "198501012010011001";
+  // Use the same NIP as LecturerDashboard for Prof. Sari Dewi
+  const lecturerNip = "197805152005012001";
   
   // Get student/lecturer data from context
   const currentStudent = managedStudents.find(s => s.nim === studentNim);

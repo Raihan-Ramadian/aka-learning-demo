@@ -59,9 +59,9 @@ export default function Schedule() {
   const [selectedManagedStudentId, setSelectedManagedStudentId] = useState<number | null>(null);
   const [studentSearchQuery, setStudentSearchQuery] = useState("");
   
-  // Checkbox filter states for smart sorting
-  const [filterBySemester, setFilterBySemester] = useState(false);
-  const [filterByAngkatan, setFilterByAngkatan] = useState(false);
+  // Dropdown filter states for granular filtering
+  const [filterSemester, setFilterSemester] = useState<number | null>(null);
+  const [filterAngkatan, setFilterAngkatan] = useState<string>("");
 
   // Delete Schedule Confirmation
   const [deleteScheduleOpen, setDeleteScheduleOpen] = useState(false);
@@ -669,8 +669,8 @@ export default function Schedule() {
         if (!open) {
           setSelectedManagedStudentId(null);
           setStudentSearchQuery("");
-          setFilterBySemester(false);
-          setFilterByAngkatan(false);
+          setFilterSemester(null);
+          setFilterAngkatan("");
         }
       }}>
         <DialogContent className="sm:max-w-lg">
@@ -704,30 +704,38 @@ export default function Schedule() {
               ) : null;
             })()}
             
-            {/* Checkbox Filters */}
+            {/* Dropdown Filters - Granular */}
             <div className="p-3 rounded-lg border border-border bg-background">
-              <p className="text-sm font-medium text-foreground mb-3">Filter Mahasiswa (Centang untuk menyaring):</p>
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filterBySemester}
-                    onChange={(e) => setFilterBySemester(e.target.checked)}
-                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                  />
-                  <span className="text-sm text-foreground">Filter Semester</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filterByAngkatan}
-                    onChange={(e) => setFilterByAngkatan(e.target.checked)}
-                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
-                  />
-                  <span className="text-sm text-foreground">Filter Angkatan</span>
-                </label>
+              <p className="text-sm font-medium text-foreground mb-3">Filter Mahasiswa (Pilih untuk menyaring):</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Semester</label>
+                  <select
+                    value={filterSemester || ""}
+                    onChange={(e) => setFilterSemester(e.target.value ? parseInt(e.target.value) : null)}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="">Semua Semester</option>
+                    {Array.from({ length: 15 }, (_, i) => i + 1).map(sem => (
+                      <option key={sem} value={sem}>Semester {sem}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Angkatan</label>
+                  <select
+                    value={filterAngkatan}
+                    onChange={(e) => setFilterAngkatan(e.target.value)}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="">Semua Angkatan</option>
+                    {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Semakin banyak filter, semakin spesifik hasil.</p>
+              <p className="text-xs text-muted-foreground mt-2">Pilih semester dan/atau angkatan untuk menyaring daftar.</p>
             </div>
             
             <div>
@@ -750,8 +758,8 @@ export default function Schedule() {
                 const filteredStudents = managedStudents.filter(student => {
                   const query = studentSearchQuery.toLowerCase();
                   const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
-                  const matchesSemester = filterBySemester && courseSemester ? student.semester === courseSemester : true;
-                  const matchesAngkatan = filterByAngkatan && courseYear ? parseInt(student.angkatan) === courseYear : true;
+                  const matchesSemester = filterSemester ? student.semester === filterSemester : true;
+                  const matchesAngkatan = filterAngkatan ? student.angkatan === filterAngkatan : true;
                   const matchesSearch = student.name.toLowerCase().includes(query) || student.nim.toLowerCase().includes(query);
                   return !isAlreadyInClass && matchesSemester && matchesAngkatan && matchesSearch;
                 });
@@ -773,11 +781,11 @@ export default function Schedule() {
                   setAddStudentOpen(false);
                   setSelectedManagedStudentId(null);
                   setStudentSearchQuery("");
-                  setFilterBySemester(false);
-                  setFilterByAngkatan(false);
+                  setFilterSemester(null);
+                  setFilterAngkatan("");
                 };
                 
-                return filteredStudents.length > 0 && (filterBySemester || filterByAngkatan) ? (
+                return filteredStudents.length > 0 && (filterSemester || filterAngkatan) ? (
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -804,9 +812,9 @@ export default function Schedule() {
                     const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
                     const matchesSearch = student.name.toLowerCase().includes(query) || student.nim.toLowerCase().includes(query);
                     
-                    // Apply checkbox filters
-                    const matchesSemester = filterBySemester && courseSemester ? student.semester === courseSemester : true;
-                    const matchesAngkatan = filterByAngkatan && courseYear ? parseInt(student.angkatan) === courseYear : true;
+                    // Apply dropdown filters
+                    const matchesSemester = filterSemester ? student.semester === filterSemester : true;
+                    const matchesAngkatan = filterAngkatan ? student.angkatan === filterAngkatan : true;
                     
                     return !isAlreadyInClass && matchesSearch && matchesSemester && matchesAngkatan;
                   });
@@ -831,7 +839,7 @@ export default function Schedule() {
                   if (sortedStudents.length === 0) {
                     return (
                       <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-                        {studentSearchQuery || filterBySemester || filterByAngkatan 
+                        {studentSearchQuery || filterSemester || filterAngkatan 
                           ? "Tidak ada mahasiswa yang cocok dengan kriteria" 
                           : "Semua mahasiswa sudah terdaftar"}
                       </div>
@@ -921,8 +929,8 @@ export default function Schedule() {
                 setAddStudentOpen(false);
                 setSelectedManagedStudentId(null);
                 setStudentSearchQuery("");
-                setFilterBySemester(false);
-                setFilterByAngkatan(false);
+                setFilterSemester(null);
+                setFilterAngkatan("");
               }}>
                 Batal
               </Button>
