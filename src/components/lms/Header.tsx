@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAcademicData } from "@/contexts/AcademicDataContext";
+import { getUserRole } from "@/types/roles";
 import { cn } from "@/lib/utils";
 
 export function Header() {
@@ -17,6 +18,7 @@ export function Header() {
   const { courses, schedules, managedStudents, managedLecturers, tasks } = useAcademicData();
   const [searchQuery, setSearchQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
+  const currentRole = getUserRole();
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
@@ -25,7 +27,7 @@ export function Header() {
     navigate("/");
   };
 
-  // Global search across all data
+  // Global search across all data - results vary by role
   const getSearchResults = () => {
     if (!searchQuery.trim()) return { courses: [], schedules: [], students: [], lecturers: [], tasks: [] };
     
@@ -43,16 +45,16 @@ export function Header() {
         s.lecturer.toLowerCase().includes(query) ||
         s.room.toLowerCase().includes(query)
       ).slice(0, 3),
-      students: managedStudents.filter(s => 
+      students: currentRole === "admin" ? managedStudents.filter(s => 
         s.name.toLowerCase().includes(query) || 
         s.nim.toLowerCase().includes(query) ||
         s.prodi.toLowerCase().includes(query)
-      ).slice(0, 3),
-      lecturers: managedLecturers.filter(l => 
+      ).slice(0, 3) : [],
+      lecturers: currentRole === "admin" ? managedLecturers.filter(l => 
         l.name.toLowerCase().includes(query) || 
         l.nip.toLowerCase().includes(query) ||
         l.prodi.toLowerCase().includes(query)
-      ).slice(0, 3),
+      ).slice(0, 3) : [],
       tasks: tasks.filter(t => 
         t.title.toLowerCase().includes(query) || 
         t.description.toLowerCase().includes(query)
@@ -113,14 +115,23 @@ export function Header() {
                 </div>
               ) : (
                 <div className="py-2">
-                  {/* Courses */}
+                  {/* Courses - Role-based navigation */}
                   {results.courses.length > 0 && (
                     <div>
                       <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">Mata Kuliah</p>
                       {results.courses.map(course => (
                         <button
                           key={course.id}
-                          onClick={() => { navigate(`/course/${course.id}`); setShowResults(false); setSearchQuery(""); }}
+                          onClick={() => { 
+                            // Admin stays in admin area, others go to course detail
+                            if (currentRole === "admin") {
+                              navigate("/courses");
+                            } else {
+                              navigate(`/course/${course.id}`);
+                            }
+                            setShowResults(false); 
+                            setSearchQuery(""); 
+                          }}
                           className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors text-left"
                         >
                           <BookOpen className="h-4 w-4 text-primary" />
@@ -193,14 +204,23 @@ export function Header() {
                     </div>
                   )}
                   
-                  {/* Tasks */}
+                  {/* Tasks - Role-based navigation */}
                   {results.tasks.length > 0 && (
                     <div>
                       <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">Tugas</p>
                       {results.tasks.map(task => (
                         <button
                           key={task.id}
-                          onClick={() => { navigate(`/course/${task.courseId}?tab=assignments`); setShowResults(false); setSearchQuery(""); }}
+                          onClick={() => { 
+                            // Admin goes to courses page, others to course detail
+                            if (currentRole === "admin") {
+                              navigate("/courses");
+                            } else {
+                              navigate(`/course/${task.courseId}?tab=assignments`);
+                            }
+                            setShowResults(false); 
+                            setSearchQuery(""); 
+                          }}
                           className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors text-left"
                         >
                           <FileText className="h-4 w-4 text-destructive" />
