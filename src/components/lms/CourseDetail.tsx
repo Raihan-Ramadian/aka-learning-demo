@@ -58,8 +58,35 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
     getMaterialsByCourse,
     submitAssignment,
     getPracticumGrade,
-    updatePracticumGrade
+    updatePracticumGrade,
+    schedules,
+    managedStudents
   } = useAcademicData();
+  
+  // Get enrolled students from schedules (synced with Admin)
+  const getEnrolledStudents = () => {
+    const courseSchedules = schedules.filter(s => s.course === course.name);
+    const enrolledStudents = new Map<string, { id: number; name: string; nim: string; email: string }>();
+    
+    courseSchedules.forEach(schedule => {
+      schedule.students.forEach(student => {
+        if (!enrolledStudents.has(student.nim)) {
+          // Get email from managedStudents if available
+          const managedStudent = managedStudents.find(ms => ms.nim === student.nim);
+          enrolledStudents.set(student.nim, {
+            id: student.id,
+            name: student.name,
+            nim: student.nim,
+            email: managedStudent?.email || `${student.nim}@mhs.aka.ac.id`
+          });
+        }
+      });
+    });
+    
+    return Array.from(enrolledStudents.values());
+  };
+  
+  const courseMembers = getEnrolledStudents();
   
   const [addMaterialOpen, setAddMaterialOpen] = useState(false);
   const [addAssignmentOpen, setAddAssignmentOpen] = useState(false);
@@ -1148,24 +1175,25 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
               <div className="border-b border-border bg-muted/50 p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-foreground">Daftar Mahasiswa</h3>
-                  <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">6 Mahasiswa</span>
+                  <span className="rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">{courseMembers.length} Mahasiswa</span>
                 </div>
               </div>
               <div className="divide-y divide-border">
-                {[
-                  { id: 1, name: "Siti Rahayu", nim: "2024001", email: "siti@mhs.aka.ac.id" },
-                  { id: 2, name: "Ahmad Fadli", nim: "2024002", email: "ahmad@mhs.aka.ac.id" },
-                  { id: 3, name: "Dewi Lestari", nim: "2024003", email: "dewi@mhs.aka.ac.id" },
-                  { id: 4, name: "Rina Wulandari", nim: "2024005", email: "rina@mhs.aka.ac.id" },
-                  { id: 5, name: "Eko Prasetyo", nim: "2023008", email: "eko@mhs.aka.ac.id" },
-                  { id: 6, name: "Maya Putri", nim: "2024007", email: "maya@mhs.aka.ac.id" },
-                ].map((member, index) => (
-                  <div key={member.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{member.name.charAt(0)}</div>
-                    <div className="flex-1"><p className="font-medium text-foreground">{member.name}</p><p className="text-sm text-muted-foreground">{member.nim}</p></div>
-                    <p className="text-sm text-muted-foreground">{member.email}</p>
+                {courseMembers.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>Belum ada mahasiswa terdaftar di kelas ini</p>
+                    <p className="text-sm mt-1">Admin dapat menambahkan mahasiswa melalui menu Jadwal</p>
                   </div>
-                ))}
+                ) : (
+                  courseMembers.map((member, index) => (
+                    <div key={member.id} className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{member.name.charAt(0)}</div>
+                      <div className="flex-1"><p className="font-medium text-foreground">{member.name}</p><p className="text-sm text-muted-foreground">{member.nim}</p></div>
+                      <p className="text-sm text-muted-foreground">{member.email}</p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </TabsContent>
