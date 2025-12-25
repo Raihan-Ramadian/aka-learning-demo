@@ -29,12 +29,23 @@ export function StudentDashboard() {
   const studentName = "Siti Rahayu";
   const mySchedules = getStudentSchedules(studentNim);
 
+  // Get unique course names from student's schedules (Admin-controlled)
+  const enrolledCourseNames = [...new Set(mySchedules.map(s => s.course))];
+  
+  // Filter courses only to those the student is enrolled in via schedules
+  const myCourses = courses.filter(c => enrolledCourseNames.includes(c.name));
+  
+  // Get tasks only for enrolled courses
+  const myCourseTasks = tasks.filter(task => 
+    myCourses.some(course => course.id === task.courseId)
+  );
+
   // Get student's submissions for progress calculation
   const studentSubmissions = submissions.filter(s => s.studentNim === studentNim);
 
   // Dynamic progress calculation: Completed Tasks / Total Tasks per course
   const getCourseProgress = (courseId: number) => {
-    const courseTasks = tasks.filter(t => t.courseId === courseId);
+    const courseTasks = myCourseTasks.filter(t => t.courseId === courseId);
     if (courseTasks.length === 0) return 0;
     
     const completedTasksCount = courseTasks.filter(task => {
@@ -45,16 +56,16 @@ export function StudentDashboard() {
     return Math.round((completedTasksCount / courseTasks.length) * 100);
   };
 
-  // Calculate overall progress across all courses
-  const totalTasksCount = tasks.length;
-  const totalCompletedTasks = tasks.filter(task => {
+  // Calculate overall progress across enrolled courses only
+  const totalTasksCount = myCourseTasks.length;
+  const totalCompletedTasks = myCourseTasks.filter(task => {
     const submission = studentSubmissions.find(s => s.taskId === task.id);
     return submission && (submission.status === "submitted" || submission.status === "graded");
   }).length;
   const overallProgress = totalTasksCount > 0 ? Math.round((totalCompletedTasks / totalTasksCount) * 100) : 0;
 
-  // Get upcoming tasks from context - FILTER OUT completed tasks
-  const upcomingTasks = tasks
+  // Get upcoming tasks from enrolled courses only - FILTER OUT completed tasks
+  const upcomingTasks = myCourseTasks
     .filter(task => {
       // Only show tasks that haven't been submitted or graded
       const submission = studentSubmissions.find(s => s.taskId === task.id);
@@ -62,7 +73,7 @@ export function StudentDashboard() {
     })
     .slice(0, 5) // Show up to 5 pending tasks
     .map(task => {
-      const course = courses.find(c => c.id === task.courseId);
+      const course = myCourses.find(c => c.id === task.courseId);
       // Check if deadline is urgent (within 3 days)
       const deadlineDate = new Date(task.deadline);
       const today = new Date();
@@ -207,10 +218,10 @@ export function StudentDashboard() {
         </div>
       )}
 
-      {/* Stats Overview - Dynamic */}
+      {/* Stats Overview - Dynamic based on schedules */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Mata Kuliah", value: String(courses.length), icon: BookOpen, color: "text-primary" },
+          { label: "Mata Kuliah", value: String(myCourses.length), icon: BookOpen, color: "text-primary" },
           { label: "Tugas Pending", value: String(pendingTasksCount), icon: FileText, color: "text-warning" },
           { label: "Jam Belajar", value: `${mySchedules.length * 2}h`, icon: Clock, color: "text-success" },
           { label: "Progress", value: `${overallProgress}%`, icon: ChevronRight, color: "text-accent-foreground" },
@@ -261,8 +272,15 @@ export function StudentDashboard() {
               Lihat Semua
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            {courses.map((course, index) => {
+          {myCourses.length === 0 ? (
+            <div className="col-span-2 rounded-xl bg-card border border-border/50 p-8 text-center">
+              <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">Belum ada mata kuliah terdaftar</p>
+              <p className="text-sm text-muted-foreground mt-1">Hubungi Admin untuk pendaftaran jadwal</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+            {myCourses.map((course, index) => {
               const progress = getCourseProgress(course.id);
               return (
                 <div
@@ -300,6 +318,7 @@ export function StudentDashboard() {
               );
             })}
           </div>
+          )}
         </div>
 
         {/* Upcoming Tasks */}

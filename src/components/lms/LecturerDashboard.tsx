@@ -54,16 +54,36 @@ export function LecturerDashboard() {
     };
   });
 
-  // Calculate dynamic stats
+  // Get unique course IDs from lecturer's schedules
+  const lecturerCourseIds = lecturerCourses.map(c => c.id).filter(id => id > 0);
+  
+  // Calculate dynamic stats - only from lecturer's schedules
   const totalStudents = mySchedules.reduce((sum, s) => sum + s.students.length, 0);
-  const pendingSubmissions = submissions.filter(s => s.status === "submitted").length;
-  const totalMaterials = materialWeeks.reduce((sum, w) => sum + w.materials.length, 0);
+  
+  // Filter submissions and tasks only for lecturer's courses
+  const lecturerTasks = tasks.filter(t => lecturerCourseIds.includes(t.courseId));
+  const lecturerSubmissions = submissions.filter(s => lecturerCourseIds.includes(s.courseId));
+  const pendingSubmissions = lecturerSubmissions.filter(s => s.status === "submitted").length;
+  
+  // Materials only for lecturer's courses
+  const lecturerMaterials = materialWeeks.filter(w => lecturerCourseIds.includes(w.courseId));
+  const totalMaterials = lecturerMaterials.reduce((sum, w) => sum + w.materials.length, 0);
 
-  // Pending tasks for lecturer
-  const pendingTasks = [
-    { id: 1, type: "Koreksi", count: pendingSubmissions, course: "Kimia Dasar", courseId: 1 },
-    { id: 2, type: "Tugas Baru", count: tasks.filter(t => t.courseId === 4).length, course: "Kimia Organik", courseId: 4 },
-  ];
+  // Dynamic pending tasks - only from lecturer's active courses
+  const pendingTasks = lecturerCourses
+    .filter(course => course.id > 0) // Only valid courses
+    .map(course => {
+      const courseSubmissions = submissions.filter(s => s.courseId === course.id && s.status === "submitted");
+      const courseTasks = tasks.filter(t => t.courseId === course.id);
+      return {
+        id: course.id,
+        type: courseSubmissions.length > 0 ? "Koreksi" : "Tugas",
+        count: courseSubmissions.length > 0 ? courseSubmissions.length : courseTasks.length,
+        course: course.name,
+        courseId: course.id
+      };
+    })
+    .filter(task => task.count > 0); // Only show if there's something to do
 
   const handleCourseClick = (courseId: number) => {
     navigate(`/course/${courseId}`);
@@ -278,22 +298,29 @@ export function LecturerDashboard() {
             </button>
           </div>
           <div className="space-y-3">
-            {pendingTasks.map((task, index) => (
-              <div 
-                key={task.id} 
-                onClick={() => handlePendingTaskClick(task.courseId)}
-                className="rounded-xl bg-warning-light border border-warning/20 p-4 animate-fade-in cursor-pointer hover:shadow-md transition-all" 
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-warning-foreground">{task.count} {task.type}</p>
-                    <p className="text-sm text-warning-foreground/70">{task.course}</p>
-                  </div>
-                  <button className="rounded-lg bg-warning/20 px-3 py-1.5 text-xs font-medium text-warning-foreground hover:bg-warning/30 transition-colors">Lihat</button>
-                </div>
+            {pendingTasks.length === 0 ? (
+              <div className="rounded-xl bg-success/5 border border-success/20 p-6 text-center">
+                <FileText className="h-8 w-8 mx-auto text-success mb-2" />
+                <p className="text-sm text-muted-foreground">Tidak ada tugas yang perlu ditindak</p>
               </div>
-            ))}
+            ) : (
+              pendingTasks.map((task, index) => (
+                <div 
+                  key={task.id} 
+                  onClick={() => handlePendingTaskClick(task.courseId)}
+                  className="rounded-xl bg-warning-light border border-warning/20 p-4 animate-fade-in cursor-pointer hover:shadow-md transition-all" 
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-warning-foreground">{task.count} {task.type}</p>
+                      <p className="text-sm text-warning-foreground/70">{task.course}</p>
+                    </div>
+                    <button className="rounded-lg bg-warning/20 px-3 py-1.5 text-xs font-medium text-warning-foreground hover:bg-warning/30 transition-colors">Lihat</button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -327,10 +354,19 @@ export function LecturerDashboard() {
             Lihat Semua
           </button>
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        {lecturerCourses.length === 0 ? (
+          <div className="rounded-xl bg-card border border-border/50 p-8 text-center">
+            <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+            <p className="text-muted-foreground">Belum ada mata kuliah yang diampu</p>
+            <p className="text-sm text-muted-foreground mt-1">Hubungi Admin untuk penugasan jadwal mengajar</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
           {lecturerCourses.map((course, index) => {
             const students = getCourseStudents(course.id);
-            const materials = course.id === 1 ? 12 : course.id === 4 ? 8 : 6;
+            // Dynamic materials count from context
+            const courseMaterials = materialWeeks.filter(w => w.courseId === course.id);
+            const materials = courseMaterials.reduce((sum, w) => sum + w.materials.length, 0);
             return (
               <div 
                 key={course.id} 
@@ -362,6 +398,7 @@ export function LecturerDashboard() {
             );
           })}
         </div>
+        )}
       </div>
 
       {/* Upload Material Modal */}
