@@ -6,35 +6,25 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useAcademicData } from "@/contexts/AcademicDataContext";
 
-// Mock user data based on role
-const initialUserData = {
-  student: {
-    name: "Siti Rahayu",
-    nim: "2024001",
-    email: "siti.rahayu@mhs.aka.ac.id",
-    phone: "081234567890",
-    address: "Jl. Merdeka No. 10, Kelurahan Tanah Sareal, Kecamatan Bogor Utara, Kota Bogor, Jawa Barat 16161",
-    prodi: "D3 Analisis Kimia",
-    angkatan: "2024",
-    status: "Aktif",
-    avatar: null,
-    semester: "3",
-  },
-  lecturer: {
-    name: "Dr. Ahmad Wijaya, M.Sc.",
-    nip: "198501012010011001",
-    email: "ahmad.wijaya@dosen.aka.ac.id",
-    phone: "081234567801",
-    address: "Jl. Profesor No. 1, Kelurahan Bubulak, Kecamatan Bogor Barat, Kota Bogor, Jawa Barat 16115",
-    prodi: "D3 Analisis Kimia",
-    jabatan: "Lektor Kepala",
-    status: "Aktif",
-    avatar: null,
-    bidang_keahlian: "Kimia Analitik, Spektroskopi",
-    pendidikan: "S3 Kimia - Universitas Indonesia",
-  },
-  admin: {
+export default function Profile() {
+  const currentRole = getUserRole();
+  const [isEditing, setIsEditing] = useState(false);
+  const { toast } = useToast();
+  const { managedStudents, managedLecturers } = useAcademicData();
+  
+  // Get current student from AcademicDataContext - simulated by NIM
+  // In a real app, this would come from authentication
+  const studentNim = "2024001";
+  const lecturerNip = "198501012010011001";
+  
+  // Get student/lecturer data from context
+  const currentStudent = managedStudents.find(s => s.nim === studentNim);
+  const currentLecturer = managedLecturers.find(l => l.nip === lecturerNip);
+  
+  // Fallback data for admin (not in managedStudents/managedLecturers)
+  const adminData = {
     name: "Admin Sistem",
     nip: "199001012015011001",
     email: "admin@aka.ac.id",
@@ -42,45 +32,55 @@ const initialUserData = {
     address: "Kampus Politeknik AKA Bogor, Jl. Pangeran Sogiri No. 283, Tanah Baru, Bogor Utara",
     jabatan: "Administrator Sistem",
     status: "Aktif",
-    avatar: null,
     unit: "Biro Administrasi Akademik",
-  },
-};
-
-export default function Profile() {
-  const currentRole = getUserRole();
-  const [isEditing, setIsEditing] = useState(false);
-  const { toast } = useToast();
+  };
   
-  // Editable form state for contact info AND work info for lecturer/admin
-  const [formData, setFormData] = useState({
-    student: {
-      phone: initialUserData.student.phone,
-      address: initialUserData.student.address,
-    },
-    lecturer: {
-      phone: initialUserData.lecturer.phone,
-      address: initialUserData.lecturer.address,
-      jabatan: initialUserData.lecturer.jabatan,
-      bidang_keahlian: initialUserData.lecturer.bidang_keahlian,
-    },
-    admin: {
-      phone: initialUserData.admin.phone,
-      address: initialUserData.admin.address,
-      jabatan: initialUserData.admin.jabatan,
-    },
-  });
+  // Get user data based on role
+  const getUserData = () => {
+    if (currentRole === "student" && currentStudent) {
+      return {
+        name: currentStudent.name,
+        nim: currentStudent.nim,
+        email: currentStudent.email,
+        phone: currentStudent.phone,
+        address: currentStudent.address,
+        prodi: currentStudent.prodi,
+        angkatan: currentStudent.angkatan,
+        semester: String(currentStudent.semester),
+        status: currentStudent.status,
+      };
+    } else if (currentRole === "lecturer" && currentLecturer) {
+      return {
+        name: currentLecturer.name,
+        nip: currentLecturer.nip,
+        email: currentLecturer.email,
+        phone: currentLecturer.phone,
+        address: currentLecturer.address,
+        prodi: currentLecturer.prodi,
+        jabatan: currentLecturer.jabatan,
+        status: currentLecturer.status,
+        bidang_keahlian: "Kimia Analitik, Spektroskopi",
+        pendidikan: "S3 Kimia - Universitas Indonesia",
+      };
+    } else {
+      return adminData;
+    }
+  };
+  
+  const userData = getUserData();
 
-  const user = initialUserData[currentRole];
-  const currentFormData = formData[currentRole];
+  // Editable form state for contact info
+  const [formData, setFormData] = useState({
+    phone: userData.phone || "",
+    address: userData.address || "",
+    jabatan: (currentRole === "lecturer" && currentLecturer) ? currentLecturer.jabatan : adminData.jabatan,
+    bidang_keahlian: "Kimia Analitik, Spektroskopi",
+  });
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [currentRole]: {
-        ...prev[currentRole],
-        [field]: value,
-      }
+      [field]: value,
     }));
   };
 
@@ -93,28 +93,15 @@ export default function Profile() {
   };
 
   const handleCancelEdit = () => {
-    // Reset form data to original
     setFormData({
-      student: {
-        phone: initialUserData.student.phone,
-        address: initialUserData.student.address,
-      },
-      lecturer: {
-        phone: initialUserData.lecturer.phone,
-        address: initialUserData.lecturer.address,
-        jabatan: initialUserData.lecturer.jabatan,
-        bidang_keahlian: initialUserData.lecturer.bidang_keahlian,
-      },
-      admin: {
-        phone: initialUserData.admin.phone,
-        address: initialUserData.admin.address,
-        jabatan: initialUserData.admin.jabatan,
-      },
+      phone: userData.phone || "",
+      address: userData.address || "",
+      jabatan: (currentRole === "lecturer" && currentLecturer) ? currentLecturer.jabatan : adminData.jabatan,
+      bidang_keahlian: "Kimia Analitik, Spektroskopi",
     });
     setIsEditing(false);
   };
 
-  // All roles can edit their profile
   const canEdit = true;
 
   return (
@@ -171,16 +158,18 @@ export default function Profile() {
         <div className="pt-16 pb-6 px-6">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-xl font-bold text-foreground">{user.name}</h2>
+              <h2 className="text-xl font-bold text-foreground">{userData.name}</h2>
               <p className="text-muted-foreground">
-                {currentRole === "student" ? `NIM: ${(user as typeof initialUserData.student).nim}` : `NIP: ${(user as typeof initialUserData.lecturer).nip}`}
+                {currentRole === "student" 
+                  ? `NIM: ${(userData as any).nim}` 
+                  : `NIP: ${(userData as any).nip}`}
               </p>
             </div>
             <span className={cn(
               "px-3 py-1 rounded-full text-sm font-medium",
-              user.status === "Aktif" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
+              userData.status === "Aktif" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
             )}>
-              {user.status}
+              {userData.status}
             </span>
           </div>
         </div>
@@ -204,7 +193,7 @@ export default function Profile() {
                 <Mail className="h-4 w-4" />
                 Email
               </label>
-              <p className="font-medium text-foreground">{user.email}</p>
+              <p className="font-medium text-foreground">{userData.email}</p>
               {isEditing && <p className="text-xs text-muted-foreground mt-1">Email tidak dapat diubah</p>}
             </div>
             <div>
@@ -214,12 +203,12 @@ export default function Profile() {
               </label>
               {isEditing ? (
                 <Input 
-                  value={currentFormData.phone} 
+                  value={formData.phone} 
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="Masukkan nomor telepon"
                 />
               ) : (
-                <p className="font-medium text-foreground">{currentFormData.phone}</p>
+                <p className="font-medium text-foreground">{formData.phone}</p>
               )}
             </div>
             <div>
@@ -229,13 +218,13 @@ export default function Profile() {
               </label>
               {isEditing ? (
                 <Textarea 
-                  value={currentFormData.address} 
+                  value={formData.address} 
                   onChange={(e) => handleInputChange('address', e.target.value)}
                   rows={3} 
                   placeholder="Masukkan alamat lengkap"
                 />
               ) : (
-                <p className="font-medium text-foreground">{currentFormData.address}</p>
+                <p className="font-medium text-foreground">{formData.address}</p>
               )}
             </div>
           </div>
@@ -255,14 +244,14 @@ export default function Profile() {
             </h3>
           </div>
           <div className="p-6 space-y-5">
-            {currentRole === "student" && (
+            {currentRole === "student" && currentStudent && (
               <>
                 <div>
                   <label className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                     <Building className="h-4 w-4" />
                     Program Studi
                   </label>
-                  <p className="font-medium text-foreground">{(user as typeof initialUserData.student).prodi}</p>
+                  <p className="font-medium text-foreground">{currentStudent.prodi}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -270,24 +259,24 @@ export default function Profile() {
                       <Calendar className="h-4 w-4" />
                       Angkatan
                     </label>
-                    <p className="font-medium text-foreground">{(user as typeof initialUserData.student).angkatan}</p>
+                    <p className="font-medium text-foreground">{currentStudent.angkatan}</p>
                   </div>
                   <div>
                     <label className="text-sm text-muted-foreground mb-2 block">Semester</label>
-                    <p className="font-medium text-foreground">Semester {(user as typeof initialUserData.student).semester}</p>
+                    <p className="font-medium text-foreground">Semester {currentStudent.semester}</p>
                   </div>
                 </div>
               </>
             )}
 
-            {currentRole === "lecturer" && (
+            {currentRole === "lecturer" && currentLecturer && (
               <>
                 <div>
                   <label className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                     <Building className="h-4 w-4" />
                     Program Studi
                   </label>
-                  <p className="font-medium text-foreground">{(user as typeof initialUserData.lecturer).prodi}</p>
+                  <p className="font-medium text-foreground">{currentLecturer.prodi}</p>
                 </div>
                 <div>
                   <label className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
@@ -296,7 +285,7 @@ export default function Profile() {
                   </label>
                   {isEditing ? (
                     <select 
-                      value={(currentFormData as typeof formData.lecturer).jabatan}
+                      value={formData.jabatan}
                       onChange={(e) => handleInputChange('jabatan', e.target.value)}
                       className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     >
@@ -306,7 +295,7 @@ export default function Profile() {
                       <option value="Guru Besar">Guru Besar</option>
                     </select>
                   ) : (
-                    <p className="font-medium text-foreground">{(user as typeof initialUserData.lecturer).jabatan}</p>
+                    <p className="font-medium text-foreground">{currentLecturer.jabatan}</p>
                   )}
                 </div>
                 <div>
@@ -314,18 +303,18 @@ export default function Profile() {
                     <GraduationCap className="h-4 w-4" />
                     Pendidikan Terakhir
                   </label>
-                  <p className="font-medium text-foreground">{(user as typeof initialUserData.lecturer).pendidikan}</p>
+                  <p className="font-medium text-foreground">S3 Kimia - Universitas Indonesia</p>
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground mb-2 block">Bidang Keahlian</label>
                   {isEditing ? (
                     <Input 
-                      value={(currentFormData as typeof formData.lecturer).bidang_keahlian}
+                      value={formData.bidang_keahlian}
                       onChange={(e) => handleInputChange('bidang_keahlian', e.target.value)}
                       placeholder="Masukkan bidang keahlian"
                     />
                   ) : (
-                    <p className="font-medium text-foreground">{(user as typeof initialUserData.lecturer).bidang_keahlian}</p>
+                    <p className="font-medium text-foreground">{formData.bidang_keahlian}</p>
                   )}
                 </div>
               </>
@@ -340,12 +329,12 @@ export default function Profile() {
                   </label>
                   {isEditing ? (
                     <Input 
-                      value={(currentFormData as typeof formData.admin).jabatan}
+                      value={formData.jabatan}
                       onChange={(e) => handleInputChange('jabatan', e.target.value)}
                       placeholder="Masukkan jabatan"
                     />
                   ) : (
-                    <p className="font-medium text-foreground">{(user as typeof initialUserData.admin).jabatan}</p>
+                    <p className="font-medium text-foreground">{adminData.jabatan}</p>
                   )}
                 </div>
                 <div>
@@ -353,7 +342,7 @@ export default function Profile() {
                     <Building className="h-4 w-4" />
                     Unit Kerja
                   </label>
-                  <p className="font-medium text-foreground">{(user as typeof initialUserData.admin).unit}</p>
+                  <p className="font-medium text-foreground">{adminData.unit}</p>
                 </div>
               </>
             )}

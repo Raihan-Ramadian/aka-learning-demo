@@ -659,7 +659,7 @@ export default function Schedule() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Student Modal - Searchable Select */}
+      {/* Add Student Modal - Searchable Select with Semester Filter */}
       <Dialog open={addStudentOpen} onOpenChange={(open) => {
         setAddStudentOpen(open);
         if (!open) {
@@ -672,9 +672,21 @@ export default function Schedule() {
             <DialogTitle>Tambah Mahasiswa ke Kelas</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {/* Course Semester Info */}
+            {selectedSchedule && (() => {
+              const selectedCourse = courses.find(c => c.name === selectedSchedule.course);
+              const courseSemester = selectedCourse?.semester;
+              return courseSemester ? (
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <p className="text-xs text-muted-foreground">Filter otomatis berdasarkan:</p>
+                  <p className="font-medium text-primary">Semester {courseSemester} ({selectedCourse?.name})</p>
+                </div>
+              ) : null;
+            })()}
+            
             <div>
               <label className="text-sm font-medium text-foreground">Pilih Mahasiswa <span className="text-destructive">*</span></label>
-              <p className="text-xs text-muted-foreground mt-1 mb-2">Cari dan pilih mahasiswa dari Master Data</p>
+              <p className="text-xs text-muted-foreground mt-1 mb-2">Mahasiswa difilter berdasarkan semester mata kuliah</p>
               
               {/* Search Input */}
               <input
@@ -685,48 +697,106 @@ export default function Schedule() {
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               
-              {/* Student List */}
-              <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-border bg-background">
-                {managedStudents
-                  .filter(student => {
-                    const query = studentSearchQuery.toLowerCase();
-                    const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
-                    return !isAlreadyInClass && (
-                      student.name.toLowerCase().includes(query) ||
-                      student.nim.toLowerCase().includes(query)
-                    );
-                  })
-                  .map((student) => (
-                    <button
-                      key={student.id}
-                      type="button"
-                      onClick={() => setSelectedManagedStudentId(student.id)}
-                      className={cn(
-                        "w-full flex items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50",
-                        selectedManagedStudentId === student.id && "bg-primary/10 border-l-2 border-primary"
-                      )}
-                    >
-                      <div>
-                        <p className="font-medium text-foreground">{student.name}</p>
-                        <p className="text-xs text-muted-foreground">{student.nim} • {student.prodi}</p>
-                      </div>
-                      {selectedManagedStudentId === student.id && (
-                        <div className="h-2 w-2 rounded-full bg-primary" />
-                      )}
-                    </button>
-                  ))}
-                {managedStudents.filter(student => {
+              {/* Select All Button */}
+              {(() => {
+                const selectedCourse = courses.find(c => c.name === selectedSchedule?.course);
+                const courseSemester = selectedCourse?.semester;
+                const filteredStudents = managedStudents.filter(student => {
                   const query = studentSearchQuery.toLowerCase();
                   const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
-                  return !isAlreadyInClass && (
+                  const matchesSemester = courseSemester ? student.semester === courseSemester : true;
+                  return !isAlreadyInClass && matchesSemester && (
                     student.name.toLowerCase().includes(query) ||
                     student.nim.toLowerCase().includes(query)
                   );
-                }).length === 0 && (
-                  <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-                    {studentSearchQuery ? "Tidak ada mahasiswa yang cocok" : "Semua mahasiswa sudah terdaftar di kelas ini"}
-                  </div>
-                )}
+                });
+                
+                const handleSelectAll = () => {
+                  if (!selectedSchedule) return;
+                  filteredStudents.forEach(student => {
+                    const isDuplicate = currentSchedule?.students.some(s => s.nim === student.nim);
+                    if (!isDuplicate) {
+                      const newStudent: Student = {
+                        id: Date.now() + Math.random(),
+                        name: student.name,
+                        nim: student.nim,
+                      };
+                      addStudentToClass(selectedSchedule.id, newStudent);
+                    }
+                  });
+                  toast.success(`${filteredStudents.length} mahasiswa berhasil ditambahkan!`);
+                  setAddStudentOpen(false);
+                  setSelectedManagedStudentId(null);
+                  setStudentSearchQuery("");
+                };
+                
+                return filteredStudents.length > 0 && courseSemester ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2 w-full gap-2"
+                    onClick={handleSelectAll}
+                  >
+                    <Users className="h-4 w-4" />
+                    Pilih Semua Mahasiswa Semester {courseSemester} ({filteredStudents.length})
+                  </Button>
+                ) : null;
+              })()}
+              
+              {/* Student List - Filtered by Semester */}
+              <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-border bg-background">
+                {(() => {
+                  const selectedCourse = courses.find(c => c.name === selectedSchedule?.course);
+                  const courseSemester = selectedCourse?.semester;
+                  
+                  return managedStudents
+                    .filter(student => {
+                      const query = studentSearchQuery.toLowerCase();
+                      const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
+                      const matchesSemester = courseSemester ? student.semester === courseSemester : true;
+                      return !isAlreadyInClass && matchesSemester && (
+                        student.name.toLowerCase().includes(query) ||
+                        student.nim.toLowerCase().includes(query)
+                      );
+                    })
+                    .map((student) => (
+                      <button
+                        key={student.id}
+                        type="button"
+                        onClick={() => setSelectedManagedStudentId(student.id)}
+                        className={cn(
+                          "w-full flex items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50",
+                          selectedManagedStudentId === student.id && "bg-primary/10 border-l-2 border-primary"
+                        )}
+                      >
+                        <div>
+                          <p className="font-medium text-foreground">{student.name}</p>
+                          <p className="text-xs text-muted-foreground">{student.nim} • {student.prodi} • Sem {student.semester}</p>
+                        </div>
+                        {selectedManagedStudentId === student.id && (
+                          <div className="h-2 w-2 rounded-full bg-primary" />
+                        )}
+                      </button>
+                    ));
+                })()}
+                {(() => {
+                  const selectedCourse = courses.find(c => c.name === selectedSchedule?.course);
+                  const courseSemester = selectedCourse?.semester;
+                  const count = managedStudents.filter(student => {
+                    const query = studentSearchQuery.toLowerCase();
+                    const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
+                    const matchesSemester = courseSemester ? student.semester === courseSemester : true;
+                    return !isAlreadyInClass && matchesSemester && (
+                      student.name.toLowerCase().includes(query) ||
+                      student.nim.toLowerCase().includes(query)
+                    );
+                  }).length;
+                  return count === 0 ? (
+                    <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                      {studentSearchQuery ? "Tidak ada mahasiswa yang cocok" : "Semua mahasiswa sudah terdaftar di kelas ini"}
+                    </div>
+                  ) : null;
+                })()}
               </div>
               
               {/* Selected Student Preview */}

@@ -88,6 +88,7 @@ export function AdminDashboard() {
     address: "",
     angkatan: "",
     jabatan: "",
+    semester: 1,
   });
 
   // Dynamic statistics from context
@@ -143,6 +144,7 @@ export function AdminDashboard() {
       address: "",
       angkatan: "",
       jabatan: "",
+      semester: 1,
     });
   };
 
@@ -166,6 +168,7 @@ export function AdminDashboard() {
         address: student.address,
         angkatan: student.angkatan,
         jabatan: "",
+        semester: student.semester || 1,
       });
     } else {
       const lecturer = user as ManagedLecturer;
@@ -179,6 +182,7 @@ export function AdminDashboard() {
         address: lecturer.address,
         angkatan: "",
         jabatan: lecturer.jabatan,
+        semester: 1,
       });
     }
     setEditUserOpen(true);
@@ -219,6 +223,7 @@ export function AdminDashboard() {
         phone: formData.phone,
         address: formData.address,
         angkatan: formData.angkatan,
+        semester: formData.semester,
       });
     } else {
       updateManagedLecturer(selectedUser.id, {
@@ -258,6 +263,7 @@ export function AdminDashboard() {
         phone: formData.phone || "-",
         address: formData.address || "-",
         angkatan: formData.angkatan || new Date().getFullYear().toString(),
+        semester: formData.semester || 1,
       });
     } else {
       addManagedLecturer({
@@ -302,7 +308,7 @@ export function AdminDashboard() {
       
       if (importDataType === "mahasiswa") {
         const studentsData: Omit<ManagedStudent, 'id'>[] = dataLines.map(line => {
-          const [nim, name, prodi, email, status, phone, address, angkatan] = line.split(',').map(s => s.trim().replace(/"/g, ''));
+          const [nim, name, prodi, email, status, phone, address, angkatan, semester] = line.split(',').map(s => s.trim().replace(/"/g, ''));
           return {
             name: name || "",
             nim: nim || "",
@@ -312,6 +318,7 @@ export function AdminDashboard() {
             phone: phone || "-",
             address: address || "-",
             angkatan: angkatan || new Date().getFullYear().toString(),
+            semester: parseInt(semester) || 1,
           };
         }).filter(s => s.nim && s.name);
         
@@ -588,6 +595,16 @@ export function AdminDashboard() {
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Prodi
                 </th>
+                {userTab === "mahasiswa" && (
+                  <>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Angkatan
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Semester
+                    </th>
+                  </>
+                )}
                 <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Email
                 </th>
@@ -602,7 +619,7 @@ export function AdminDashboard() {
             <tbody className="divide-y divide-border">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={userTab === "mahasiswa" ? 8 : 6} className="px-4 py-8 text-center text-muted-foreground">
                     {searchQuery.trim() ? "Tidak ada data yang cocok dengan pencarian" : "Belum ada data user"}
                   </td>
                 </tr>
@@ -625,6 +642,16 @@ export function AdminDashboard() {
                       {userTab === "mahasiswa" ? (user as ManagedStudent).nim : (user as ManagedLecturer).nip}
                     </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{user.prodi}</td>
+                    {userTab === "mahasiswa" && (
+                      <>
+                        <td className="px-4 py-3 text-sm text-muted-foreground">{(user as ManagedStudent).angkatan}</td>
+                        <td className="px-4 py-3">
+                          <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                            Semester {(user as ManagedStudent).semester}
+                          </span>
+                        </td>
+                      </>
+                    )}
                     <td className="px-4 py-3 text-sm text-muted-foreground">{user.email}</td>
                     <td className="px-4 py-3">
                       <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", getStatusStyle(user.status))}>
