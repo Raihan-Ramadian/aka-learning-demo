@@ -659,7 +659,7 @@ export default function Schedule() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Student Modal - Searchable Select with Semester Filter */}
+      {/* Add Student Modal - Searchable Select with Semester and Prodi Filter */}
       <Dialog open={addStudentOpen} onOpenChange={(open) => {
         setAddStudentOpen(open);
         if (!open) {
@@ -672,21 +672,34 @@ export default function Schedule() {
             <DialogTitle>Tambah Mahasiswa ke Kelas</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            {/* Course Semester Info */}
+            {/* Course Semester & Prodi Info */}
             {selectedSchedule && (() => {
               const selectedCourse = courses.find(c => c.name === selectedSchedule.course);
               const courseSemester = selectedCourse?.semester;
-              return courseSemester ? (
+              const courseProdi = selectedCourse?.prodi;
+              return (courseSemester || courseProdi) ? (
                 <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                  <p className="text-xs text-muted-foreground">Filter otomatis berdasarkan:</p>
-                  <p className="font-medium text-primary">Semester {courseSemester} ({selectedCourse?.name})</p>
+                  <p className="text-xs text-muted-foreground mb-1">Filter otomatis berdasarkan:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {courseSemester && (
+                      <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                        Semester {courseSemester}
+                      </span>
+                    )}
+                    {courseProdi && (
+                      <span className="px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
+                        {courseProdi}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">{selectedCourse?.name}</p>
                 </div>
               ) : null;
             })()}
             
             <div>
               <label className="text-sm font-medium text-foreground">Pilih Mahasiswa <span className="text-destructive">*</span></label>
-              <p className="text-xs text-muted-foreground mt-1 mb-2">Mahasiswa difilter berdasarkan semester mata kuliah</p>
+              <p className="text-xs text-muted-foreground mt-1 mb-2">Mahasiswa difilter berdasarkan semester dan prodi mata kuliah</p>
               
               {/* Search Input */}
               <input
@@ -701,11 +714,13 @@ export default function Schedule() {
               {(() => {
                 const selectedCourse = courses.find(c => c.name === selectedSchedule?.course);
                 const courseSemester = selectedCourse?.semester;
+                const courseProdi = selectedCourse?.prodi;
                 const filteredStudents = managedStudents.filter(student => {
                   const query = studentSearchQuery.toLowerCase();
                   const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
                   const matchesSemester = courseSemester ? student.semester === courseSemester : true;
-                  return !isAlreadyInClass && matchesSemester && (
+                  const matchesProdi = courseProdi ? student.prodi === courseProdi : true;
+                  return !isAlreadyInClass && matchesSemester && matchesProdi && (
                     student.name.toLowerCase().includes(query) ||
                     student.nim.toLowerCase().includes(query)
                   );
@@ -730,7 +745,7 @@ export default function Schedule() {
                   setStudentSearchQuery("");
                 };
                 
-                return filteredStudents.length > 0 && courseSemester ? (
+                return filteredStudents.length > 0 && (courseSemester || courseProdi) ? (
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -738,23 +753,25 @@ export default function Schedule() {
                     onClick={handleSelectAll}
                   >
                     <Users className="h-4 w-4" />
-                    Pilih Semua Mahasiswa Semester {courseSemester} ({filteredStudents.length})
+                    Pilih Semua Mahasiswa ({filteredStudents.length})
                   </Button>
                 ) : null;
               })()}
               
-              {/* Student List - Filtered by Semester */}
+              {/* Student List - Filtered by Semester and Prodi */}
               <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-border bg-background">
                 {(() => {
                   const selectedCourse = courses.find(c => c.name === selectedSchedule?.course);
                   const courseSemester = selectedCourse?.semester;
+                  const courseProdi = selectedCourse?.prodi;
                   
                   return managedStudents
                     .filter(student => {
                       const query = studentSearchQuery.toLowerCase();
                       const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
                       const matchesSemester = courseSemester ? student.semester === courseSemester : true;
-                      return !isAlreadyInClass && matchesSemester && (
+                      const matchesProdi = courseProdi ? student.prodi === courseProdi : true;
+                      return !isAlreadyInClass && matchesSemester && matchesProdi && (
                         student.name.toLowerCase().includes(query) ||
                         student.nim.toLowerCase().includes(query)
                       );
@@ -782,18 +799,20 @@ export default function Schedule() {
                 {(() => {
                   const selectedCourse = courses.find(c => c.name === selectedSchedule?.course);
                   const courseSemester = selectedCourse?.semester;
+                  const courseProdi = selectedCourse?.prodi;
                   const count = managedStudents.filter(student => {
                     const query = studentSearchQuery.toLowerCase();
                     const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
                     const matchesSemester = courseSemester ? student.semester === courseSemester : true;
-                    return !isAlreadyInClass && matchesSemester && (
+                    const matchesProdi = courseProdi ? student.prodi === courseProdi : true;
+                    return !isAlreadyInClass && matchesSemester && matchesProdi && (
                       student.name.toLowerCase().includes(query) ||
                       student.nim.toLowerCase().includes(query)
                     );
                   }).length;
                   return count === 0 ? (
                     <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-                      {studentSearchQuery ? "Tidak ada mahasiswa yang cocok" : "Semua mahasiswa sudah terdaftar di kelas ini"}
+                      {studentSearchQuery ? "Tidak ada mahasiswa yang cocok" : "Semua mahasiswa sudah terdaftar atau tidak ada yang cocok dengan filter"}
                     </div>
                   ) : null;
                 })()}
@@ -1305,60 +1324,161 @@ export default function Schedule() {
       {/* Role-based Content */}
       {currentRole === "admin" ? renderAdminView() : renderPersonalScheduleView()}
 
-      {/* Add Schedule Modal (Admin) */}
-      <Dialog open={addScheduleOpen} onOpenChange={setAddScheduleOpen}>
+      {/* Add Schedule Modal (Admin) - With Locked Selection Logic */}
+      <Dialog open={addScheduleOpen} onOpenChange={(open) => {
+        setAddScheduleOpen(open);
+        if (!open) {
+          setNewScheduleData({
+            className: "",
+            course: "",
+            lecturer: "",
+            day: "Senin",
+            time: "",
+            room: "",
+          });
+          setScheduleStartTime("");
+          setScheduleEndTime("");
+        }
+      }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Tambah Jadwal Baru</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {/* Step 1: Pilih Mata Kuliah (Primary Selection) */}
+            <div>
+              <label className="text-sm font-medium text-foreground">Mata Kuliah <span className="text-destructive">*</span></label>
+              <p className="text-xs text-muted-foreground mb-1.5">Pilih mata kuliah terlebih dahulu untuk mengaktifkan pilihan lainnya</p>
+              <select 
+                value={newScheduleData.course}
+                onChange={(e) => {
+                  const selectedCourse = courses.find(c => c.name === e.target.value);
+                  // Auto-select lecturer if only one lecturer teaches this course
+                  const courseLecturers = courses
+                    .filter(c => c.name === e.target.value)
+                    .map(c => c.lecturer);
+                  const uniqueLecturers = [...new Set(courseLecturers)];
+                  
+                  setNewScheduleData({
+                    ...newScheduleData, 
+                    course: e.target.value,
+                    lecturer: uniqueLecturers.length === 1 ? uniqueLecturers[0] : ""
+                  });
+                }}
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">Pilih Mata Kuliah</option>
+                {/* Show unique course names */}
+                {[...new Map(courses.map(c => [c.name, c])).values()].map((course) => (
+                  <option key={course.id} value={course.name}>{course.code} - {course.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Course Info Display - Shows when course is selected */}
+            {newScheduleData.course && (() => {
+              const selectedCourse = courses.find(c => c.name === newScheduleData.course);
+              return selectedCourse ? (
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                      Semester {selectedCourse.semester || "-"}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-full bg-success/10 text-success font-medium">
+                      {selectedCourse.sks || "-"} SKS
+                    </span>
+                    <span className="text-muted-foreground">
+                      Prodi: {selectedCourse.prodi || "-"}
+                    </span>
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
+            {/* Step 2: Pilih Dosen - Filtered by selected course */}
+            <div>
+              <label className="text-sm font-medium text-foreground">Dosen Pengampu <span className="text-destructive">*</span></label>
+              <select 
+                value={newScheduleData.lecturer}
+                onChange={(e) => setNewScheduleData({...newScheduleData, lecturer: e.target.value})}
+                disabled={!newScheduleData.course}
+                className={cn(
+                  "mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+                  !newScheduleData.course && "opacity-50 cursor-not-allowed bg-muted"
+                )}
+              >
+                <option value="">
+                  {!newScheduleData.course ? "Pilih Mata Kuliah terlebih dahulu" : "Pilih Dosen Pengampu"}
+                </option>
+                {/* Smart filter: Only show lecturers who teach the selected course */}
+                {newScheduleData.course && (() => {
+                  const courseLecturers = courses
+                    .filter(c => c.name === newScheduleData.course)
+                    .map(c => c.lecturer);
+                  const uniqueLecturers = [...new Set(courseLecturers)];
+                  
+                  // If no lecturers in courses data, show all managed lecturers as fallback
+                  const lecturersToShow = uniqueLecturers.length > 0 
+                    ? uniqueLecturers 
+                    : managedLecturers.map(l => l.name);
+                  
+                  return lecturersToShow.map((lecturerName, idx) => (
+                    <option key={idx} value={lecturerName}>{lecturerName}</option>
+                  ));
+                })()}
+              </select>
+              {newScheduleData.course && (() => {
+                const courseLecturers = courses
+                  .filter(c => c.name === newScheduleData.course)
+                  .map(c => c.lecturer);
+                const uniqueLecturers = [...new Set(courseLecturers)];
+                return uniqueLecturers.length > 0 ? (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {uniqueLecturers.length} dosen tersedia untuk mata kuliah ini
+                  </p>
+                ) : null;
+              })()}
+            </div>
+
+            {/* Step 3: Pilih Kelas */}
             <div>
               <label className="text-sm font-medium text-foreground">Kelas <span className="text-destructive">*</span></label>
               <select 
                 value={newScheduleData.className}
                 onChange={(e) => setNewScheduleData({...newScheduleData, className: e.target.value})}
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                disabled={!newScheduleData.course}
+                className={cn(
+                  "mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+                  !newScheduleData.course && "opacity-50 cursor-not-allowed bg-muted"
+                )}
               >
-                <option value="">Pilih Kelas</option>
+                <option value="">
+                  {!newScheduleData.course ? "Pilih Mata Kuliah terlebih dahulu" : "Pilih Kelas"}
+                </option>
+                <option value="D3-AK-1A">D3-AK-1A</option>
+                <option value="D3-AK-1B">D3-AK-1B</option>
                 <option value="D3-AK-2A">D3-AK-2A</option>
                 <option value="D3-AK-2B">D3-AK-2B</option>
+                <option value="D3-AK-3A">D3-AK-3A</option>
+                <option value="D3-TI-1A">D3-TI-1A</option>
                 <option value="D3-TI-2A">D3-TI-2A</option>
+                <option value="D4-AK-1A">D4-AK-1A</option>
                 <option value="D4-AK-4A">D4-AK-4A</option>
               </select>
             </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Mata Kuliah <span className="text-destructive">*</span></label>
-              <select 
-                value={newScheduleData.course}
-                onChange={(e) => setNewScheduleData({...newScheduleData, course: e.target.value})}
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="">Pilih Mata Kuliah</option>
-                {courses.map((course) => (
-                  <option key={course.id} value={course.name}>{course.code} - {course.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-foreground">Dosen <span className="text-destructive">*</span></label>
-              <select 
-                value={newScheduleData.lecturer}
-                onChange={(e) => setNewScheduleData({...newScheduleData, lecturer: e.target.value})}
-                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="">Pilih Dosen</option>
-                {managedLecturers.map((lecturer) => (
-                  <option key={lecturer.id} value={lecturer.name}>{lecturer.name}</option>
-                ))}
-              </select>
-            </div>
+
+            {/* Step 4: Hari dan Ruangan */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-foreground">Hari <span className="text-destructive">*</span></label>
                 <select 
                   value={newScheduleData.day}
                   onChange={(e) => setNewScheduleData({...newScheduleData, day: e.target.value})}
-                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  disabled={!newScheduleData.course}
+                  className={cn(
+                    "mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+                    !newScheduleData.course && "opacity-50 cursor-not-allowed bg-muted"
+                  )}
                 >
                   {daysOfWeek.map((day) => (
                     <option key={day} value={day}>{day}</option>
@@ -1370,17 +1490,27 @@ export default function Schedule() {
                 <select 
                   value={newScheduleData.room}
                   onChange={(e) => setNewScheduleData({...newScheduleData, room: e.target.value})}
-                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  disabled={!newScheduleData.course}
+                  className={cn(
+                    "mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+                    !newScheduleData.course && "opacity-50 cursor-not-allowed bg-muted"
+                  )}
                 >
                   <option value="">Pilih Ruangan</option>
                   <option value="Lab Kimia A">Lab Kimia A</option>
                   <option value="Lab Kimia B">Lab Kimia B</option>
                   <option value="Lab Komputer">Lab Komputer</option>
+                  <option value="Lab Instrumen">Lab Instrumen</option>
                   <option value="R. 201">R. 201</option>
+                  <option value="R. 202">R. 202</option>
+                  <option value="R. 301">R. 301</option>
                   <option value="R. 302">R. 302</option>
+                  <option value="Aula">Aula</option>
                 </select>
               </div>
             </div>
+
+            {/* Step 5: Jam */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-foreground">Jam Mulai <span className="text-destructive">*</span></label>
@@ -1388,7 +1518,11 @@ export default function Schedule() {
                   type="time"
                   value={scheduleStartTime}
                   onChange={(e) => setScheduleStartTime(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  disabled={!newScheduleData.course}
+                  className={cn(
+                    "mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+                    !newScheduleData.course && "opacity-50 cursor-not-allowed bg-muted"
+                  )}
                 />
               </div>
               <div>
@@ -1397,15 +1531,20 @@ export default function Schedule() {
                   type="time"
                   value={scheduleEndTime}
                   onChange={(e) => setScheduleEndTime(e.target.value)}
-                  className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  disabled={!newScheduleData.course}
+                  className={cn(
+                    "mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
+                    !newScheduleData.course && "opacity-50 cursor-not-allowed bg-muted"
+                  )}
                 />
               </div>
             </div>
+
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={() => setAddScheduleOpen(false)}>
                 Batal
               </Button>
-              <Button onClick={handleAddSchedule}>
+              <Button onClick={handleAddSchedule} disabled={!newScheduleData.course}>
                 Simpan
               </Button>
             </div>
