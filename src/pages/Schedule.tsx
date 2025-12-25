@@ -58,6 +58,10 @@ export default function Schedule() {
   const [newStudentName, setNewStudentName] = useState("");
   const [selectedManagedStudentId, setSelectedManagedStudentId] = useState<number | null>(null);
   const [studentSearchQuery, setStudentSearchQuery] = useState("");
+  
+  // Checkbox filter states for smart sorting
+  const [filterBySemester, setFilterBySemester] = useState(false);
+  const [filterByAngkatan, setFilterByAngkatan] = useState(false);
 
   // Delete Schedule Confirmation
   const [deleteScheduleOpen, setDeleteScheduleOpen] = useState(false);
@@ -659,27 +663,30 @@ export default function Schedule() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Student Modal - Searchable Select with Semester and Prodi Filter */}
+      {/* Add Student Modal - Smart Sorting with Checkbox Filters */}
       <Dialog open={addStudentOpen} onOpenChange={(open) => {
         setAddStudentOpen(open);
         if (!open) {
           setSelectedManagedStudentId(null);
           setStudentSearchQuery("");
+          setFilterBySemester(false);
+          setFilterByAngkatan(false);
         }
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Tambah Mahasiswa ke Kelas</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            {/* Course Semester & Prodi Info */}
+            {/* Course Info */}
             {selectedSchedule && (() => {
               const selectedCourse = courses.find(c => c.name === selectedSchedule.course);
               const courseSemester = selectedCourse?.semester;
               const courseProdi = selectedCourse?.prodi;
+              const courseAngkatan = courseSemester ? (new Date().getFullYear() - Math.floor((courseSemester - 1) / 2)).toString() : null;
               return (courseSemester || courseProdi) ? (
-                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
-                  <p className="text-xs text-muted-foreground mb-1">Filter otomatis berdasarkan:</p>
+                <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs text-muted-foreground mb-2">Informasi Mata Kuliah:</p>
                   <div className="flex flex-wrap gap-2">
                     {courseSemester && (
                       <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
@@ -697,33 +704,56 @@ export default function Schedule() {
               ) : null;
             })()}
             
+            {/* Checkbox Filters */}
+            <div className="p-3 rounded-lg border border-border bg-background">
+              <p className="text-sm font-medium text-foreground mb-3">Filter Mahasiswa (Centang untuk menyaring):</p>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filterBySemester}
+                    onChange={(e) => setFilterBySemester(e.target.checked)}
+                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-foreground">Filter Semester</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filterByAngkatan}
+                    onChange={(e) => setFilterByAngkatan(e.target.checked)}
+                    className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-foreground">Filter Angkatan</span>
+                </label>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Semakin banyak filter, semakin spesifik hasil.</p>
+            </div>
+            
             <div>
-              <label className="text-sm font-medium text-foreground">Pilih Mahasiswa <span className="text-destructive">*</span></label>
-              <p className="text-xs text-muted-foreground mt-1 mb-2">Mahasiswa difilter berdasarkan semester dan prodi mata kuliah</p>
-              
-              {/* Search Input */}
+              <label className="text-sm font-medium text-foreground">Cari Mahasiswa</label>
               <input
                 type="text"
                 value={studentSearchQuery}
                 onChange={(e) => setStudentSearchQuery(e.target.value)}
-                placeholder="Ketik nama atau NIM untuk mencari..."
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="Ketik nama atau NIM..."
+                className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               
-              {/* Select All Button */}
+              {/* Select All Matching Button */}
               {(() => {
                 const selectedCourse = courses.find(c => c.name === selectedSchedule?.course);
                 const courseSemester = selectedCourse?.semester;
                 const courseProdi = selectedCourse?.prodi;
+                const courseYear = courseSemester ? (new Date().getFullYear() - Math.floor((courseSemester - 1) / 2)) : null;
+                
                 const filteredStudents = managedStudents.filter(student => {
                   const query = studentSearchQuery.toLowerCase();
                   const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
-                  const matchesSemester = courseSemester ? student.semester === courseSemester : true;
-                  const matchesProdi = courseProdi ? student.prodi === courseProdi : true;
-                  return !isAlreadyInClass && matchesSemester && matchesProdi && (
-                    student.name.toLowerCase().includes(query) ||
-                    student.nim.toLowerCase().includes(query)
-                  );
+                  const matchesSemester = filterBySemester && courseSemester ? student.semester === courseSemester : true;
+                  const matchesAngkatan = filterByAngkatan && courseYear ? parseInt(student.angkatan) === courseYear : true;
+                  const matchesSearch = student.name.toLowerCase().includes(query) || student.nim.toLowerCase().includes(query);
+                  return !isAlreadyInClass && matchesSemester && matchesAngkatan && matchesSearch;
                 });
                 
                 const handleSelectAll = () => {
@@ -743,9 +773,11 @@ export default function Schedule() {
                   setAddStudentOpen(false);
                   setSelectedManagedStudentId(null);
                   setStudentSearchQuery("");
+                  setFilterBySemester(false);
+                  setFilterByAngkatan(false);
                 };
                 
-                return filteredStudents.length > 0 && (courseSemester || courseProdi) ? (
+                return filteredStudents.length > 0 && (filterBySemester || filterByAngkatan) ? (
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -753,68 +785,120 @@ export default function Schedule() {
                     onClick={handleSelectAll}
                   >
                     <Users className="h-4 w-4" />
-                    Pilih Semua Mahasiswa ({filteredStudents.length})
+                    Pilih Semua ({filteredStudents.length} mahasiswa)
                   </Button>
                 ) : null;
               })()}
               
-              {/* Student List - Filtered by Semester and Prodi */}
-              <div className="mt-2 max-h-48 overflow-y-auto rounded-lg border border-border bg-background">
+              {/* Student List - Smart Sorted */}
+              <div className="mt-2 max-h-60 overflow-y-auto rounded-lg border border-border bg-background">
                 {(() => {
                   const selectedCourse = courses.find(c => c.name === selectedSchedule?.course);
                   const courseSemester = selectedCourse?.semester;
                   const courseProdi = selectedCourse?.prodi;
+                  const courseYear = courseSemester ? (new Date().getFullYear() - Math.floor((courseSemester - 1) / 2)) : null;
                   
-                  return managedStudents
-                    .filter(student => {
-                      const query = studentSearchQuery.toLowerCase();
-                      const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
-                      const matchesSemester = courseSemester ? student.semester === courseSemester : true;
-                      const matchesProdi = courseProdi ? student.prodi === courseProdi : true;
-                      return !isAlreadyInClass && matchesSemester && matchesProdi && (
-                        student.name.toLowerCase().includes(query) ||
-                        student.nim.toLowerCase().includes(query)
-                      );
-                    })
-                    .map((student) => (
-                      <button
-                        key={student.id}
-                        type="button"
-                        onClick={() => setSelectedManagedStudentId(student.id)}
-                        className={cn(
-                          "w-full flex items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50",
-                          selectedManagedStudentId === student.id && "bg-primary/10 border-l-2 border-primary"
-                        )}
-                      >
-                        <div>
-                          <p className="font-medium text-foreground">{student.name}</p>
-                          <p className="text-xs text-muted-foreground">{student.nim} • {student.prodi} • Sem {student.semester}</p>
-                        </div>
-                        {selectedManagedStudentId === student.id && (
-                          <div className="h-2 w-2 rounded-full bg-primary" />
-                        )}
-                      </button>
-                    ));
-                })()}
-                {(() => {
-                  const selectedCourse = courses.find(c => c.name === selectedSchedule?.course);
-                  const courseSemester = selectedCourse?.semester;
-                  const courseProdi = selectedCourse?.prodi;
-                  const count = managedStudents.filter(student => {
+                  // Get all students and categorize them
+                  const allStudents = managedStudents.filter(student => {
                     const query = studentSearchQuery.toLowerCase();
                     const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
-                    const matchesSemester = courseSemester ? student.semester === courseSemester : true;
-                    const matchesProdi = courseProdi ? student.prodi === courseProdi : true;
-                    return !isAlreadyInClass && matchesSemester && matchesProdi && (
-                      student.name.toLowerCase().includes(query) ||
-                      student.nim.toLowerCase().includes(query)
+                    const matchesSearch = student.name.toLowerCase().includes(query) || student.nim.toLowerCase().includes(query);
+                    
+                    // Apply checkbox filters
+                    const matchesSemester = filterBySemester && courseSemester ? student.semester === courseSemester : true;
+                    const matchesAngkatan = filterByAngkatan && courseYear ? parseInt(student.angkatan) === courseYear : true;
+                    
+                    return !isAlreadyInClass && matchesSearch && matchesSemester && matchesAngkatan;
+                  });
+                  
+                  // Sort: recommended students first (same semester AND prodi)
+                  const sortedStudents = [...allStudents].sort((a, b) => {
+                    const aIsRecommended = (courseSemester ? a.semester === courseSemester : false) && (courseProdi ? a.prodi === courseProdi : false);
+                    const bIsRecommended = (courseSemester ? b.semester === courseSemester : false) && (courseProdi ? b.prodi === courseProdi : false);
+                    if (aIsRecommended && !bIsRecommended) return -1;
+                    if (!aIsRecommended && bIsRecommended) return 1;
+                    return 0;
+                  });
+                  
+                  // Group for display
+                  const recommendedStudents = sortedStudents.filter(s => 
+                    (courseSemester ? s.semester === courseSemester : false) && (courseProdi ? s.prodi === courseProdi : false)
+                  );
+                  const otherStudents = sortedStudents.filter(s => 
+                    !((courseSemester ? s.semester === courseSemester : false) && (courseProdi ? s.prodi === courseProdi : false))
+                  );
+                  
+                  if (sortedStudents.length === 0) {
+                    return (
+                      <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                        {studentSearchQuery || filterBySemester || filterByAngkatan 
+                          ? "Tidak ada mahasiswa yang cocok dengan kriteria" 
+                          : "Semua mahasiswa sudah terdaftar"}
+                      </div>
                     );
-                  }).length;
-                  return count === 0 ? (
-                    <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-                      {studentSearchQuery ? "Tidak ada mahasiswa yang cocok" : "Semua mahasiswa sudah terdaftar atau tidak ada yang cocok dengan filter"}
-                    </div>
-                  ) : null;
+                  }
+                  
+                  return (
+                    <>
+                      {/* Recommended Section */}
+                      {recommendedStudents.length > 0 && (
+                        <>
+                          <div className="px-3 py-2 bg-success/10 border-b border-success/20 sticky top-0">
+                            <p className="text-xs font-medium text-success">✓ Sesuai Rekomendasi (Semester & Prodi cocok)</p>
+                          </div>
+                          {recommendedStudents.map((student) => (
+                            <button
+                              key={student.id}
+                              type="button"
+                              onClick={() => setSelectedManagedStudentId(student.id)}
+                              className={cn(
+                                "w-full flex items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50",
+                                selectedManagedStudentId === student.id && "bg-primary/10 border-l-2 border-primary"
+                              )}
+                            >
+                              <div>
+                                <p className="font-medium text-foreground">{student.name}</p>
+                                <p className="text-xs text-muted-foreground">{student.nim} • {student.prodi} • Sem {student.semester} • {student.angkatan}</p>
+                              </div>
+                              {selectedManagedStudentId === student.id && (
+                                <div className="h-2 w-2 rounded-full bg-primary" />
+                              )}
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      
+                      {/* Other Students Section */}
+                      {otherStudents.length > 0 && (
+                        <>
+                          {recommendedStudents.length > 0 && (
+                            <div className="px-3 py-2 bg-muted/50 border-b border-border sticky top-0">
+                              <p className="text-xs font-medium text-muted-foreground">Mahasiswa Lainnya</p>
+                            </div>
+                          )}
+                          {otherStudents.map((student) => (
+                            <button
+                              key={student.id}
+                              type="button"
+                              onClick={() => setSelectedManagedStudentId(student.id)}
+                              className={cn(
+                                "w-full flex items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-muted/50",
+                                selectedManagedStudentId === student.id && "bg-primary/10 border-l-2 border-primary"
+                              )}
+                            >
+                              <div>
+                                <p className="font-medium text-foreground">{student.name}</p>
+                                <p className="text-xs text-muted-foreground">{student.nim} • {student.prodi} • Sem {student.semester} • {student.angkatan}</p>
+                              </div>
+                              {selectedManagedStudentId === student.id && (
+                                <div className="h-2 w-2 rounded-full bg-primary" />
+                              )}
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </>
+                  );
                 })()}
               </div>
               
@@ -837,6 +921,8 @@ export default function Schedule() {
                 setAddStudentOpen(false);
                 setSelectedManagedStudentId(null);
                 setStudentSearchQuery("");
+                setFilterBySemester(false);
+                setFilterByAngkatan(false);
               }}>
                 Batal
               </Button>

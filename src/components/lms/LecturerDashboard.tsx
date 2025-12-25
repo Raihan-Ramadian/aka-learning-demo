@@ -17,7 +17,7 @@ const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 export function LecturerDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { courses, getLecturerSchedules, submissions, tasks, materialWeeks, addMaterial, addMaterialWeek, academicEvents } = useAcademicData();
+  const { courses, getLecturerSchedules, submissions, tasks, materialWeeks, addMaterial, addMaterialWeek, academicEvents, managedLecturers } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
   const [materialType, setMaterialType] = useState<"document" | "video">("document");
@@ -28,8 +28,12 @@ export function LecturerDashboard() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   
-  // Simulated lecturer name - in real app this would come from auth
-  const lecturerName = "Sari Dewi";
+  // Get lecturer data from context (synced with Admin Kelola User)
+  const lecturerNip = "197805152005012001";
+  const currentLecturer = managedLecturers.find(l => l.nip === lecturerNip);
+  const lecturerName = currentLecturer?.name?.replace(/^(Dr\.|Prof\.|Pak|Bu)\s*/gi, '').trim() || "Dosen";
+  const lecturerFullName = currentLecturer?.name || "Dosen";
+  const lecturerProdi = currentLecturer?.prodi || "Program Studi";
   const mySchedules = getLecturerSchedules(lecturerName);
   
   // Get unique courses from lecturer's schedules dynamically
@@ -188,8 +192,8 @@ export function LecturerDashboard() {
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Halo, Prof. Sari Dewi 👋</h1>
-          <p className="mt-1 text-muted-foreground">Dosen Prodi D3 Analisis Kimia</p>
+          <h1 className="text-2xl font-bold text-foreground">Halo, {lecturerFullName} 👋</h1>
+          <p className="mt-1 text-muted-foreground">Dosen Prodi {lecturerProdi}</p>
         </div>
       </div>
 

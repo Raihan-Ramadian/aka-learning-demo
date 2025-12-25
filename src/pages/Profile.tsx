@@ -298,25 +298,6 @@ export default function Profile() {
                     <p className="font-medium text-foreground">{currentLecturer.jabatan}</p>
                   )}
                 </div>
-                <div>
-                  <label className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                    <GraduationCap className="h-4 w-4" />
-                    Pendidikan Terakhir
-                  </label>
-                  <p className="font-medium text-foreground">S3 Kimia - Universitas Indonesia</p>
-                </div>
-                <div>
-                  <label className="text-sm text-muted-foreground mb-2 block">Bidang Keahlian</label>
-                  {isEditing ? (
-                    <Input 
-                      value={formData.bidang_keahlian}
-                      onChange={(e) => handleInputChange('bidang_keahlian', e.target.value)}
-                      placeholder="Masukkan bidang keahlian"
-                    />
-                  ) : (
-                    <p className="font-medium text-foreground">{formData.bidang_keahlian}</p>
-                  )}
-                </div>
               </>
             )}
 

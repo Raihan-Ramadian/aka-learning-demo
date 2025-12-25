@@ -17,16 +17,19 @@ const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 export function StudentDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { courses, getStudentSchedules, submissions, tasks, submitAssignment, academicEvents } = useAcademicData();
+  const { courses, getStudentSchedules, submissions, tasks, submitAssignment, academicEvents, managedStudents } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
   const [selectedTask, setSelectedTask] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [studentNote, setStudentNote] = useState("");
   
-  // Simulated student NIM - in real app this would come from auth
+  // Get student data from context (synced with Admin Kelola User)
   const studentNim = "2024001";
-  const studentName = "Siti Rahayu";
+  const currentStudent = managedStudents.find(s => s.nim === studentNim);
+  const studentName = currentStudent?.name || "Mahasiswa";
+  const studentProdi = currentStudent?.prodi || "Program Studi";
+  const studentSemester = currentStudent?.semester || 1;
   const mySchedules = getStudentSchedules(studentNim);
 
   // Get unique course names from student's schedules (Admin-controlled)
@@ -163,12 +166,8 @@ export function StudentDashboard() {
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Halo, Siti 👋</h1>
-          <p className="mt-1 text-muted-foreground">D3 Analisis Kimia • Semester 4</p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-muted-foreground">Rabu, 18 Desember 2024</p>
-          <p className="text-xs text-muted-foreground">Semester Ganjil 2024/2025</p>
+          <h1 className="text-2xl font-bold text-foreground">Halo, {currentStudent?.name.split(' ')[0] || 'Mahasiswa'} 👋</h1>
+          <p className="mt-1 text-muted-foreground">{studentProdi} • Semester {studentSemester}</p>
         </div>
       </div>
 
