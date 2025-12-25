@@ -130,25 +130,26 @@ export interface PracticumGrade {
 const initialManagedStudents: ManagedStudent[] = [
   { id: 1, name: "Siti Rahayu", nim: "2024001", prodi: "D3 Analisis Kimia", email: "siti@mhs.aka.ac.id", status: "Aktif", phone: "081234567890", address: "Jl. Merdeka No. 10, Bogor", angkatan: "2024", semester: 1 },
   { id: 2, name: "Ahmad Fadli", nim: "2024002", prodi: "D3 Analisis Kimia", email: "ahmad@mhs.aka.ac.id", status: "Aktif", phone: "081234567891", address: "Jl. Sudirman No. 5, Bogor", angkatan: "2024", semester: 1 },
-  { id: 3, name: "Dewi Lestari", nim: "2024003", prodi: "D3 Teknik Informatika", email: "dewi@mhs.aka.ac.id", status: "Aktif", phone: "081234567892", address: "Jl. Ahmad Yani No. 15, Bogor", angkatan: "2024", semester: 1 },
-  { id: 4, name: "Budi Santoso", nim: "2023015", prodi: "D4 Analisis Kimia", email: "budi@mhs.aka.ac.id", status: "Cuti", phone: "081234567893", address: "Jl. Pahlawan No. 20, Bogor", angkatan: "2023", semester: 3 },
+  { id: 3, name: "Dewi Lestari", nim: "2024003", prodi: "D3 Penjaminan Mutu Industri Pangan", email: "dewi@mhs.aka.ac.id", status: "Aktif", phone: "081234567892", address: "Jl. Ahmad Yani No. 15, Bogor", angkatan: "2024", semester: 1 },
+  { id: 4, name: "Budi Santoso", nim: "2023015", prodi: "D4 Nanoteknologi Pangan", email: "budi@mhs.aka.ac.id", status: "Cuti", phone: "081234567893", address: "Jl. Pahlawan No. 20, Bogor", angkatan: "2023", semester: 3 },
   { id: 5, name: "Rina Wulandari", nim: "2024005", prodi: "D3 Analisis Kimia", email: "rina@mhs.aka.ac.id", status: "Aktif", phone: "081234567894", address: "Jl. Diponegoro No. 8, Bogor", angkatan: "2024", semester: 1 },
-  { id: 6, name: "Eko Prasetyo", nim: "2023008", prodi: "D3 Teknik Informatika", email: "eko@mhs.aka.ac.id", status: "Aktif", phone: "081234567895", address: "Jl. Gatot Subroto No. 12, Bogor", angkatan: "2023", semester: 3 },
+  { id: 6, name: "Eko Prasetyo", nim: "2023008", prodi: "D3 Pengolahan Limbah Industri", email: "eko@mhs.aka.ac.id", status: "Aktif", phone: "081234567895", address: "Jl. Gatot Subroto No. 12, Bogor", angkatan: "2023", semester: 3 },
 ];
 
 const initialManagedLecturers: ManagedLecturer[] = [
   { id: 1, name: "Dr. Ahmad Wijaya", nip: "198501012010011001", prodi: "D3 Analisis Kimia", email: "ahmad@dosen.aka.ac.id", status: "Aktif", phone: "081234567801", address: "Jl. Profesor No. 1, Bogor", jabatan: "Lektor Kepala" },
   { id: 2, name: "Prof. Sari Dewi", nip: "197805152005012001", prodi: "D3 Analisis Kimia", email: "sari@dosen.aka.ac.id", status: "Aktif", phone: "081234567802", address: "Jl. Akademik No. 5, Bogor", jabatan: "Guru Besar" },
-  { id: 3, name: "Pak Budi Santoso", nip: "198203202008011003", prodi: "D3 Teknik Informatika", email: "budi@dosen.aka.ac.id", status: "Aktif", phone: "081234567803", address: "Jl. Pendidikan No. 10, Bogor", jabatan: "Lektor" },
-  { id: 4, name: "Dr. Maya Putri", nip: "198906302015012001", prodi: "D4 Analisis Kimia", email: "maya@dosen.aka.ac.id", status: "Cuti", phone: "081234567804", address: "Jl. Ilmu No. 3, Bogor", jabatan: "Asisten Ahli" },
+  { id: 3, name: "Pak Budi Santoso", nip: "198203202008011003", prodi: "D3 Penjaminan Mutu Industri Pangan", email: "budi@dosen.aka.ac.id", status: "Aktif", phone: "081234567803", address: "Jl. Pendidikan No. 10, Bogor", jabatan: "Lektor" },
+  { id: 4, name: "Dr. Maya Putri", nip: "198906302015012001", prodi: "D4 Nanoteknologi Pangan", email: "maya@dosen.aka.ac.id", status: "Cuti", phone: "081234567804", address: "Jl. Ilmu No. 3, Bogor", jabatan: "Asisten Ahli" },
 ];
 
 const initialCourses: Course[] = [
   { id: 1, name: "Kimia Dasar", code: "KIM101", lecturer: "Dr. Ahmad Wijaya", color: "from-blue-500 to-cyan-500", classes: 2, prodi: "D3 Analisis Kimia", semester: 1, sks: 3 },
   { id: 2, name: "Biokimia", code: "BIO201", lecturer: "Prof. Sari Dewi", color: "from-emerald-500 to-teal-500", classes: 2, prodi: "D3 Analisis Kimia", semester: 2, sks: 3 },
   { id: 3, name: "Kimia Analitik", code: "KIM202", lecturer: "Dr. Rudi Hartono", color: "from-violet-500 to-purple-500", classes: 1, prodi: "D3 Analisis Kimia", semester: 3, sks: 4 },
-  { id: 4, name: "Kimia Organik", code: "KIM301", lecturer: "Dr. Maya Putri", color: "from-orange-500 to-amber-500", classes: 3, prodi: "D4 Analisis Kimia", semester: 3, sks: 3 },
+  { id: 4, name: "Kimia Organik", code: "KIM301", lecturer: "Prof. Sari Dewi", color: "from-orange-500 to-amber-500", classes: 3, prodi: "D4 Nanoteknologi Pangan", semester: 3, sks: 3 },
   { id: 5, name: "Praktikum Kimia", code: "KIM102", lecturer: "Dr. Ahmad Wijaya", color: "from-violet-500 to-purple-500", classes: 4, prodi: "D3 Analisis Kimia", semester: 1, sks: 2 },
+  { id: 6, name: "Matematika Terapan", code: "MTK203", lecturer: "Prof. Sari Dewi", color: "from-pink-500 to-rose-500", classes: 2, prodi: "D3 Analisis Kimia", semester: 1, sks: 3 },
 ];
 
 const initialMaterialWeeks: MaterialWeek[] = [
@@ -206,43 +207,20 @@ const initialSchedules: ClassSchedule[] = [
     day: "Selasa", time: "08:00 - 09:40", room: "Lab Kimia B", 
     students: [
       { id: 1, name: "Siti Rahayu", nim: "2024001" },
-      { id: 2, name: "Ahmad Fadli", nim: "2024002" },
-      { id: 3, name: "Rina Wulandari", nim: "2024005" },
     ],
     color: "bg-warning/10 border-warning/30 text-warning"
   },
   { 
-    id: 4, className: "D3-AK-3A", course: "Biokimia", lecturer: "Pak Budi Santoso", 
+    id: 4, className: "D3-AK-3A", course: "Biokimia", lecturer: "Prof. Sari Dewi", 
     day: "Selasa", time: "13:00 - 14:40", room: "R. 302", 
     students: [{ id: 6, name: "Eko Prasetyo", nim: "2023008" }],
     color: "bg-accent border-accent text-accent-foreground"
   },
   { 
-    id: 5, className: "D4-AK-4A", course: "Analisis Instrumen", lecturer: "Prof. Sari Dewi", 
+    id: 5, className: "D4-NP-4A", course: "Analisis Instrumen", lecturer: "Prof. Sari Dewi", 
     day: "Kamis", time: "13:00 - 15:30", room: "Lab Instrumen", 
     students: [],
     color: "bg-destructive/10 border-destructive/30 text-destructive"
-  },
-  { 
-    id: 6, className: "D3-TI-2A", course: "Pemrograman Dasar", lecturer: "Pak Eko Prasetyo", 
-    day: "Senin", time: "10:00 - 11:40", room: "Lab Komputer", 
-    students: [],
-    color: "bg-primary/10 border-primary/30 text-primary"
-  },
-  { 
-    id: 7, className: "D3-TI-2A", course: "Basis Data", lecturer: "Dr. Rina Wulandari", 
-    day: "Rabu", time: "13:00 - 14:40", room: "Lab Komputer", 
-    students: [],
-    color: "bg-success/10 border-success/30 text-success"
-  },
-  { 
-    id: 8, className: "D3-AK-2A", course: "Matematika Terapan", lecturer: "Prof. Sari Dewi", 
-    day: "Senin", time: "10:00 - 11:40", room: "R. 201", 
-    students: [
-      { id: 1, name: "Siti Rahayu", nim: "2024001" },
-      { id: 2, name: "Ahmad Fadli", nim: "2024002" },
-    ],
-    color: "bg-success/10 border-success/30 text-success"
   },
 ];
 

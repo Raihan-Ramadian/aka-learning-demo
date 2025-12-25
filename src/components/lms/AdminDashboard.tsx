@@ -32,17 +32,18 @@ import { downloadCSV } from "@/lib/file-utils";
 
 const prodiOptions = [
   { value: "all", label: "Semua Prodi" },
-  { value: "d3-ak", label: "D3 Analisis Kimia" },
-  { value: "d3-pmip", label: "D3 Penjaminan Mutu Industri Pangan" },
-  { value: "d3-pli", label: "D3 Pengolahan Limbah Industri" },
-  { value: "d4-np", label: "D4 Nanoteknologi Pangan" },
+  { value: "D3 Analisis Kimia", label: "D3 Analisis Kimia" },
+  { value: "D3 Penjaminan Mutu Industri Pangan", label: "D3 Penjaminan Mutu Industri Pangan" },
+  { value: "D3 Pengolahan Limbah Industri", label: "D3 Pengolahan Limbah Industri" },
+  { value: "D4 Nanoteknologi Pangan", label: "D4 Nanoteknologi Pangan" },
 ];
 
+// Simplified prodi map - value equals label for direct matching
 const prodiMap: Record<string, string> = {
-  "d3-ak": "D3 Analisis Kimia",
-  "d3-pmip": "D3 Penjaminan Mutu Industri Pangan",
-  "d3-pli": "D3 Pengolahan Limbah Industri",
-  "d4-np": "D4 Nanoteknologi Pangan",
+  "D3 Analisis Kimia": "D3 Analisis Kimia",
+  "D3 Penjaminan Mutu Industri Pangan": "D3 Penjaminan Mutu Industri Pangan",
+  "D3 Pengolahan Limbah Industri": "D3 Pengolahan Limbah Industri",
+  "D4 Nanoteknologi Pangan": "D4 Nanoteknologi Pangan",
 };
 
 export function AdminDashboard() {
@@ -114,7 +115,7 @@ export function AdminDashboard() {
   const filteredUsers = currentData.filter((user) => {
     const matchesProdi =
       selectedProdi === "all" ||
-      user.prodi.toLowerCase().includes(selectedProdi.replace("-", " "));
+      user.prodi === selectedProdi;
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (userTab === "mahasiswa" ? (user as ManagedStudent).nim : (user as ManagedLecturer).nip).includes(searchQuery);
@@ -949,10 +950,11 @@ export function AdminDashboard() {
               <div>
                 <label className="text-sm font-medium text-foreground">Program Studi</label>
                 <select 
-                  value={formData.prodi === "D3 Analisis Kimia" ? "d3-ak" : formData.prodi === "D3 Teknik Informatika" ? "d3-ti" : "d4-ak"}
-                  onChange={(e) => setFormData(prev => ({ ...prev, prodi: prodiMap[e.target.value] || e.target.value }))}
+                  value={formData.prodi}
+                  onChange={(e) => setFormData(prev => ({ ...prev, prodi: e.target.value }))}
                   className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
+                  <option value="">Pilih Program Studi</option>
                   {prodiOptions.slice(1).map((prodi) => (
                     <option key={prodi.value} value={prodi.value}>{prodi.label}</option>
                   ))}

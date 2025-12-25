@@ -71,9 +71,10 @@ export default function Schedule() {
   const [importedScheduleFile, setImportedScheduleFile] = useState<File | null>(null);
   const [importedStudentFile, setImportedStudentFile] = useState<File | null>(null);
 
-  // Add schedule form states
+  // Add schedule form states - using courseCode as unique identifier
   const [newScheduleData, setNewScheduleData] = useState({
     className: "",
+    courseCode: "", // Use code as unique identifier
     course: "",
     lecturer: "",
     day: "Senin",
@@ -276,6 +277,7 @@ export default function Schedule() {
     setAddScheduleOpen(false);
     setNewScheduleData({
       className: "",
+      courseCode: "",
       course: "",
       lecturer: "",
       day: "Senin",
@@ -722,17 +724,16 @@ export default function Schedule() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Angkatan</label>
-                  <select
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Angkatan (Tahun)</label>
+                  <input
+                    type="number"
                     value={filterAngkatan}
                     onChange={(e) => setFilterAngkatan(e.target.value)}
-                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                  >
-                    <option value="">Semua Angkatan</option>
-                    {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                      <option key={year} value={year}>{year}</option>
-                    ))}
-                  </select>
+                    placeholder="Ketik tahun (misal: 2024)"
+                    min="2000"
+                    max="2099"
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground"
+                  />
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">Pilih semester dan/atau angkatan untuk menyaring daftar.</p>
@@ -1416,6 +1417,7 @@ export default function Schedule() {
         if (!open) {
           setNewScheduleData({
             className: "",
+            courseCode: "",
             course: "",
             lecturer: "",
             day: "Senin",
@@ -1431,38 +1433,45 @@ export default function Schedule() {
             <DialogTitle>Tambah Jadwal Baru</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            {/* Step 1: Pilih Mata Kuliah (Primary Selection) */}
+            {/* Step 1: Pilih Mata Kuliah (Primary Selection) - Using code as unique identifier */}
             <div>
               <label className="text-sm font-medium text-foreground">Mata Kuliah <span className="text-destructive">*</span></label>
               <p className="text-xs text-muted-foreground mb-1.5">Pilih mata kuliah terlebih dahulu untuk mengaktifkan pilihan lainnya</p>
               <select 
-                value={newScheduleData.course}
+                value={newScheduleData.courseCode}
                 onChange={(e) => {
-                  const selectedCourse = courses.find(c => c.name === e.target.value);
-                  // Auto-select lecturer if only one lecturer teaches this course
-                  const courseLecturers = courses
-                    .filter(c => c.name === e.target.value)
-                    .map(c => c.lecturer);
-                  const uniqueLecturers = [...new Set(courseLecturers)];
+                  const selectedCode = e.target.value;
+                  const selectedCourse = courses.find(c => c.code === selectedCode);
+                  if (!selectedCourse) {
+                    setNewScheduleData({
+                      ...newScheduleData,
+                      courseCode: "",
+                      course: "",
+                      lecturer: ""
+                    });
+                    return;
+                  }
                   
+                  // Auto-select lecturer from the selected course
                   setNewScheduleData({
                     ...newScheduleData, 
-                    course: e.target.value,
-                    lecturer: uniqueLecturers.length === 1 ? uniqueLecturers[0] : ""
+                    courseCode: selectedCode,
+                    course: selectedCourse.name,
+                    lecturer: selectedCourse.lecturer || ""
                   });
                 }}
                 className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               >
                 <option value="">Pilih Mata Kuliah</option>
                 {courses.map((course) => (
-                  <option key={course.id} value={course.name}>{course.code} - {course.name}</option>
+                  <option key={course.id} value={course.code}>{course.code} - {course.name}</option>
                 ))}
               </select>
             </div>
 
             {/* Course Info Display - Shows when course is selected */}
-            {newScheduleData.course && (() => {
-              const selectedCourse = courses.find(c => c.name === newScheduleData.course);
+            {newScheduleData.courseCode && (() => {
+              const selectedCourse = courses.find(c => c.code === newScheduleData.courseCode);
               return selectedCourse ? (
                 <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
                   <div className="flex items-center gap-4 text-sm">
@@ -1480,49 +1489,31 @@ export default function Schedule() {
               ) : null;
             })()}
 
-            {/* Step 2: Pilih Dosen - Filtered by selected course */}
+            {/* Step 2: Pilih Dosen - Can override default from course */}
             <div>
               <label className="text-sm font-medium text-foreground">Dosen Pengampu <span className="text-destructive">*</span></label>
               <select 
                 value={newScheduleData.lecturer}
                 onChange={(e) => setNewScheduleData({...newScheduleData, lecturer: e.target.value})}
-                disabled={!newScheduleData.course}
+                disabled={!newScheduleData.courseCode}
                 className={cn(
                   "mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
-                  !newScheduleData.course && "opacity-50 cursor-not-allowed bg-muted"
+                  !newScheduleData.courseCode && "opacity-50 cursor-not-allowed bg-muted"
                 )}
               >
                 <option value="">
-                  {!newScheduleData.course ? "Pilih Mata Kuliah terlebih dahulu" : "Pilih Dosen Pengampu"}
+                  {!newScheduleData.courseCode ? "Pilih Mata Kuliah terlebih dahulu" : "Pilih Dosen Pengampu"}
                 </option>
-                {/* Smart filter: Only show lecturers who teach the selected course */}
-                {newScheduleData.course && (() => {
-                  const courseLecturers = courses
-                    .filter(c => c.name === newScheduleData.course)
-                    .map(c => c.lecturer);
-                  const uniqueLecturers = [...new Set(courseLecturers)];
-                  
-                  // If no lecturers in courses data, show all managed lecturers as fallback
-                  const lecturersToShow = uniqueLecturers.length > 0 
-                    ? uniqueLecturers 
-                    : managedLecturers.map(l => l.name);
-                  
-                  return lecturersToShow.map((lecturerName, idx) => (
-                    <option key={idx} value={lecturerName}>{lecturerName}</option>
-                  ));
-                })()}
+                {/* Show all managed lecturers */}
+                {managedLecturers.map((lecturer) => (
+                  <option key={lecturer.id} value={lecturer.name}>{lecturer.name}</option>
+                ))}
               </select>
-              {newScheduleData.course && (() => {
-                const courseLecturers = courses
-                  .filter(c => c.name === newScheduleData.course)
-                  .map(c => c.lecturer);
-                const uniqueLecturers = [...new Set(courseLecturers)];
-                return uniqueLecturers.length > 0 ? (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {uniqueLecturers.length} dosen tersedia untuk mata kuliah ini
-                  </p>
-                ) : null;
-              })()}
+              {newScheduleData.courseCode && newScheduleData.lecturer && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Dosen: {newScheduleData.lecturer}
+                </p>
+              )}
             </div>
 
             {/* Step 3: Pilih Kelas */}
@@ -1531,24 +1522,24 @@ export default function Schedule() {
               <select 
                 value={newScheduleData.className}
                 onChange={(e) => setNewScheduleData({...newScheduleData, className: e.target.value})}
-                disabled={!newScheduleData.course}
+                disabled={!newScheduleData.courseCode}
                 className={cn(
                   "mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
-                  !newScheduleData.course && "opacity-50 cursor-not-allowed bg-muted"
+                  !newScheduleData.courseCode && "opacity-50 cursor-not-allowed bg-muted"
                 )}
               >
                 <option value="">
-                  {!newScheduleData.course ? "Pilih Mata Kuliah terlebih dahulu" : "Pilih Kelas"}
+                  {!newScheduleData.courseCode ? "Pilih Mata Kuliah terlebih dahulu" : "Pilih Kelas"}
                 </option>
                 <option value="D3-AK-1A">D3-AK-1A</option>
                 <option value="D3-AK-1B">D3-AK-1B</option>
                 <option value="D3-AK-2A">D3-AK-2A</option>
                 <option value="D3-AK-2B">D3-AK-2B</option>
                 <option value="D3-AK-3A">D3-AK-3A</option>
-                <option value="D3-TI-1A">D3-TI-1A</option>
-                <option value="D3-TI-2A">D3-TI-2A</option>
-                <option value="D4-AK-1A">D4-AK-1A</option>
-                <option value="D4-AK-4A">D4-AK-4A</option>
+                <option value="D3-PMIP-1A">D3-PMIP-1A</option>
+                <option value="D3-PLI-1A">D3-PLI-1A</option>
+                <option value="D4-NP-1A">D4-NP-1A</option>
+                <option value="D4-NP-2A">D4-NP-2A</option>
               </select>
             </div>
 
@@ -1559,10 +1550,10 @@ export default function Schedule() {
                 <select 
                   value={newScheduleData.day}
                   onChange={(e) => setNewScheduleData({...newScheduleData, day: e.target.value})}
-                  disabled={!newScheduleData.course}
+                  disabled={!newScheduleData.courseCode}
                   className={cn(
                     "mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
-                    !newScheduleData.course && "opacity-50 cursor-not-allowed bg-muted"
+                    !newScheduleData.courseCode && "opacity-50 cursor-not-allowed bg-muted"
                   )}
                 >
                   {daysOfWeek.map((day) => (
@@ -1575,10 +1566,10 @@ export default function Schedule() {
                 <select 
                   value={newScheduleData.room}
                   onChange={(e) => setNewScheduleData({...newScheduleData, room: e.target.value})}
-                  disabled={!newScheduleData.course}
+                  disabled={!newScheduleData.courseCode}
                   className={cn(
                     "mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
-                    !newScheduleData.course && "opacity-50 cursor-not-allowed bg-muted"
+                    !newScheduleData.courseCode && "opacity-50 cursor-not-allowed bg-muted"
                   )}
                 >
                   <option value="">Pilih Ruangan</option>
@@ -1603,10 +1594,10 @@ export default function Schedule() {
                   type="time"
                   value={scheduleStartTime}
                   onChange={(e) => setScheduleStartTime(e.target.value)}
-                  disabled={!newScheduleData.course}
+                  disabled={!newScheduleData.courseCode}
                   className={cn(
                     "mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
-                    !newScheduleData.course && "opacity-50 cursor-not-allowed bg-muted"
+                    !newScheduleData.courseCode && "opacity-50 cursor-not-allowed bg-muted"
                   )}
                 />
               </div>
@@ -1616,10 +1607,10 @@ export default function Schedule() {
                   type="time"
                   value={scheduleEndTime}
                   onChange={(e) => setScheduleEndTime(e.target.value)}
-                  disabled={!newScheduleData.course}
+                  disabled={!newScheduleData.courseCode}
                   className={cn(
                     "mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20",
-                    !newScheduleData.course && "opacity-50 cursor-not-allowed bg-muted"
+                    !newScheduleData.courseCode && "opacity-50 cursor-not-allowed bg-muted"
                   )}
                 />
               </div>
@@ -1629,7 +1620,7 @@ export default function Schedule() {
               <Button variant="outline" onClick={() => setAddScheduleOpen(false)}>
                 Batal
               </Button>
-              <Button onClick={handleAddSchedule} disabled={!newScheduleData.course}>
+              <Button onClick={handleAddSchedule} disabled={!newScheduleData.courseCode}>
                 Simpan
               </Button>
             </div>
