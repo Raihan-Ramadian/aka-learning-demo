@@ -19,7 +19,18 @@ export function StudentDashboard() {
   const { toast } = useToast();
   const { courses, getStudentSchedules, submissions, tasks, submitAssignment, managedStudents } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
-  const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
+  const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<{
+    id: number;
+    scheduleId: number;
+    name: string;
+    code: string;
+    lecturer: string;
+    color: string;
+    prodi: string;
+    semester: number;
+    sks: number;
+    className: string;
+  } | null>(null);
   const [selectedTask, setSelectedTask] = useState("");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [studentNote, setStudentNote] = useState("");
@@ -32,18 +43,31 @@ export function StudentDashboard() {
   const studentSemester = currentStudent?.semester || 1;
   const mySchedules = getStudentSchedules(studentNim);
 
-  // Get unique course names from student's schedules (Admin-controlled)
-  const enrolledCourseNames = [...new Set(mySchedules.map(s => s.course))];
-  
-  // Filter courses only to those the student is enrolled in via schedules
-  // Use Set to ensure unique courses by ID - prevent duplicates
-  const seenCourseIds = new Set<number>();
-  const myCourses = courses.filter(c => {
-    if (!enrolledCourseNames.includes(c.name)) return false;
-    if (seenCourseIds.has(c.id)) return false;
-    seenCourseIds.add(c.id);
-    return true;
-  });
+  // Build courses DIRECTLY from schedules (Admin-controlled) - no duplicates
+  // Use Set to track unique course names from schedules
+  const seenCourseNames = new Set<string>();
+  const myCourses = mySchedules
+    .filter(schedule => {
+      if (seenCourseNames.has(schedule.course)) return false;
+      seenCourseNames.add(schedule.course);
+      return true;
+    })
+    .map(schedule => {
+      // Find the matching course from master data for additional info
+      const courseData = courses.find(c => c.name === schedule.course);
+      return {
+        id: courseData?.id || schedule.id, // Use master course ID for tasks/navigation
+        scheduleId: schedule.id,
+        name: schedule.course,
+        code: courseData?.code || schedule.className,
+        lecturer: schedule.lecturer,
+        color: courseData?.color || schedule.color || "from-primary to-primary/80",
+        prodi: courseData?.prodi || "",
+        semester: courseData?.semester || 0,
+        sks: courseData?.sks || 0,
+        className: schedule.className,
+      };
+    });
   
   // Get tasks only for enrolled courses
   const myCourseTasks = tasks.filter(task => 
@@ -107,7 +131,7 @@ export function StudentDashboard() {
     navigate(`/course/${courseId}`);
   };
 
-  const handleUploadClick = (e: React.MouseEvent, course: typeof courses[0]) => {
+  const handleUploadClick = (e: React.MouseEvent, course: typeof myCourses[0]) => {
     e.stopPropagation();
     setSelectedCourseForUpload(course);
     setUploadModalOpen(true);
