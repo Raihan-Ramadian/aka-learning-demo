@@ -31,6 +31,14 @@ export default function Schedule() {
   const currentRole = getUserRole();
   const { academicEvents, schedules, courses, managedLecturers, managedStudents, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule, deleteSchedule, addSchedule, addAcademicEvent, deleteAcademicEvent, importSchedulesFromCSV } = useAcademicData();
   
+  // Simulated current user - In a real app, this would come from authentication
+  const studentNim = "2024001"; // Current logged-in student NIM
+  const lecturerNip = "197805152005012001"; // Current logged-in lecturer NIP
+  
+  // Get current user data
+  const currentStudent = managedStudents.find(s => s.nim === studentNim);
+  const currentLecturer = managedLecturers.find(l => l.nip === lecturerNip);
+  
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [addScheduleOpen, setAddScheduleOpen] = useState(false);
@@ -101,8 +109,29 @@ export default function Schedule() {
     course: "",
   });
 
+  // Filter schedules based on user role
+  const getFilteredSchedules = () => {
+    if (currentRole === "admin") {
+      // Admin sees all schedules
+      return schedules;
+    } else if (currentRole === "student" && currentStudent) {
+      // Student only sees schedules where their NIM is in the students list
+      return schedules.filter(schedule => 
+        schedule.students.some(student => student.nim === studentNim)
+      );
+    } else if (currentRole === "lecturer" && currentLecturer) {
+      // Lecturer only sees schedules where they are the assigned lecturer
+      return schedules.filter(schedule => 
+        schedule.lecturer === currentLecturer.name
+      );
+    }
+    return [];
+  };
+  
+  const filteredSchedules = getFilteredSchedules();
+
   const getScheduleByDay = (day: string) => {
-    return schedules.filter(s => s.day === day);
+    return filteredSchedules.filter(s => s.day === day);
   };
 
   const handleDownloadPDF = () => {
