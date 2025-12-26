@@ -64,12 +64,8 @@ export function Header() {
         schedule.students.some(student => student.nim === studentNim)
       );
     } else if (currentRole === "lecturer") {
-      // Match lecturer by name (strip prefix)
-      const searchName = lecturerName.replace(/^(Dr\.|Prof\.|Pak|Bu)\s*/gi, '').trim().toLowerCase();
-      return schedules.filter(schedule => {
-        const scheduleLecturerName = schedule.lecturer.replace(/^(Dr\.|Prof\.|Pak|Bu)\s*/gi, '').trim().toLowerCase();
-        return scheduleLecturerName.includes(searchName) || searchName.includes(scheduleLecturerName);
-      });
+      // SINGLE SOURCE OF TRUTH: Use NIP for exact match
+      return schedules.filter(schedule => schedule.lecturerNip === storedLecturerNip);
     }
     return [];
   };

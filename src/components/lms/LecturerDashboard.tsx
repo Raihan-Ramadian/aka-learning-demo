@@ -28,13 +28,14 @@ export function LecturerDashboard() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   
-  // LIVE LOOKUP: Get lecturer data from context (synced with Admin Kelola User)
-  const lecturerNip = localStorage.getItem("userNimNip") || "197805152005012001";
+  // LIVE LOOKUP: Get lecturer data using NIP as Single Source of Truth
+  const lecturerNip = localStorage.getItem("userNimNip") || "198501012010011001";
   const currentLecturer = getLecturerByNip(lecturerNip);
-  const lecturerName = currentLecturer?.name?.replace(/^(Dr\.|Prof\.|Pak|Bu)\s*/gi, '').trim() || "Dosen";
   const lecturerFullName = currentLecturer?.name || "Dosen";
   const lecturerProdi = currentLecturer?.prodi || "Program Studi";
-  const mySchedules = getLecturerSchedules(lecturerName);
+  
+  // Use NIP directly for schedule lookup (Single Source of Truth)
+  const mySchedules = getLecturerSchedules(lecturerNip);
   
   // Get unique courses from lecturer's schedules dynamically
   // Use Set to prevent duplicates
@@ -57,7 +58,7 @@ export function LecturerDashboard() {
       id: -1 * (index + 1), // Use negative index for temp IDs to avoid conflicts
       name: courseName,
       code: "N/A",
-      lecturer: lecturerName,
+      lecturer: lecturerFullName,
       color: "from-primary to-primary/50",
       classes: schedulesForCourse.length,
     };

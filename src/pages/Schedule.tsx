@@ -31,11 +31,11 @@ export default function Schedule() {
   const currentRole = getUserRole();
   const { academicEvents, schedules, courses, managedLecturers, managedStudents, addStudentToClass, removeStudentFromClass, updateStudentInClass, updateSchedule, deleteSchedule, addSchedule, addAcademicEvent, deleteAcademicEvent, importSchedulesFromCSV } = useAcademicData();
   
-  // Simulated current user - In a real app, this would come from authentication
-  const studentNim = "2024001"; // Current logged-in student NIM
-  const lecturerNip = "197805152005012001"; // Current logged-in lecturer NIP
+  // SINGLE SOURCE OF TRUTH: Get NIM/NIP from localStorage
+  const studentNim = localStorage.getItem("userNimNip") || "2024001"; // Current logged-in student NIM
+  const lecturerNip = localStorage.getItem("userNimNip") || "198501012010011001"; // Current logged-in lecturer NIP
   
-  // Get current user data
+  // Get current user data via LIVE LOOKUP
   const currentStudent = managedStudents.find(s => s.nim === studentNim);
   const currentLecturer = managedLecturers.find(l => l.nip === lecturerNip);
   
@@ -263,7 +263,7 @@ export default function Schedule() {
       const dataLines = lines.slice(1);
       
       const schedulesData: Omit<ClassSchedule, 'id'>[] = dataLines.map(line => {
-        const [className, courseCode, course, prodi, semester, sks, lecturer, day, time, room] = line.split(',').map(s => s.trim().replace(/"/g, ''));
+        const [className, courseCode, course, prodi, semester, sks, lecturer, lecturerNip, day, time, room] = line.split(',').map(s => s.trim().replace(/"/g, ''));
         return {
           className: className || "",
           courseCode: courseCode || "",
@@ -272,6 +272,7 @@ export default function Schedule() {
           semester: semester ? parseInt(semester) : null,
           sks: sks ? parseInt(sks) : null,
           lecturer: lecturer || "",
+          lecturerNip: lecturerNip || "", // PRIMARY KEY for lecturer identity
           day: day || "Senin",
           time: time || "",
           room: room || "",
@@ -324,6 +325,9 @@ export default function Schedule() {
     // Find selected course to get prodi, semester, sks
     const selectedCourse = courses.find(c => c.code === newScheduleData.courseCode);
     
+    // Find selected lecturer to get NIP
+    const selectedLecturer = managedLecturers.find(l => l.name === newScheduleData.lecturer);
+    
     addSchedule({
       className: newScheduleData.className,
       courseCode: newScheduleData.courseCode,
@@ -332,6 +336,7 @@ export default function Schedule() {
       semester: selectedCourse?.semester || null,
       sks: selectedCourse?.sks || null,
       lecturer: newScheduleData.lecturer,
+      lecturerNip: selectedLecturer?.nip || "", // PRIMARY KEY for lecturer identity
       day: newScheduleData.day,
       time: timeRange,
       room: newScheduleData.room,

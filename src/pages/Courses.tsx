@@ -134,9 +134,13 @@ export default function Courses() {
     };
   });
   
-  // For Lecturer view - get schedules and derive courses
-  const lecturerName = "Sari Dewi"; // In real app from auth
-  const mySchedules = getLecturerSchedules(lecturerName);
+  // SINGLE SOURCE OF TRUTH: For Lecturer view - use NIP from localStorage
+  const lecturerNip = localStorage.getItem("userNimNip") || "198501012010011001";
+  const mySchedules = getLecturerSchedules(lecturerNip);
+  
+  // Get current lecturer info for live lookup
+  const currentLecturerInfo = managedLecturers.find(l => l.nip === lecturerNip);
+  const lecturerFullName = currentLecturerInfo?.name || "Dosen";
   
   // Get unique courses from lecturer's schedules
   const lecturerCourseNames = [...new Set(mySchedules.map(s => s.course))];
@@ -157,11 +161,12 @@ export default function Courses() {
       id: -1 * (index + 1), // Use negative index for temp IDs to avoid conflicts
       name: courseName,
       code: "N/A",
-      lecturer: lecturerName,
+      lecturer: lecturerFullName,
       color: "from-primary to-primary/50",
       classes: schedulesForCourse.length,
       totalStudents,
       schedulesForCourse,
+      sks: 0, // Default SKS for fallback
     };
   });
   
