@@ -719,28 +719,58 @@ export default function Schedule() {
             <DialogTitle>Tambah Mahasiswa ke Kelas</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            {/* Course Info - Bound directly to selectedSchedule object */}
-            {selectedSchedule && (
-              <div className="p-3 rounded-lg bg-muted/50 border border-border">
-                <p className="text-xs text-muted-foreground mb-2">Informasi Jadwal yang Dipilih:</p>
-                <p className="font-medium text-foreground">{selectedSchedule.course}</p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="px-2.5 py-1 rounded-full bg-accent/50 text-accent-foreground text-xs font-medium">
-                    Kelas: {selectedSchedule.className}
-                  </span>
-                  <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                    {selectedSchedule.day}
-                  </span>
-                  <span className="px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
-                    {selectedSchedule.time}
-                  </span>
-                  <span className="px-2.5 py-1 rounded-full bg-warning/10 text-warning text-xs font-medium">
-                    {selectedSchedule.room}
-                  </span>
+            {/* Course Info - Bound directly to selectedSchedule object with prodi/semester from linked course */}
+            {selectedSchedule && (() => {
+              const linkedCourse = courses.find(c => c.name === selectedSchedule.course);
+              const scheduleProdi = linkedCourse?.prodi || "-";
+              const scheduleSemester = linkedCourse?.semester || null;
+              const scheduleSks = linkedCourse?.sks || null;
+              const scheduleCode = linkedCourse?.code || "-";
+              
+              return (
+                <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-xs text-muted-foreground mb-2">Informasi Jadwal yang Dipilih:</p>
+                  <p className="font-medium text-foreground">{selectedSchedule.course}</p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <span className="px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium">
+                      Kode: {scheduleCode}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                      {scheduleProdi}
+                    </span>
+                    {scheduleSemester && (
+                      <span className="px-2.5 py-1 rounded-full bg-accent/50 text-accent-foreground text-xs font-medium">
+                        Semester {scheduleSemester}
+                      </span>
+                    )}
+                    {scheduleSks && (
+                      <span className="px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
+                        {scheduleSks} SKS
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    <span className="px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium">
+                      Kelas: {selectedSchedule.className}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium">
+                      {selectedSchedule.day} • {selectedSchedule.time}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium">
+                      {selectedSchedule.room}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">Dosen: {selectedSchedule.lecturer}</p>
+                  
+                  {/* Recommendation Criteria Display */}
+                  <div className="mt-3 pt-2 border-t border-border">
+                    <p className="text-xs font-medium text-primary">
+                      📌 Kriteria Rekomendasi: {scheduleProdi} • Semester {scheduleSemester || "-"}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">Dosen: {selectedSchedule.lecturer}</p>
-              </div>
-            )}
+              );
+            })()}
             
             {/* Dropdown Filters - Granular with Prodi */}
             <div className="p-3 rounded-lg border border-border bg-background">
@@ -798,13 +828,8 @@ export default function Schedule() {
                 className="mt-1.5 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               
-              {/* Select All Matching Button */}
+              {/* Select All Matching Button - Uses same filter logic */}
               {(() => {
-                const selectedCourse = courses.find(c => c.name === selectedSchedule?.course);
-                const courseSemester = selectedCourse?.semester;
-                const courseProdi = selectedCourse?.prodi;
-                const courseYear = courseSemester ? (new Date().getFullYear() - Math.floor((courseSemester - 1) / 2)) : null;
-                
                 const filteredStudents = managedStudents.filter(student => {
                   const query = studentSearchQuery.toLowerCase();
                   const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
@@ -850,21 +875,21 @@ export default function Schedule() {
                 ) : null;
               })()}
               
-              {/* Student List - Smart Sorted */}
+              {/* Student List - Smart Sorted based on schedule header criteria */}
               <div className="mt-2 max-h-60 overflow-y-auto rounded-lg border border-border bg-background">
                 {(() => {
-                  const selectedCourse = courses.find(c => c.name === selectedSchedule?.course);
-                  const courseSemester = selectedCourse?.semester;
-                  const courseProdi = selectedCourse?.prodi;
-                  const courseYear = courseSemester ? (new Date().getFullYear() - Math.floor((courseSemester - 1) / 2)) : null;
+                  // Get prodi and semester directly from the linked course for the selected schedule
+                  const linkedCourse = courses.find(c => c.name === selectedSchedule?.course);
+                  const targetSemester = linkedCourse?.semester || null;
+                  const targetProdi = linkedCourse?.prodi || null;
                   
-                  // Get all students and categorize them
+                  // Get all students and apply filters
                   const allStudents = managedStudents.filter(student => {
                     const query = studentSearchQuery.toLowerCase();
                     const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
                     const matchesSearch = student.name.toLowerCase().includes(query) || student.nim.toLowerCase().includes(query);
                     
-                    // Apply dropdown filters
+                    // Apply dropdown filters (drill-down)
                     const matchesSemester = filterSemester ? student.semester === filterSemester : true;
                     const matchesAngkatan = filterAngkatan ? student.angkatan === filterAngkatan : true;
                     const matchesProdi = filterProdi ? student.prodi === filterProdi : true;
@@ -872,22 +897,24 @@ export default function Schedule() {
                     return !isAlreadyInClass && matchesSearch && matchesSemester && matchesAngkatan && matchesProdi;
                   });
                   
-                  // Sort: recommended students first (same semester AND prodi)
+                  // Recommendation: match BOTH prodi AND semester from the modal header
+                  const isRecommended = (student: typeof managedStudents[0]) => {
+                    if (!targetSemester || !targetProdi) return false;
+                    return student.semester === targetSemester && student.prodi === targetProdi;
+                  };
+                  
+                  // Sort: recommended students first
                   const sortedStudents = [...allStudents].sort((a, b) => {
-                    const aIsRecommended = (courseSemester ? a.semester === courseSemester : false) && (courseProdi ? a.prodi === courseProdi : false);
-                    const bIsRecommended = (courseSemester ? b.semester === courseSemester : false) && (courseProdi ? b.prodi === courseProdi : false);
-                    if (aIsRecommended && !bIsRecommended) return -1;
-                    if (!aIsRecommended && bIsRecommended) return 1;
+                    const aRec = isRecommended(a);
+                    const bRec = isRecommended(b);
+                    if (aRec && !bRec) return -1;
+                    if (!aRec && bRec) return 1;
                     return 0;
                   });
                   
                   // Group for display
-                  const recommendedStudents = sortedStudents.filter(s => 
-                    (courseSemester ? s.semester === courseSemester : false) && (courseProdi ? s.prodi === courseProdi : false)
-                  );
-                  const otherStudents = sortedStudents.filter(s => 
-                    !((courseSemester ? s.semester === courseSemester : false) && (courseProdi ? s.prodi === courseProdi : false))
-                  );
+                  const recommendedStudents = sortedStudents.filter(s => isRecommended(s));
+                  const otherStudents = sortedStudents.filter(s => !isRecommended(s));
                   
                   if (sortedStudents.length === 0) {
                     return (
@@ -905,7 +932,9 @@ export default function Schedule() {
                       {recommendedStudents.length > 0 && (
                         <>
                           <div className="px-3 py-2 bg-success/10 border-b border-success/20 sticky top-0">
-                            <p className="text-xs font-medium text-success">✓ Sesuai Rekomendasi (Semester & Prodi cocok)</p>
+                            <p className="text-xs font-medium text-success">
+                              ✓ Sesuai Rekomendasi ({targetProdi} • Semester {targetSemester})
+                            </p>
                           </div>
                           {recommendedStudents.map((student) => (
                             <button
