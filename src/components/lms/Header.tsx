@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Search, User, LogOut, X, BookOpen, FileText, Calendar, Users } from "lucide-react";
+import { Bell, Search, User, LogOut, X, BookOpen, FileText, Calendar, Users, Video, File } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,10 +12,29 @@ import { useAcademicData } from "@/contexts/AcademicDataContext";
 import { getUserRole } from "@/types/roles";
 import { cn } from "@/lib/utils";
 
+// Interface for search result materials
+interface SearchMaterial {
+  id: number;
+  name: string;
+  type: string;
+  courseId: number;
+  courseName: string;
+  weekTitle: string;
+}
+
+// Interface for search result tasks
+interface SearchTask {
+  id: number;
+  title: string;
+  deadline: string;
+  courseId: number;
+  courseName: string;
+}
+
 export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { courses, schedules, managedStudents, managedLecturers, tasks } = useAcademicData();
+  const { courses, schedules, managedStudents, managedLecturers, tasks, materialWeeks } = useAcademicData();
   const [searchQuery, setSearchQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
   const currentRole = getUserRole();
@@ -51,10 +70,22 @@ export function Header() {
   
   // Get course IDs from user's schedules for filtering courses and tasks
   const userCourseNames = userSchedules.map(s => s.course);
+  
+  // Get user's course IDs for materials and tasks
+  const getUserCourseIds = (): number[] => {
+    const courseIds: number[] = [];
+    userCourseNames.forEach(courseName => {
+      const course = courses.find(c => c.name === courseName);
+      if (course) courseIds.push(course.id);
+    });
+    return courseIds;
+  };
+  
+  const userCourseIds = getUserCourseIds();
 
   // Global search across all data - results vary by role
   const getSearchResults = () => {
-    if (!searchQuery.trim()) return { courses: [], schedules: [], students: [], lecturers: [], tasks: [] };
+    if (!searchQuery.trim()) return { courses: [], schedules: [], students: [], lecturers: [], tasks: [], materials: [] };
     
     const query = searchQuery.toLowerCase();
     
@@ -63,13 +94,42 @@ export function Header() {
       ? courses 
       : courses.filter(c => userCourseNames.includes(c.name));
     
-    // Filter tasks based on role - only show tasks for courses the user is enrolled in
-    const filteredTasks = currentRole === "admin"
-      ? tasks
-      : tasks.filter(t => {
-          const taskCourse = courses.find(c => c.id === t.courseId);
-          return taskCourse && userCourseNames.includes(taskCourse.name);
+    // Filter tasks based on role - ADMIN TIDAK BOLEH MELIHAT TUGAS
+    let filteredTasks: SearchTask[] = [];
+    if (currentRole !== "admin") {
+      filteredTasks = tasks
+        .filter(t => userCourseIds.includes(t.courseId))
+        .map(t => {
+          const course = courses.find(c => c.id === t.courseId);
+          return {
+            id: t.id,
+            title: t.title,
+            deadline: t.deadline,
+            courseId: t.courseId,
+            courseName: course?.name || "Unknown"
+          };
         });
+    }
+    
+    // Filter materials based on role - only for Student and Lecturer
+    let filteredMaterials: SearchMaterial[] = [];
+    if (currentRole !== "admin") {
+      materialWeeks
+        .filter(w => userCourseIds.includes(w.courseId))
+        .forEach(week => {
+          const course = courses.find(c => c.id === week.courseId);
+          week.materials.forEach(material => {
+            filteredMaterials.push({
+              id: material.id,
+              name: material.name,
+              type: material.type,
+              courseId: week.courseId,
+              courseName: course?.name || "Unknown",
+              weekTitle: week.title
+            });
+          });
+        });
+    }
     
     return {
       courses: filteredCourses.filter(c => 
@@ -94,8 +154,11 @@ export function Header() {
         l.prodi.toLowerCase().includes(query)
       ).slice(0, 3) : [],
       tasks: filteredTasks.filter(t => 
-        t.title.toLowerCase().includes(query) || 
-        t.description.toLowerCase().includes(query)
+        t.title.toLowerCase().includes(query)
+      ).slice(0, 3),
+      materials: filteredMaterials.filter(m => 
+        m.name.toLowerCase().includes(query) ||
+        m.weekTitle.toLowerCase().includes(query)
       ).slice(0, 3),
     };
   };
@@ -249,7 +312,7 @@ export function Header() {
                     </div>
                   )}
                   
-                  {/* Tasks - Role-based navigation */}
+                  {/* Tasks - Only for Student and Lecturer (Admin excluded) */}
                   {results.tasks.length > 0 && (
                     <div>
                       <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">Tugas</p>
@@ -257,10 +320,8 @@ export function Header() {
                         <button
                           key={task.id}
                           onClick={() => { 
-                            // Navigate based on role
-                            if (currentRole === "admin") {
-                              navigate("/courses");
-                            } else if (currentRole === "lecturer") {
+                            // Navigate based on role - Lecturer uses lecturer route
+                            if (currentRole === "lecturer") {
                               navigate(`/course/${task.courseId}?tab=assignments`);
                             } else {
                               // Student
@@ -274,7 +335,41 @@ export function Header() {
                           <FileText className="h-4 w-4 text-destructive" />
                           <div>
                             <p className="text-sm font-medium text-foreground">{task.title}</p>
-                            <p className="text-xs text-muted-foreground">Deadline: {task.deadline}</p>
+                            <p className="text-xs text-muted-foreground">{task.courseName} • Deadline: {task.deadline}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Materials - Only for Student and Lecturer (Admin excluded) */}
+                  {results.materials.length > 0 && (
+                    <div>
+                      <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">Materi</p>
+                      {results.materials.map(material => (
+                        <button
+                          key={`material-${material.id}`}
+                          onClick={() => { 
+                            // Navigate based on role
+                            if (currentRole === "lecturer") {
+                              navigate(`/course/${material.courseId}?tab=materials`);
+                            } else {
+                              // Student
+                              navigate(`/course/${material.courseId}?tab=materials`);
+                            }
+                            setShowResults(false); 
+                            setSearchQuery(""); 
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors text-left"
+                        >
+                          {material.type === "video" ? (
+                            <Video className="h-4 w-4 text-primary" />
+                          ) : (
+                            <File className="h-4 w-4 text-warning" />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{material.name}</p>
+                            <p className="text-xs text-muted-foreground">{material.courseName} • {material.weekTitle}</p>
                           </div>
                         </button>
                       ))}
