@@ -17,7 +17,7 @@ const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 export function StudentDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { courses, getStudentSchedules, submissions, tasks, submitAssignment, managedStudents } = useAcademicData();
+  const { courses, getStudentSchedules, submissions, tasks, submitAssignment, getStudentByNim } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<{
     id: number;
@@ -35,9 +35,9 @@ export function StudentDashboard() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [studentNote, setStudentNote] = useState("");
   
-  // Get student data from context (synced with Admin Kelola User)
-  const studentNim = "2024001";
-  const currentStudent = managedStudents.find(s => s.nim === studentNim);
+  // LIVE LOOKUP: Get student data from context (synced with Admin Kelola User)
+  const studentNim = localStorage.getItem("userNimNip") || "2024001";
+  const currentStudent = getStudentByNim(studentNim);
   const studentName = currentStudent?.name || "Mahasiswa";
   const studentProdi = currentStudent?.prodi || "Program Studi";
   const studentSemester = currentStudent?.semester || 1;

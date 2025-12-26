@@ -60,24 +60,27 @@ export function CourseDetail({ course, userRole, onBack }: CourseDetailProps) {
     getPracticumGrade,
     updatePracticumGrade,
     schedules,
-    managedStudents
+    managedStudents,
+    getStudentByNim
   } = useAcademicData();
   
-  // Get enrolled students from schedules (synced with Admin)
+  // Get enrolled students from schedules (synced with Admin via live lookup)
   const getEnrolledStudents = () => {
     const courseSchedules = schedules.filter(s => s.course === course.name);
-    const enrolledStudents = new Map<string, { id: number; name: string; nim: string; email: string }>();
+    const enrolledStudents = new Map<string, { id: number; name: string; nim: string; email: string; prodi: string }>();
     
     courseSchedules.forEach(schedule => {
       schedule.students.forEach(student => {
         if (!enrolledStudents.has(student.nim)) {
-          // Get email from managedStudents if available
-          const managedStudent = managedStudents.find(ms => ms.nim === student.nim);
+          // LIVE LOOKUP: Always get current data from managedStudents
+          const currentStudent = getStudentByNim(student.nim);
           enrolledStudents.set(student.nim, {
             id: student.id,
-            name: student.name,
+            // Use current name from managedStudents if available, otherwise fallback to schedule
+            name: currentStudent?.name || student.name,
             nim: student.nim,
-            email: managedStudent?.email || `${student.nim}@mhs.aka.ac.id`
+            email: currentStudent?.email || `${student.nim}@mhs.aka.ac.id`,
+            prodi: currentStudent?.prodi || ""
           });
         }
       });

@@ -259,6 +259,19 @@ const initialPracticumGrades: PracticumGrade[] = [
   { id: 2, submissionId: 2, laporanAwal: 90, apd: 85, k3: 92, skill: 88, kuis: 85, laporanAkhir: 90, average: 88.3 },
 ];
 
+// User info type for live lookup
+export interface UserInfo {
+  name: string;
+  prodi: string;
+  email: string;
+  status: string;
+  phone?: string;
+  address?: string;
+  angkatan?: string;
+  semester?: number;
+  jabatan?: string;
+}
+
 interface AcademicDataContextType {
   // User management
   managedStudents: ManagedStudent[];
@@ -271,6 +284,11 @@ interface AcademicDataContextType {
   deleteManagedLecturer: (id: number) => void;
   importStudentsFromCSV: (students: Omit<ManagedStudent, 'id'>[]) => void;
   importLecturersFromCSV: (lecturers: Omit<ManagedLecturer, 'id'>[]) => void;
+  
+  // Live lookup helper - ALWAYS use this to get current user info
+  getStudentByNim: (nim: string) => ManagedStudent | undefined;
+  getLecturerByNip: (nip: string) => ManagedLecturer | undefined;
+  getLecturerByName: (name: string) => ManagedLecturer | undefined;
   
   // Course management
   courses: Course[];
@@ -372,7 +390,23 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
     setManagedLecturers(prev => [...prev, ...newLecturers]);
   };
 
-  // Course management functions
+  // Live lookup helper functions - ALWAYS use these for current user info
+  const getStudentByNim = (nim: string): ManagedStudent | undefined => {
+    return managedStudents.find(s => s.nim === nim);
+  };
+
+  const getLecturerByNip = (nip: string): ManagedLecturer | undefined => {
+    return managedLecturers.find(l => l.nip === nip);
+  };
+
+  const getLecturerByName = (name: string): ManagedLecturer | undefined => {
+    // Match by partial name (e.g., "Sari Dewi" matches "Prof. Sari Dewi")
+    const searchName = name.replace(/^(Dr\.|Prof\.|Pak|Bu)\s*/gi, '').trim().toLowerCase();
+    return managedLecturers.find(l => {
+      const lecturerName = l.name.replace(/^(Dr\.|Prof\.|Pak|Bu)\s*/gi, '').trim().toLowerCase();
+      return lecturerName.includes(searchName) || searchName.includes(lecturerName);
+    });
+  };
   const addCourse = (course: Omit<Course, 'id'>) => {
     const newCourse: Course = { ...course, id: Date.now() };
     setCourses(prev => [...prev, newCourse]);
@@ -605,7 +639,10 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
       importStudentsFromCSV,
       importLecturersFromCSV,
       
-      // Course management
+      // Live lookup helpers
+      getStudentByNim,
+      getLecturerByNip,
+      getLecturerByName,
       courses,
       setCourses,
       addCourse,
