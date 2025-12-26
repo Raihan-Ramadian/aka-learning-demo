@@ -17,7 +17,7 @@ const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 export function LecturerDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { courses, getLecturerSchedules, submissions, tasks, materialWeeks, addMaterial, addMaterialWeek, managedLecturers } = useAcademicData();
+  const { courses, getLecturerSchedules, submissions, tasks, materialWeeks, addMaterial, addMaterialWeek, getLecturerByNip } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
   const [materialType, setMaterialType] = useState<"document" | "video">("document");
@@ -28,9 +28,9 @@ export function LecturerDashboard() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState("");
   
-  // Get lecturer data from context (synced with Admin Kelola User)
-  const lecturerNip = "197805152005012001";
-  const currentLecturer = managedLecturers.find(l => l.nip === lecturerNip);
+  // LIVE LOOKUP: Get lecturer data from context (synced with Admin Kelola User)
+  const lecturerNip = localStorage.getItem("userNimNip") || "197805152005012001";
+  const currentLecturer = getLecturerByNip(lecturerNip);
   const lecturerName = currentLecturer?.name?.replace(/^(Dr\.|Prof\.|Pak|Bu)\s*/gi, '').trim() || "Dosen";
   const lecturerFullName = currentLecturer?.name || "Dosen";
   const lecturerProdi = currentLecturer?.prodi || "Program Studi";

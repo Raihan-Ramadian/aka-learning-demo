@@ -34,7 +34,7 @@ interface SearchTask {
 export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { courses, schedules, managedStudents, managedLecturers, tasks, materialWeeks } = useAcademicData();
+  const { courses, schedules, managedStudents, managedLecturers, tasks, materialWeeks, getLecturerByNip } = useAcademicData();
   const [searchQuery, setSearchQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
   const currentRole = getUserRole();
@@ -48,7 +48,12 @@ export function Header() {
 
   // Get current user identifiers for filtering
   const studentNim = localStorage.getItem("userNimNip") || "";
-  const lecturerName = localStorage.getItem("userName") || "";
+  const storedLecturerName = localStorage.getItem("userName") || "";
+  const storedLecturerNip = localStorage.getItem("userNimNip") || "";
+  
+  // LIVE LOOKUP: Get current lecturer name from context
+  const currentLecturer = getLecturerByNip(storedLecturerNip);
+  const lecturerName = currentLecturer?.name || storedLecturerName;
   
   // Get filtered schedules for current user
   const getUserSchedules = () => {
@@ -59,9 +64,12 @@ export function Header() {
         schedule.students.some(student => student.nim === studentNim)
       );
     } else if (currentRole === "lecturer") {
-      return schedules.filter(schedule => 
-        schedule.lecturer === lecturerName
-      );
+      // Match lecturer by name (strip prefix)
+      const searchName = lecturerName.replace(/^(Dr\.|Prof\.|Pak|Bu)\s*/gi, '').trim().toLowerCase();
+      return schedules.filter(schedule => {
+        const scheduleLecturerName = schedule.lecturer.replace(/^(Dr\.|Prof\.|Pak|Bu)\s*/gi, '').trim().toLowerCase();
+        return scheduleLecturerName.includes(searchName) || searchName.includes(scheduleLecturerName);
+      });
     }
     return [];
   };
@@ -154,11 +162,13 @@ export function Header() {
         l.prodi.toLowerCase().includes(query)
       ).slice(0, 3) : [],
       tasks: filteredTasks.filter(t => 
-        t.title.toLowerCase().includes(query)
+        t.title.toLowerCase().includes(query) ||
+        t.courseName.toLowerCase().includes(query)
       ).slice(0, 3),
       materials: filteredMaterials.filter(m => 
         m.name.toLowerCase().includes(query) ||
-        m.weekTitle.toLowerCase().includes(query)
+        m.weekTitle.toLowerCase().includes(query) ||
+        m.courseName.toLowerCase().includes(query)
       ).slice(0, 3),
     };
   };
