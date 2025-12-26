@@ -17,7 +17,7 @@ const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 export function LecturerDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { courses, getLecturerSchedules, submissions, tasks, materialWeeks, addMaterial, addMaterialWeek, academicEvents, managedLecturers } = useAcademicData();
+  const { courses, getLecturerSchedules, submissions, tasks, materialWeeks, addMaterial, addMaterialWeek, managedLecturers } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<typeof courses[0] | null>(null);
   const [materialType, setMaterialType] = useState<"document" | "video">("document");
@@ -156,29 +156,6 @@ export function LecturerDashboard() {
   };
 
   const getScheduleByDay = (day: string) => mySchedules.filter(s => s.day === day);
-
-  // Format date range for display
-  const formatDateRange = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const startDay = start.getDate();
-    const endDay = end.getDate();
-    const startMonth = start.toLocaleDateString('id-ID', { month: 'short' });
-    const endMonth = end.toLocaleDateString('id-ID', { month: 'short' });
-    
-    if (startDate === endDate) return `${startDay} ${startMonth}`;
-    if (startMonth === endMonth) return `${startDay} - ${endDay} ${startMonth}`;
-    return `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
-  };
-
-  const getEventCategoryStyle = (category: "urgent" | "warning" | "success") => {
-    switch (category) {
-      case "urgent": return "bg-destructive/10 border-destructive/20 text-destructive";
-      case "warning": return "bg-warning/10 border-warning/20 text-warning";
-      case "success": return "bg-success/10 border-success/20 text-success";
-    }
-  };
-
   // Get today's schedule
   const todaySchedule = mySchedules.filter(s => s.day === "Selasa"); // Simulated as Tuesday
 
@@ -334,23 +311,6 @@ export function LecturerDashboard() {
         </div>
       </div>
 
-      {/* Academic Events */}
-      {academicEvents.length > 0 && (
-        <div className="rounded-xl bg-card border border-border/50 shadow-card p-4">
-          <h2 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-            <Calendar className="h-5 w-5 text-primary" />
-            Kalender Akademik
-          </h2>
-          <div className="grid grid-cols-3 gap-3 text-sm">
-            {academicEvents.slice(0, 3).map((event) => (
-              <div key={event.id} className={cn("p-3 rounded-lg border", getEventCategoryStyle(event.category))}>
-                <p className="font-medium">{formatDateRange(event.startDate, event.endDate)}</p>
-                <p className="text-muted-foreground text-xs mt-1">{event.title}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Course Cards */}
       <div className="space-y-4">

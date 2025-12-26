@@ -62,6 +62,15 @@ export default function Schedule() {
   // Dropdown filter states for granular filtering
   const [filterSemester, setFilterSemester] = useState<number | null>(null);
   const [filterAngkatan, setFilterAngkatan] = useState<string>("");
+  const [filterProdi, setFilterProdi] = useState<string>("");
+  
+  // Standard prodi options
+  const prodiOptions = [
+    "D3 Analisis Kimia",
+    "D3 Penjaminan Mutu Industri Pangan", 
+    "D3 Pengolahan Limbah Industri",
+    "D4 Nanoteknologi Pangan"
+  ];
 
   // Delete Schedule Confirmation
   const [deleteScheduleOpen, setDeleteScheduleOpen] = useState(false);
@@ -673,6 +682,7 @@ export default function Schedule() {
           setStudentSearchQuery("");
           setFilterSemester(null);
           setFilterAngkatan("");
+          setFilterProdi("");
         }
       }}>
         <DialogContent className="sm:max-w-lg">
@@ -718,10 +728,10 @@ export default function Schedule() {
               );
             })()}
             
-            {/* Dropdown Filters - Granular */}
+            {/* Dropdown Filters - Granular with Prodi */}
             <div className="p-3 rounded-lg border border-border bg-background">
               <p className="text-sm font-medium text-foreground mb-3">Filter Mahasiswa (Pilih untuk menyaring):</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs text-muted-foreground mb-1.5 block">Semester</label>
                   <select
@@ -729,26 +739,39 @@ export default function Schedule() {
                     onChange={(e) => setFilterSemester(e.target.value ? parseInt(e.target.value) : null)}
                     className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
-                    <option value="">Semua Semester</option>
+                    <option value="">Semua</option>
                     {Array.from({ length: 15 }, (_, i) => i + 1).map(sem => (
-                      <option key={sem} value={sem}>Semester {sem}</option>
+                      <option key={sem} value={sem}>Sem {sem}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block">Angkatan (Tahun)</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Angkatan</label>
                   <input
                     type="number"
                     value={filterAngkatan}
                     onChange={(e) => setFilterAngkatan(e.target.value)}
-                    placeholder="Ketik tahun (misal: 2024)"
+                    placeholder="Tahun"
                     min="2000"
                     max="2099"
                     className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 placeholder:text-muted-foreground"
                   />
                 </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1.5 block">Program Studi</label>
+                  <select
+                    value={filterProdi}
+                    onChange={(e) => setFilterProdi(e.target.value)}
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="">Semua Prodi</option>
+                    {prodiOptions.map(prodi => (
+                      <option key={prodi} value={prodi}>{prodi}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">Pilih semester dan/atau angkatan untuk menyaring daftar.</p>
+              <p className="text-xs text-muted-foreground mt-2">Pilih semester, angkatan, dan/atau prodi untuk menyaring daftar.</p>
             </div>
             
             <div>
@@ -773,8 +796,9 @@ export default function Schedule() {
                   const isAlreadyInClass = currentSchedule?.students.some(s => s.nim === student.nim);
                   const matchesSemester = filterSemester ? student.semester === filterSemester : true;
                   const matchesAngkatan = filterAngkatan ? student.angkatan === filterAngkatan : true;
+                  const matchesProdi = filterProdi ? student.prodi === filterProdi : true;
                   const matchesSearch = student.name.toLowerCase().includes(query) || student.nim.toLowerCase().includes(query);
-                  return !isAlreadyInClass && matchesSemester && matchesAngkatan && matchesSearch;
+                  return !isAlreadyInClass && matchesSemester && matchesAngkatan && matchesProdi && matchesSearch;
                 });
                 
                 const handleSelectAll = () => {
@@ -796,9 +820,10 @@ export default function Schedule() {
                   setStudentSearchQuery("");
                   setFilterSemester(null);
                   setFilterAngkatan("");
+                  setFilterProdi("");
                 };
                 
-                return filteredStudents.length > 0 && (filterSemester || filterAngkatan) ? (
+                return filteredStudents.length > 0 && (filterSemester || filterAngkatan || filterProdi) ? (
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -828,8 +853,9 @@ export default function Schedule() {
                     // Apply dropdown filters
                     const matchesSemester = filterSemester ? student.semester === filterSemester : true;
                     const matchesAngkatan = filterAngkatan ? student.angkatan === filterAngkatan : true;
+                    const matchesProdi = filterProdi ? student.prodi === filterProdi : true;
                     
-                    return !isAlreadyInClass && matchesSearch && matchesSemester && matchesAngkatan;
+                    return !isAlreadyInClass && matchesSearch && matchesSemester && matchesAngkatan && matchesProdi;
                   });
                   
                   // Sort: recommended students first (same semester AND prodi)
@@ -852,7 +878,7 @@ export default function Schedule() {
                   if (sortedStudents.length === 0) {
                     return (
                       <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-                        {studentSearchQuery || filterSemester || filterAngkatan 
+                        {studentSearchQuery || filterSemester || filterAngkatan || filterProdi 
                           ? "Tidak ada mahasiswa yang cocok dengan kriteria" 
                           : "Semua mahasiswa sudah terdaftar"}
                       </div>
