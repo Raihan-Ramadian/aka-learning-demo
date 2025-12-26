@@ -246,10 +246,14 @@ export default function Schedule() {
       const dataLines = lines.slice(1);
       
       const schedulesData: Omit<ClassSchedule, 'id'>[] = dataLines.map(line => {
-        const [className, course, lecturer, day, time, room] = line.split(',').map(s => s.trim().replace(/"/g, ''));
+        const [className, courseCode, course, prodi, semester, sks, lecturer, day, time, room] = line.split(',').map(s => s.trim().replace(/"/g, ''));
         return {
           className: className || "",
+          courseCode: courseCode || "",
           course: course || "",
+          prodi: prodi || "",
+          semester: semester ? parseInt(semester) : null,
+          sks: sks ? parseInt(sks) : null,
           lecturer: lecturer || "",
           day: day || "Senin",
           time: time || "",
@@ -300,9 +304,16 @@ export default function Schedule() {
     
     const timeRange = `${scheduleStartTime} - ${scheduleEndTime}`;
     
+    // Find selected course to get prodi, semester, sks
+    const selectedCourse = courses.find(c => c.code === newScheduleData.courseCode);
+    
     addSchedule({
       className: newScheduleData.className,
+      courseCode: newScheduleData.courseCode,
       course: newScheduleData.course,
+      prodi: selectedCourse?.prodi || "",
+      semester: selectedCourse?.semester || null,
+      sks: selectedCourse?.sks || null,
       lecturer: newScheduleData.lecturer,
       day: newScheduleData.day,
       time: timeRange,
@@ -719,58 +730,50 @@ export default function Schedule() {
             <DialogTitle>Tambah Mahasiswa ke Kelas</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            {/* Course Info - Bound directly to selectedSchedule object with prodi/semester from linked course */}
-            {selectedSchedule && (() => {
-              const linkedCourse = courses.find(c => c.name === selectedSchedule.course);
-              const scheduleProdi = linkedCourse?.prodi || "-";
-              const scheduleSemester = linkedCourse?.semester || null;
-              const scheduleSks = linkedCourse?.sks || null;
-              const scheduleCode = linkedCourse?.code || "-";
-              
-              return (
-                <div className="p-3 rounded-lg bg-muted/50 border border-border">
-                  <p className="text-xs text-muted-foreground mb-2">Informasi Jadwal yang Dipilih:</p>
-                  <p className="font-medium text-foreground">{selectedSchedule.course}</p>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <span className="px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium">
-                      Kode: {scheduleCode}
+            {/* Course Info - Bound directly to selectedSchedule object (NO lookup) */}
+            {selectedSchedule && (
+              <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                <p className="text-xs text-muted-foreground mb-2">Informasi Jadwal (ID: {selectedSchedule.id}):</p>
+                <p className="font-medium text-foreground">{selectedSchedule.course}</p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span className="px-2.5 py-1 rounded-full bg-secondary text-secondary-foreground text-xs font-medium">
+                    Kode: {selectedSchedule.courseCode || "-"}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                    {selectedSchedule.prodi || "-"}
+                  </span>
+                  {selectedSchedule.semester && (
+                    <span className="px-2.5 py-1 rounded-full bg-accent/50 text-accent-foreground text-xs font-medium">
+                      Semester {selectedSchedule.semester}
                     </span>
-                    <span className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                      {scheduleProdi}
+                  )}
+                  {selectedSchedule.sks && (
+                    <span className="px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
+                      {selectedSchedule.sks} SKS
                     </span>
-                    {scheduleSemester && (
-                      <span className="px-2.5 py-1 rounded-full bg-accent/50 text-accent-foreground text-xs font-medium">
-                        Semester {scheduleSemester}
-                      </span>
-                    )}
-                    {scheduleSks && (
-                      <span className="px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
-                        {scheduleSks} SKS
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <span className="px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium">
-                      Kelas: {selectedSchedule.className}
-                    </span>
-                    <span className="px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium">
-                      {selectedSchedule.day} • {selectedSchedule.time}
-                    </span>
-                    <span className="px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium">
-                      {selectedSchedule.room}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">Dosen: {selectedSchedule.lecturer}</p>
-                  
-                  {/* Recommendation Criteria Display */}
-                  <div className="mt-3 pt-2 border-t border-border">
-                    <p className="text-xs font-medium text-primary">
-                      📌 Kriteria Rekomendasi: {scheduleProdi} • Semester {scheduleSemester || "-"}
-                    </p>
-                  </div>
+                  )}
                 </div>
-              );
-            })()}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span className="px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium">
+                    Kelas: {selectedSchedule.className}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium">
+                    {selectedSchedule.day} • {selectedSchedule.time}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-xs font-medium">
+                    {selectedSchedule.room}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">Dosen: {selectedSchedule.lecturer}</p>
+                
+                {/* Recommendation Criteria Display - Direct from selectedSchedule */}
+                <div className="mt-3 pt-2 border-t border-border">
+                  <p className="text-xs font-medium text-primary">
+                    📌 Kriteria Rekomendasi: {selectedSchedule.prodi || "-"} • Semester {selectedSchedule.semester || "-"}
+                  </p>
+                </div>
+              </div>
+            )}
             
             {/* Dropdown Filters - Granular with Prodi */}
             <div className="p-3 rounded-lg border border-border bg-background">
@@ -878,10 +881,9 @@ export default function Schedule() {
               {/* Student List - Smart Sorted based on schedule header criteria */}
               <div className="mt-2 max-h-60 overflow-y-auto rounded-lg border border-border bg-background">
                 {(() => {
-                  // Get prodi and semester directly from the linked course for the selected schedule
-                  const linkedCourse = courses.find(c => c.name === selectedSchedule?.course);
-                  const targetSemester = linkedCourse?.semester || null;
-                  const targetProdi = linkedCourse?.prodi || null;
+                  // Get prodi and semester DIRECTLY from selectedSchedule - NO LOOKUP
+                  const targetSemester = selectedSchedule?.semester || null;
+                  const targetProdi = selectedSchedule?.prodi || null;
                   
                   // Get all students and apply filters
                   const allStudents = managedStudents.filter(student => {
@@ -897,7 +899,7 @@ export default function Schedule() {
                     return !isAlreadyInClass && matchesSearch && matchesSemester && matchesAngkatan && matchesProdi;
                   });
                   
-                  // Recommendation: match BOTH prodi AND semester from the modal header
+                  // Recommendation: match BOTH prodi AND semester from selectedSchedule directly
                   const isRecommended = (student: typeof managedStudents[0]) => {
                     if (!targetSemester || !targetProdi) return false;
                     return student.semester === targetSemester && student.prodi === targetProdi;
