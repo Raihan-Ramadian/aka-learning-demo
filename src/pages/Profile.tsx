@@ -12,17 +12,16 @@ export default function Profile() {
   const currentRole = getUserRole();
   const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
-  const { managedStudents, managedLecturers } = useAcademicData();
+  const { getStudentByNim, getLecturerByNip } = useAcademicData();
   
-  // Get current student from AcademicDataContext - simulated by NIM
-  // In a real app, this would come from authentication
-  const studentNim = "2024001";
-  // Use the same NIP as LecturerDashboard for Prof. Sari Dewi
-  const lecturerNip = "197805152005012001";
+  // LIVE LOOKUP: Use NIM/NIP from localStorage (set during login) as primary key
+  // This ensures sync with LecturerDashboard and Admin Kelola User
+  const studentNim = localStorage.getItem("userNimNip") || "2024001";
+  const lecturerNip = localStorage.getItem("userNimNip") || "197805152005012001";
   
-  // Get student/lecturer data from context
-  const currentStudent = managedStudents.find(s => s.nim === studentNim);
-  const currentLecturer = managedLecturers.find(l => l.nip === lecturerNip);
+  // LIVE LOOKUP: Get student/lecturer data directly from context (synced with Admin)
+  const currentStudent = getStudentByNim(studentNim);
+  const currentLecturer = getLecturerByNip(lecturerNip);
   
   // Fallback data for admin (not in managedStudents/managedLecturers)
   const adminData = {
@@ -236,8 +235,11 @@ export default function Profile() {
           <div className="bg-muted/50 px-6 py-4 border-b border-border">
             <h3 className="font-semibold text-foreground">
               {currentRole === "student" ? "Informasi Akademik" : "Informasi Pekerjaan"}
-              {isEditing && currentRole !== "student" && (
+            {isEditing && currentRole === "admin" && (
                 <span className="ml-2 text-xs text-primary font-normal">(Dapat diedit)</span>
+              )}
+              {isEditing && currentRole === "lecturer" && (
+                <span className="ml-2 text-xs text-muted-foreground font-normal">(Hanya baca)</span>
               )}
               {isEditing && currentRole === "student" && (
                 <span className="ml-2 text-xs text-muted-foreground font-normal">(Tidak dapat diubah)</span>
@@ -284,19 +286,13 @@ export default function Profile() {
                     <Briefcase className="h-4 w-4" />
                     Jabatan Akademik
                   </label>
-                  {isEditing ? (
-                    <select 
-                      value={formData.jabatan}
-                      onChange={(e) => handleInputChange('jabatan', e.target.value)}
-                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    >
-                      <option value="Asisten Ahli">Asisten Ahli</option>
-                      <option value="Lektor">Lektor</option>
-                      <option value="Lektor Kepala">Lektor Kepala</option>
-                      <option value="Guru Besar">Guru Besar</option>
-                    </select>
-                  ) : (
-                    <p className="font-medium text-foreground">{currentLecturer.jabatan}</p>
+                  {/* JABATAN READ-ONLY: Dosen tidak boleh mengubah jabatan sendiri */}
+                  {/* Jabatan hanya bisa diubah oleh Admin melalui Kelola User */}
+                  <p className="font-medium text-foreground">{currentLecturer.jabatan}</p>
+                  {isEditing && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Jabatan akademik hanya dapat diubah oleh Admin
+                    </p>
                   )}
                 </div>
               </>
