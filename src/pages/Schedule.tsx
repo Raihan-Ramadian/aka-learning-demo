@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { getUserRole } from "@/types/roles";
 import { useAcademicData, Student, ClassSchedule, AcademicEvent } from "@/contexts/AcademicDataContext";
-import { Calendar, Download, Upload, Clock, MapPin, User, ChevronLeft, ChevronRight, FileImage, Users, Plus, Pencil, Trash2, FileSpreadsheet, X } from "lucide-react";
+import { Calendar, Download, Upload, Clock, MapPin, User, ChevronLeft, ChevronRight, FileImage, Users, Plus, Pencil, Trash2, FileSpreadsheet, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,6 +43,9 @@ export default function Schedule() {
   const [addEventOpen, setAddEventOpen] = useState(false);
   const [addScheduleOpen, setAddScheduleOpen] = useState(false);
   const [importScheduleOpen, setImportScheduleOpen] = useState(false);
+  
+  // Admin schedule table search
+  const [scheduleTableSearch, setScheduleTableSearch] = useState("");
   
   // Academic Event form states
   const [newEventTitle, setNewEventTitle] = useState("");
@@ -129,6 +132,20 @@ export default function Schedule() {
   };
   
   const filteredSchedules = getFilteredSchedules();
+  
+  // Additional filter for admin table search
+  const getAdminTableSchedules = () => {
+    if (!scheduleTableSearch.trim()) return schedules;
+    const query = scheduleTableSearch.toLowerCase();
+    return schedules.filter(s =>
+      s.course.toLowerCase().includes(query) ||
+      s.courseCode?.toLowerCase().includes(query) ||
+      s.className.toLowerCase().includes(query) ||
+      s.lecturer.toLowerCase().includes(query)
+    );
+  };
+  
+  const adminTableSchedules = getAdminTableSchedules();
 
   const getScheduleByDay = (day: string) => {
     return filteredSchedules.filter(s => s.day === day);
@@ -500,6 +517,25 @@ export default function Schedule() {
               </button>
             </div>
           </div>
+          {/* Search Bar untuk tabel jadwal */}
+          <div className="relative mt-4">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={scheduleTableSearch}
+              onChange={(e) => setScheduleTableSearch(e.target.value)}
+              placeholder="Cari berdasarkan nama matkul, kode, kelas, atau dosen..."
+              className="h-10 w-full rounded-lg border border-input bg-background pl-10 pr-10 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+            />
+            {scheduleTableSearch && (
+              <button 
+                onClick={() => setScheduleTableSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -516,14 +552,14 @@ export default function Schedule() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {schedules.length === 0 ? (
+              {adminTableSchedules.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
-                    Belum ada data jadwal. Klik "Tambah Jadwal" untuk menambahkan jadwal baru.
+                    {scheduleTableSearch ? `Tidak ada jadwal yang cocok dengan "${scheduleTableSearch}"` : "Belum ada data jadwal. Klik \"Tambah Jadwal\" untuk menambahkan jadwal baru."}
                   </td>
                 </tr>
               ) : (
-                schedules.map((schedule, index) => (
+                adminTableSchedules.map((schedule, index) => (
                   <tr
                     key={schedule.id}
                     className="hover:bg-muted/30 transition-colors animate-fade-in"
@@ -574,7 +610,10 @@ export default function Schedule() {
         </div>
         <div className="border-t border-border p-4">
           <p className="text-sm text-muted-foreground">
-            Total <span className="font-medium text-foreground">{schedules.length}</span> jadwal kelas
+            {scheduleTableSearch 
+              ? <>Menampilkan <span className="font-medium text-foreground">{adminTableSchedules.length}</span> dari <span className="font-medium text-foreground">{schedules.length}</span> jadwal</>
+              : <>Total <span className="font-medium text-foreground">{schedules.length}</span> jadwal kelas</>
+            }
           </p>
         </div>
       </div>

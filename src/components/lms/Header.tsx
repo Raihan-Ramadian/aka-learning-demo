@@ -27,19 +27,57 @@ export function Header() {
     navigate("/");
   };
 
+  // Get current user identifiers for filtering
+  const studentNim = localStorage.getItem("userNimNip") || "";
+  const lecturerName = localStorage.getItem("userName") || "";
+  
+  // Get filtered schedules for current user
+  const getUserSchedules = () => {
+    if (currentRole === "admin") {
+      return schedules;
+    } else if (currentRole === "student") {
+      return schedules.filter(schedule => 
+        schedule.students.some(student => student.nim === studentNim)
+      );
+    } else if (currentRole === "lecturer") {
+      return schedules.filter(schedule => 
+        schedule.lecturer === lecturerName
+      );
+    }
+    return [];
+  };
+  
+  const userSchedules = getUserSchedules();
+  
+  // Get course IDs from user's schedules for filtering courses and tasks
+  const userCourseNames = userSchedules.map(s => s.course);
+
   // Global search across all data - results vary by role
   const getSearchResults = () => {
     if (!searchQuery.trim()) return { courses: [], schedules: [], students: [], lecturers: [], tasks: [] };
     
     const query = searchQuery.toLowerCase();
     
+    // Filter courses based on role
+    const filteredCourses = currentRole === "admin" 
+      ? courses 
+      : courses.filter(c => userCourseNames.includes(c.name));
+    
+    // Filter tasks based on role - only show tasks for courses the user is enrolled in
+    const filteredTasks = currentRole === "admin"
+      ? tasks
+      : tasks.filter(t => {
+          const taskCourse = courses.find(c => c.id === t.courseId);
+          return taskCourse && userCourseNames.includes(taskCourse.name);
+        });
+    
     return {
-      courses: courses.filter(c => 
+      courses: filteredCourses.filter(c => 
         c.name.toLowerCase().includes(query) || 
         c.code.toLowerCase().includes(query) ||
         c.lecturer.toLowerCase().includes(query)
       ).slice(0, 3),
-      schedules: schedules.filter(s => 
+      schedules: userSchedules.filter(s => 
         s.course.toLowerCase().includes(query) || 
         s.className.toLowerCase().includes(query) ||
         s.lecturer.toLowerCase().includes(query) ||
@@ -55,7 +93,7 @@ export function Header() {
         l.nip.toLowerCase().includes(query) ||
         l.prodi.toLowerCase().includes(query)
       ).slice(0, 3) : [],
-      tasks: tasks.filter(t => 
+      tasks: filteredTasks.filter(t => 
         t.title.toLowerCase().includes(query) || 
         t.description.toLowerCase().includes(query)
       ).slice(0, 3),
@@ -123,10 +161,13 @@ export function Header() {
                         <button
                           key={course.id}
                           onClick={() => { 
-                            // Admin stays in admin area, others go to course detail
+                            // Navigate based on role
                             if (currentRole === "admin") {
                               navigate("/courses");
+                            } else if (currentRole === "lecturer") {
+                              navigate(`/course/${course.id}`);
                             } else {
+                              // Student
                               navigate(`/course/${course.id}`);
                             }
                             setShowResults(false); 
@@ -144,27 +185,31 @@ export function Header() {
                     </div>
                   )}
                   
-                  {/* Schedules */}
+                  {/* Schedules - Navigate to schedule page */}
                   {results.schedules.length > 0 && (
                     <div>
                       <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">Jadwal</p>
                       {results.schedules.map(schedule => (
                         <button
                           key={schedule.id}
-                          onClick={() => { navigate("/schedule"); setShowResults(false); setSearchQuery(""); }}
+                          onClick={() => { 
+                            navigate("/schedule"); 
+                            setShowResults(false); 
+                            setSearchQuery(""); 
+                          }}
                           className="w-full flex items-center gap-3 px-3 py-2 hover:bg-muted/50 transition-colors text-left"
                         >
                           <Calendar className="h-4 w-4 text-success" />
                           <div>
                             <p className="text-sm font-medium text-foreground">{schedule.className} - {schedule.course}</p>
-                            <p className="text-xs text-muted-foreground">{schedule.day} {schedule.time} • {schedule.room}</p>
+                            <p className="text-xs text-muted-foreground">{schedule.day} {schedule.time} • {schedule.room} • {schedule.lecturer}</p>
                           </div>
                         </button>
                       ))}
                     </div>
                   )}
                   
-                  {/* Students */}
+                  {/* Students - Admin only */}
                   {results.students.length > 0 && (
                     <div>
                       <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">Mahasiswa</p>
@@ -184,7 +229,7 @@ export function Header() {
                     </div>
                   )}
                   
-                  {/* Lecturers */}
+                  {/* Lecturers - Admin only */}
                   {results.lecturers.length > 0 && (
                     <div>
                       <p className="px-3 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">Dosen</p>
@@ -212,10 +257,13 @@ export function Header() {
                         <button
                           key={task.id}
                           onClick={() => { 
-                            // Admin goes to courses page, others to course detail
+                            // Navigate based on role
                             if (currentRole === "admin") {
                               navigate("/courses");
+                            } else if (currentRole === "lecturer") {
+                              navigate(`/course/${task.courseId}?tab=assignments`);
                             } else {
+                              // Student
                               navigate(`/course/${task.courseId}?tab=assignments`);
                             }
                             setShowResults(false); 
