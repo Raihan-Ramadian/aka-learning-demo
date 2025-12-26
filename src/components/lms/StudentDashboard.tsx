@@ -17,7 +17,7 @@ const daysOfWeek = ["Senin", "Selasa", "Rabu", "Kamis", "Jumat"];
 export function StudentDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { courses, getStudentSchedules, submissions, tasks, submitAssignment, getStudentByNim } = useAcademicData();
+  const { courses, getStudentSchedules, submissions, tasks, submitAssignment, getStudentByNim, getLecturerByNip } = useAcademicData();
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedCourseForUpload, setSelectedCourseForUpload] = useState<{
     id: number;
@@ -55,12 +55,18 @@ export function StudentDashboard() {
     .map(schedule => {
       // Find the matching course from master data for additional info
       const courseData = courses.find(c => c.name === schedule.course);
+      
+      // LIVE LOOKUP: Get lecturer name from NIP (Single Source of Truth)
+      const lecturer = schedule.lecturerNip 
+        ? getLecturerByNip(schedule.lecturerNip)?.name || schedule.lecturer
+        : schedule.lecturer;
+      
       return {
         id: courseData?.id || schedule.id, // Use master course ID for tasks/navigation
         scheduleId: schedule.id,
         name: schedule.course,
         code: courseData?.code || schedule.className,
-        lecturer: schedule.lecturer,
+        lecturer: lecturer,
         color: courseData?.color || schedule.color || "from-primary to-primary/80",
         prodi: courseData?.prodi || "",
         semester: courseData?.semester || 0,

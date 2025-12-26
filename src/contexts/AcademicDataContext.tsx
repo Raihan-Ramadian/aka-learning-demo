@@ -38,6 +38,7 @@ export interface Course {
   name: string;
   code: string;
   lecturer: string;
+  lecturerNip?: string; // PRIMARY KEY: Use NIP for live lookup
   color: string;
   classes?: number;
   prodi?: string;
@@ -73,6 +74,7 @@ export interface ClassSchedule {
   semester: number | null; // Direct binding - no lookup needed
   sks: number | null; // Direct binding - no lookup needed
   lecturer: string;
+  lecturerNip: string; // PRIMARY KEY: Use NIP for live lookup - ensures identity sync
   day: string;
   time: string;
   room: string;
@@ -190,7 +192,8 @@ const initialSchedules: ClassSchedule[] = [
   { 
     id: 1, className: "D3-AK-2A", course: "Kimia Dasar", courseCode: "KIM101", 
     prodi: "D3 Analisis Kimia", semester: 1, sks: 3,
-    lecturer: "Dr. Ahmad Wijaya", day: "Senin", time: "08:00 - 09:40", room: "Lab Kimia A", 
+    lecturer: "Dr. Ahmad Wijaya", lecturerNip: "198501012010011001",
+    day: "Senin", time: "08:00 - 09:40", room: "Lab Kimia A", 
     students: [
       { id: 1, name: "Siti Rahayu", nim: "2024001" },
       { id: 2, name: "Ahmad Fadli", nim: "2024002" },
@@ -201,7 +204,8 @@ const initialSchedules: ClassSchedule[] = [
   { 
     id: 2, className: "D3-AK-2B", course: "Kimia Dasar", courseCode: "KIM101",
     prodi: "D3 Analisis Kimia", semester: 1, sks: 3,
-    lecturer: "Dr. Ahmad Wijaya", day: "Rabu", time: "08:00 - 09:40", room: "Lab Kimia A", 
+    lecturer: "Dr. Ahmad Wijaya", lecturerNip: "198501012010011001",
+    day: "Rabu", time: "08:00 - 09:40", room: "Lab Kimia A", 
     students: [
       { id: 4, name: "Budi Santoso", nim: "2024010" },
       { id: 5, name: "Dewi Lestari", nim: "2024011" },
@@ -211,7 +215,8 @@ const initialSchedules: ClassSchedule[] = [
   { 
     id: 3, className: "D3-AK-2A", course: "Kimia Organik", courseCode: "KIM301",
     prodi: "D4 Nanoteknologi Pangan", semester: 3, sks: 3,
-    lecturer: "Prof. Sari Dewi", day: "Selasa", time: "08:00 - 09:40", room: "Lab Kimia B", 
+    lecturer: "Prof. Sari Dewi", lecturerNip: "197805152005012001",
+    day: "Selasa", time: "08:00 - 09:40", room: "Lab Kimia B", 
     students: [
       { id: 1, name: "Siti Rahayu", nim: "2024001" },
     ],
@@ -220,14 +225,16 @@ const initialSchedules: ClassSchedule[] = [
   { 
     id: 4, className: "D3-AK-3A", course: "Biokimia", courseCode: "BIO201",
     prodi: "D3 Analisis Kimia", semester: 2, sks: 3,
-    lecturer: "Prof. Sari Dewi", day: "Selasa", time: "13:00 - 14:40", room: "R. 302", 
+    lecturer: "Prof. Sari Dewi", lecturerNip: "197805152005012001",
+    day: "Selasa", time: "13:00 - 14:40", room: "R. 302", 
     students: [{ id: 6, name: "Eko Prasetyo", nim: "2023008" }],
     color: "bg-accent border-accent text-accent-foreground"
   },
   { 
     id: 5, className: "D4-NP-4A", course: "Analisis Instrumen", courseCode: "ANL401",
     prodi: "D4 Nanoteknologi Pangan", semester: 4, sks: 3,
-    lecturer: "Prof. Sari Dewi", day: "Kamis", time: "13:00 - 15:30", room: "Lab Instrumen", 
+    lecturer: "Prof. Sari Dewi", lecturerNip: "197805152005012001",
+    day: "Kamis", time: "13:00 - 15:30", room: "Lab Instrumen", 
     students: [],
     color: "bg-destructive/10 border-destructive/30 text-destructive"
   },
@@ -462,8 +469,18 @@ export function AcademicDataProvider({ children }: { children: ReactNode }) {
     return schedules.filter(s => s.students.some(st => st.nim === studentNim));
   };
 
-  const getLecturerSchedules = (lecturerName: string): ClassSchedule[] => {
-    return schedules.filter(s => s.lecturer.toLowerCase().includes(lecturerName.toLowerCase()));
+  // UPDATED: Match by NIP for exact identity (preferred) or fallback to name match
+  const getLecturerSchedules = (lecturerNipOrName: string): ClassSchedule[] => {
+    // First try exact NIP match (most reliable - Single Source of Truth)
+    const nipMatch = schedules.filter(s => s.lecturerNip === lecturerNipOrName);
+    if (nipMatch.length > 0) return nipMatch;
+    
+    // Fallback: name-based matching (strip prefixes)
+    const searchName = lecturerNipOrName.replace(/^(Dr\.|Prof\.|Pak|Bu)\s*/gi, '').trim().toLowerCase();
+    return schedules.filter(s => {
+      const scheduleLecturerName = s.lecturer.replace(/^(Dr\.|Prof\.|Pak|Bu)\s*/gi, '').trim().toLowerCase();
+      return scheduleLecturerName.includes(searchName) || searchName.includes(scheduleLecturerName);
+    });
   };
 
   const getStudentSubmission = (taskId: number, studentNim: string): TaskSubmission | undefined => {

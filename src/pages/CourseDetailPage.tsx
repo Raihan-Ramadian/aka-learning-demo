@@ -9,12 +9,27 @@ export function CourseDetailPage() {
   const currentRole = getUserRole();
   
   // Get courses from context for dynamic data
-  const { courses, getMaterialsByCourse } = useAcademicData();
+  const { courses, getMaterialsByCourse, schedules, getLecturerByNip } = useAcademicData();
   
   // Find course using string comparison to handle both number and string IDs
   const course = courseId 
     ? courses.find(c => String(c.id) === String(courseId))
     : null;
+    
+  // LIVE LOOKUP: Get the latest lecturer name from schedules that reference this course
+  const getCourseLecturerName = () => {
+    if (!course) return "";
+    
+    // First try to find from schedule with lecturerNip
+    const courseSchedule = schedules.find(s => s.course === course.name);
+    if (courseSchedule?.lecturerNip) {
+      const lecturer = getLecturerByNip(courseSchedule.lecturerNip);
+      if (lecturer) return lecturer.name;
+    }
+    
+    // Fallback to course.lecturer (static)
+    return course.lecturer;
+  };
   
   if (!course) {
     return (
@@ -41,10 +56,16 @@ export function CourseDetailPage() {
       navigate("/dashboard");
     }
   };
+  
+  // Create course object with live-looked-up lecturer name
+  const courseWithLiveLecturer = {
+    ...course,
+    lecturer: getCourseLecturerName(),
+  };
 
   return (
     <CourseDetail
-      course={course}
+      course={courseWithLiveLecturer}
       userRole={currentRole === "lecturer" ? "lecturer" : "student"}
       onBack={handleBack}
     />
