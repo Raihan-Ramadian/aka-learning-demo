@@ -68,6 +68,10 @@ export interface ClassSchedule {
   id: number;
   className: string;
   course: string;
+  courseCode: string; // Direct binding - no lookup needed
+  prodi: string; // Direct binding - no lookup needed
+  semester: number | null; // Direct binding - no lookup needed
+  sks: number | null; // Direct binding - no lookup needed
   lecturer: string;
   day: string;
   time: string;
@@ -184,8 +188,9 @@ const initialAcademicEvents: AcademicEvent[] = [
 
 const initialSchedules: ClassSchedule[] = [
   { 
-    id: 1, className: "D3-AK-2A", course: "Kimia Dasar", lecturer: "Dr. Ahmad Wijaya", 
-    day: "Senin", time: "08:00 - 09:40", room: "Lab Kimia A", 
+    id: 1, className: "D3-AK-2A", course: "Kimia Dasar", courseCode: "KIM101", 
+    prodi: "D3 Analisis Kimia", semester: 1, sks: 3,
+    lecturer: "Dr. Ahmad Wijaya", day: "Senin", time: "08:00 - 09:40", room: "Lab Kimia A", 
     students: [
       { id: 1, name: "Siti Rahayu", nim: "2024001" },
       { id: 2, name: "Ahmad Fadli", nim: "2024002" },
@@ -194,8 +199,9 @@ const initialSchedules: ClassSchedule[] = [
     color: "bg-primary/10 border-primary/30 text-primary"
   },
   { 
-    id: 2, className: "D3-AK-2B", course: "Kimia Dasar", lecturer: "Dr. Ahmad Wijaya", 
-    day: "Rabu", time: "08:00 - 09:40", room: "Lab Kimia A", 
+    id: 2, className: "D3-AK-2B", course: "Kimia Dasar", courseCode: "KIM101",
+    prodi: "D3 Analisis Kimia", semester: 1, sks: 3,
+    lecturer: "Dr. Ahmad Wijaya", day: "Rabu", time: "08:00 - 09:40", room: "Lab Kimia A", 
     students: [
       { id: 4, name: "Budi Santoso", nim: "2024010" },
       { id: 5, name: "Dewi Lestari", nim: "2024011" },
@@ -203,22 +209,25 @@ const initialSchedules: ClassSchedule[] = [
     color: "bg-success/10 border-success/30 text-success"
   },
   { 
-    id: 3, className: "D3-AK-2A", course: "Kimia Organik", lecturer: "Prof. Sari Dewi", 
-    day: "Selasa", time: "08:00 - 09:40", room: "Lab Kimia B", 
+    id: 3, className: "D3-AK-2A", course: "Kimia Organik", courseCode: "KIM301",
+    prodi: "D4 Nanoteknologi Pangan", semester: 3, sks: 3,
+    lecturer: "Prof. Sari Dewi", day: "Selasa", time: "08:00 - 09:40", room: "Lab Kimia B", 
     students: [
       { id: 1, name: "Siti Rahayu", nim: "2024001" },
     ],
     color: "bg-warning/10 border-warning/30 text-warning"
   },
   { 
-    id: 4, className: "D3-AK-3A", course: "Biokimia", lecturer: "Prof. Sari Dewi", 
-    day: "Selasa", time: "13:00 - 14:40", room: "R. 302", 
+    id: 4, className: "D3-AK-3A", course: "Biokimia", courseCode: "BIO201",
+    prodi: "D3 Analisis Kimia", semester: 2, sks: 3,
+    lecturer: "Prof. Sari Dewi", day: "Selasa", time: "13:00 - 14:40", room: "R. 302", 
     students: [{ id: 6, name: "Eko Prasetyo", nim: "2023008" }],
     color: "bg-accent border-accent text-accent-foreground"
   },
   { 
-    id: 5, className: "D4-NP-4A", course: "Analisis Instrumen", lecturer: "Prof. Sari Dewi", 
-    day: "Kamis", time: "13:00 - 15:30", room: "Lab Instrumen", 
+    id: 5, className: "D4-NP-4A", course: "Analisis Instrumen", courseCode: "ANL401",
+    prodi: "D4 Nanoteknologi Pangan", semester: 4, sks: 3,
+    lecturer: "Prof. Sari Dewi", day: "Kamis", time: "13:00 - 15:30", room: "Lab Instrumen", 
     students: [],
     color: "bg-destructive/10 border-destructive/30 text-destructive"
   },
