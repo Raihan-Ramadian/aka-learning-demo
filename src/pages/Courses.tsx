@@ -221,11 +221,11 @@ export default function Courses() {
   const getPageTitle = () => {
     switch (currentRole) {
       case "admin":
-        return "Master Data Mata Kuliah 📚";
+        return "Master Data Mata Kuliah";
       case "lecturer":
-        return "Kelas Saya 👨‍🏫";
+        return "Kelas Saya";
       case "student":
-        return "Kelas Aktif Saya 📖";
+        return "Kelas Aktif Saya";
     }
   };
 

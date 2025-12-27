@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Search, User, LogOut, X, BookOpen, FileText, Calendar, Users, Video, File } from "lucide-react";
+import { Bell, Search, User, LogOut, X, BookOpen, FileText, Calendar, Users, Video, File, Menu } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +11,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAcademicData } from "@/contexts/AcademicDataContext";
 import { getUserRole } from "@/types/roles";
 import { cn } from "@/lib/utils";
+import { useSidebar } from "@/contexts/SidebarContext";
+import { Button } from "@/components/ui/button";
 
 // Interface for search result materials
 interface SearchMaterial {
@@ -38,6 +40,7 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showResults, setShowResults] = useState(false);
   const currentRole = getUserRole();
+  const { toggleSidebar } = useSidebar();
 
   const handleLogout = () => {
     localStorage.removeItem("userRole");
@@ -189,8 +192,16 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card px-6 shadow-sm">
-      {/* Search */}
+      {/* Left Section */}
       <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
+          className="h-9 w-9"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
         <div className="relative" onClick={(e) => e.stopPropagation()}>
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input

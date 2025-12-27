@@ -1,0 +1,29 @@
+/* Custom CSS for Login page - Mobile Friendly Override */
+
+/* Mobile devices (< 768px) -- try on 900 */
+@media only screen and (max-width: 899px) {
+  .login-left-side {
+    display: none !important;
+  }
+  
+  .login-mobile-logo {
+    display: flex !important;
+  }
+  
+  /* Ensure proper spacing on mobile */
+  .login-right-side {
+    padding: 1.5rem !important;
+    min-height: 100vh;
+  }
+}
+
+/* Tablets and Desktop (>= 768px) -- 900 dech*/
+@media only screen and (min-width: 900px) {
+  .login-left-side {
+    display: flex !important;
+  }
+  
+  .login-mobile-logo {
+    display: none !important;
+  }
+}

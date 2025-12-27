@@ -229,11 +229,11 @@ export default function Schedule() {
   const getPageTitle = () => {
     switch (currentRole) {
       case "admin":
-        return "Manajemen Jadwal Kuliah 📅";
+        return "Manajemen Jadwal Kuliah";
       case "lecturer":
-        return "Jadwal Mengajar Saya 👨‍🏫";
+        return "Jadwal Mengajar Saya";
       case "student":
-        return "Jadwal Kuliah Saya 📅";
+        return "Jadwal Kuliah Saya";
     }
   };
 

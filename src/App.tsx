@@ -17,18 +17,34 @@ import { CourseDetailPage } from "./pages/CourseDetailPage";
 import { Sidebar } from "./components/lms/Sidebar";
 import { Header } from "./components/lms/Header";
 import { AcademicDataProvider } from "./contexts/AcademicDataContext";
+import { SidebarProvider, useSidebar } from "./contexts/SidebarContext";
 
 const queryClient = new QueryClient();
 
 // Layout wrapper for authenticated pages
-const DashboardLayout = ({ children }: { children: React.ReactNode }) => (
-  <div className="min-h-screen bg-background">
-    <Sidebar />
-    <div className="ml-64">
-      <Header />
-      <main className="p-6">{children}</main>
+const DashboardLayoutContent = ({ children }: { children: React.ReactNode }) => {
+  const { isOpen } = useSidebar();
+  
+  return (
+    <div className="min-h-screen bg-background">
+      <Sidebar />
+      <div 
+        className="transition-all duration-300 ease-in-out" 
+        style={{ 
+          marginLeft: isOpen ? '256px' : '64px',
+        }}
+      >
+        <Header />
+        <main className="p-6">{children}</main>
+      </div>
     </div>
-  </div>
+  );
+};
+
+const DashboardLayout = ({ children }: { children: React.ReactNode }) => (
+  <SidebarProvider>
+    <DashboardLayoutContent>{children}</DashboardLayoutContent>
+  </SidebarProvider>
 );
 
 const App = () => (

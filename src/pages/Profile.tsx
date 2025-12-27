@@ -109,7 +109,7 @@ export default function Profile() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Profil Saya 👤</h1>
+          <h1 className="text-2xl font-bold text-foreground">Profil Saya</h1>
           <p className="mt-1 text-muted-foreground">
             Lihat dan kelola informasi profil Anda
           </p>

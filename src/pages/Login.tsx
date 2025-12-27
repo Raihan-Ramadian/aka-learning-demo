@@ -1,15 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { GraduationCap, Eye, EyeOff, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import "./login.css"; // Import custom CSS for media queries
 
 // Demo credentials for role-based login
+{/* These are just for simulation purposes 
 const demoCredentials = {
   student: { id: "2024001", password: "demo123", role: "student" },
   lecturer: { id: "198501012010011001", password: "demo123", role: "lecturer" },
   admin: { id: "admin", password: "admin123", role: "admin" },
+};*/}
+
+const demoCredentials = {
+  student: { id: "1", password: "1", role: "student" },
+  lecturer: { id: "2", password: "2", role: "lecturer" },
+  admin: { id: "3", password: "3", role: "admin" },
 };
 
 export default function Login() {
@@ -19,6 +27,24 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Override viewport untuk mobile-friendly pada halaman login
+  useEffect(() => {
+    const viewport = document.querySelector('meta[name="viewport"]');
+    const originalContent = viewport?.getAttribute('content') || '';
+    
+    // Set responsive viewport untuk login page
+    if (viewport) {
+      viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+    }
+    
+    // Restore original viewport saat unmount
+    return () => {
+      if (viewport) {
+        viewport.setAttribute('content', originalContent);
+      }
+    };
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,21 +71,21 @@ export default function Login() {
       let redirectPath = "/dashboard";
       
       // Check for admin login
-      if (nimNip.toLowerCase() === "admin") {
+      if (nimNip === "3") {
         role = "admin";
         userName = "Admin";
         roleLabel = "Admin";
         redirectPath = "/admin";
       } 
       // Check for NIP format (starts with '19' - lecturer/dosen)
-      else if (nimNip.startsWith("19")) {
+      else if (nimNip.startsWith("2")) {
         role = "lecturer";
         userName = "Dosen";
         roleLabel = "Dosen";
         redirectPath = "/lecturer";
       } 
       // Check for NIM format (starts with '20' - student/mahasiswa)
-      else if (nimNip.startsWith("20")) {
+      else if (nimNip.startsWith("1")) {
         role = "student";
         userName = "Mahasiswa";
         roleLabel = "Mahasiswa";
@@ -94,15 +120,23 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Visual */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-sidebar-background via-sidebar-accent to-primary overflow-hidden">
-        {/* Decorative Elements */}
-        <div className="absolute inset-0">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-40 right-20 w-96 h-96 bg-sidebar-primary/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-          <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-accent/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: "2s" }} />
-        </div>
+    <div className="min-h-screen flex flex-col lg:flex-row">
+      {/* Left Side - Visual - Hidden on mobile via CSS media query */}
+      <div className="login-left-side lg:w-1/2 relative overflow-hidden">
+        {/* Building Background Image with slight blur */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ 
+            backgroundImage: 'url(/building.jpg)',
+            filter: 'blur(3px)'
+          }}
+        />
+        
+        {/* Blend Mode Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-red-900/70 via-white-900/90 to-gray-900/70 mix-blend-multiply" />
+        
+        {/* Additional Color Overlay for Readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40" />
 
         {/* Chemistry Lab Illustration Pattern */}
         <div className="absolute inset-0 opacity-10">
@@ -119,20 +153,18 @@ export default function Login() {
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center justify-center w-full p-12">
           <div className="flex items-center gap-4 mb-8">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-sidebar-primary shadow-lg">
-              <GraduationCap className="h-10 w-10 text-sidebar-primary-foreground" />
-            </div>
+            <img src="/icon.png" alt="AKA Logo" className="h-16 w-16 object-contain drop-shadow-xl" />
             <div>
-              <h1 className="text-3xl font-bold text-sidebar-foreground">AKA Learning</h1>
-              <p className="text-sidebar-foreground/70">Learning Management System</p>
+              <h1 className="text-3xl font-bold text-white drop-shadow-lg">Politeknik AKA Bogor</h1>
+              <p className="text-white/80 drop-shadow-md">Learning Management System</p>
             </div>
           </div>
 
           <div className="max-w-md text-center">
-            <h2 className="text-4xl font-bold text-sidebar-foreground mb-4">
+            <h2 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">
               Selamat Datang di Portal Akademik
             </h2>
-            <p className="text-lg text-sidebar-foreground/80 mb-8">
+            <p className="text-lg text-white/70 mb-8 drop-shadow-md">
               Akses materi kuliah, kelola tugas, dan pantau perkembangan akademik Anda dengan mudah.
             </p>
 
@@ -144,9 +176,9 @@ export default function Login() {
                 { title: "Jadwal Kuliah", desc: "Kalender terintegrasi" },
                 { title: "Komunikasi", desc: "Dosen & mahasiswa" },
               ].map((feature, i) => (
-                <div key={i} className="bg-sidebar-accent/50 rounded-xl p-4 backdrop-blur-sm">
-                  <h3 className="font-semibold text-sidebar-foreground">{feature.title}</h3>
-                  <p className="text-sm text-sidebar-foreground/70">{feature.desc}</p>
+                <div key={i} className="bg-white/10 rounded-xl p-4 backdrop-blur-md border border-white/20 hover:bg-white/15 transition-all">
+                  <h3 className="font-semibold text-white">{feature.title}</h3>
+                  <p className="text-sm text-white/80">{feature.desc}</p>
                 </div>
               ))}
             </div>
@@ -154,8 +186,8 @@ export default function Login() {
 
           {/* Campus Logo/Badge */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-            <p className="text-sm text-sidebar-foreground/60">
-              Politeknik AKA Bogor © 2024
+            <p className="text-sm text-white/70 drop-shadow-md">
+              Politeknik AKA Bogor © 2025
             </p>
           </div>
         </div>
@@ -164,13 +196,11 @@ export default function Login() {
       {/* Right Side - Login Form */}
       <div className="flex w-full lg:w-1/2 items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md">
-          {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-              <GraduationCap className="h-7 w-7 text-primary-foreground" />
-            </div>
+          {/* Mobile Logo - shown on mobile via CSS media query */}
+          <div className="login-mobile-logo flex items-center justify-center gap-3 mb-8">
+            <img src="/icon.png" alt="AKA Logo" className="h-14 w-14 object-contain" />
             <div>
-              <h1 className="text-xl font-bold text-foreground">AKA Learning</h1>
+              <h1 className="text-xl font-bold text-foreground">Politeknik AKA Bogor</h1>
               <p className="text-xs text-muted-foreground">Learning Management System</p>
             </div>
           </div>
@@ -260,9 +290,9 @@ export default function Login() {
           <div className="mt-6 p-4 bg-muted rounded-xl">
             <p className="text-sm font-medium text-foreground mb-2">Demo Account:</p>
             <div className="text-xs text-muted-foreground space-y-1">
-              <p>Mahasiswa: NIM <strong>2024001</strong> | Password: <strong>demo123</strong></p>
-              <p>Dosen: NIP <strong>198501012010011001</strong> | Password: <strong>demo123</strong></p>
-              <p>Admin: ID <strong>admin</strong> | Password: <strong>admin123</strong></p>
+              <p>Mahasiswa: NIM <strong>1</strong> | Password: <strong>1</strong></p>
+              <p>Dosen: NIP <strong>2</strong> | Password: <strong>2</strong></p>
+              <p>Admin: ID <strong>3</strong> | Password: <strong>3</strong></p>
             </div>
           </div>
         </div>

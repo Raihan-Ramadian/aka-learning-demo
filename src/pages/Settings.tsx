@@ -66,8 +66,8 @@ export default function Settings() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <SettingsIcon className="h-7 w-7" />
-          Pengaturan ⚙️
+          {/*<SettingsIcon className="h-7 w-7" /> */}
+          Pengaturan
         </h1>
         <p className="mt-1 text-muted-foreground">Kelola password dan preferensi notifikasi Anda</p>
       </div>
